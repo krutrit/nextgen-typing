@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextGen Typing - ฝึกพิมพ์สัมผัส</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', 'Sarabun', monospace; }
+        
+        /* Cursor Animation */
+        .cursor {
+            border-left: 2px solid #eab308;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Key Pop & Wiggle Animation */
+        @keyframes popWiggle {
+            0% { transform: scale(1); }
+            20% { transform: scale(1.15); }
+            40% { transform: scale(1.15) rotate(-3deg); }
+            60% { transform: scale(1.15) rotate(3deg); }
+            80% { transform: scale(1.15) rotate(-1deg); } 
+            100% { transform: scale(1.15) rotate(0); }
+        }
+
+        .key-active-anim {
+            animation: popWiggle 0.4s ease-out forwards;
+            z-index: 20;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+            border-color: #818cf8 !important;
+            transform: translateY(2px);
+        }
+
+        /* Active Key Background Colors */
+        .active-pinky  { background-color: #be123c !important; }
+        .active-ring   { background-color: #b45309 !important; }
+        .active-middle { background-color: #a16207 !important; }
+        .active-index  { background-color: #0369a1 !important; }
+        .active-thumb  { background-color: #475569 !important; }
+
+        .key-active-anim span {
+            color: rgba(255,255,255,0.5) !important;
+            text-shadow: none !important;
+        }
+
+        .target-char { 
+            color: #ffffff !important; 
+            opacity: 1 !important;
+            text-shadow: 0 0 10px rgba(255,255,255,1) !important;
+            font-weight: 800 !important; 
+            transform: scale(1.4);
+            display: inline-block;
+        }
+
+        /* Hand Styles */
+        .hand-path { fill: #1e293b; stroke: #334155; stroke-width: 2; }
+        .finger-tip { transition: fill 0.2s, r 0.2s; }
+        
+        .f-pinky { fill: #be123c; opacity: 0.3; }
+        .f-ring  { fill: #d97706; opacity: 0.3; }
+        .f-middle { fill: #eab308; opacity: 0.3; }
+        .f-index  { fill: #0ea5e9; opacity: 0.3; }
+        .f-thumb  { fill: #64748b; opacity: 0.3; }
+
+        .finger-active { opacity: 1 !important; r: 14; stroke: white; stroke-width: 2; filter: drop-shadow(0 0 5px currentColor); }
+
+        /* Custom Scrollbar */
+        .lesson-scroll::-webkit-scrollbar { width: 4px; }
+        .lesson-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .lesson-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .char-error-flash {
+            color: #ef4444 !important;
+            text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+            transition: color 0.1s;
+        }
+
+        /* ===== Letter Tower Climb Game ===== */
+        #climb-world { transition: transform 0.42s cubic-bezier(0.34, 1.4, 0.5, 1); }
+
+        .climb-plank {
+            position: absolute;
+            transform: translateX(-50%);
+            width: 92px; height: 26px;
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800;
+            font-size: 22px;
+            color: #3b2410;
+            background: linear-gradient(#c98a3c, #a5641f 55%, #7c4711);
+            border-top: 2px solid #e6b877;
+            border-bottom: 3px solid #5f3410;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.35), inset 0 -3px 4px rgba(0,0,0,0.25);
+            text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+            transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        }
+        .climb-plank.reachable {
+            filter: brightness(1.12) saturate(1.15);
+            box-shadow: 0 0 0 3px rgba(253,224,71,0.9), 0 4px 8px rgba(0,0,0,0.4);
+            animation: climb-plank-pulse 1s ease-in-out infinite;
+        }
+        @keyframes climb-plank-pulse {
+            0%,100% { transform: translateX(-50%) translateY(0); }
+            50%     { transform: translateX(-50%) translateY(-3px); }
+        }
+        .climb-plank.stepped { filter: brightness(0.82); }
+
+        .climb-goal {
+            position: absolute; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+            font-size: 40px; line-height: 1;
+        }
+        .climb-goal .flag { animation: climb-plank-pulse 1.4s ease-in-out infinite; }
+        .climb-goal .base {
+            width: 150px; height: 22px; margin-top: 4px; border-radius: 8px;
+            background: linear-gradient(#c98a3c, #8a531a);
+            border-top: 2px solid #e6b877; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .climb-ground {
+            position: absolute; left: 0; right: 0; bottom: 0;
+            height: 40px;
+            background: linear-gradient(#7c4711, #5f3410);
+            border-top: 4px solid #a5641f;
+        }
+
+        /* Character: outer moves between planks, inner plays the hop arc */
+        #climb-char-outer {
+            position: absolute;
+            transform: translateX(-50%);
+            transition: left 0.42s cubic-bezier(0.34, 1.4, 0.5, 1),
+                        bottom 0.42s cubic-bezier(0.34, 1.4, 0.5, 1);
+            z-index: 5; pointer-events: none;
+        }
+        #climb-char-inner {
+            font-size: 38px; line-height: 1;
+            filter: drop-shadow(0 4px 3px rgba(0,0,0,0.4));
+            transform-origin: bottom center;
+        }
+        .climb-hop { animation: climb-hop 0.42s ease-out; }
+        @keyframes climb-hop {
+            0%   { transform: translateY(0) scaleY(0.85); }
+            35%  { transform: translateY(-26px) scaleY(1.1); }
+            100% { transform: translateY(0) scaleY(1); }
+        }
+        .climb-decor {
+            position: absolute; opacity: 0.85;
+            animation: climb-float 6s ease-in-out infinite;
+        }
+        @keyframes climb-float {
+            0%,100% { transform: translateY(0); }
+            50%     { transform: translateY(-14px); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-900 z-[100] flex flex-col items-center justify-center transition-opacity duration-500 pointer-events-auto">
+        <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-indigo-400 font-bold animate-pulse">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="h-14 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 shadow-md z-10 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white text-lg shadow-lg">N</div>
+            <h1 class="text-lg font-bold tracking-tight text-white hidden sm:block">NextGen Typing by Krutrit yu 9</h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <!-- Auth Controls -->
+            <div id="auth-controls-wrapper" class="flex items-center gap-3">
+                <div id="logged-in-view" class="hidden flex items-center gap-3">
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-full border border-slate-600">
+                        <div class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]"></div>
+                        <span id="current-username" class="text-xs font-bold text-slate-300">Guest</span>
+                    </div>
+                    <button onclick="logout()" class="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="ออกจากระบบ">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
+
+                <div id="guest-view" class="flex items-center">
+                    <button onclick="showLoginModal()" class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition shadow-lg border border-indigo-500/50 hover:scale-105 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        <span>เข้าสู่ระบบ</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="w-px h-6 bg-slate-700 mx-1"></div>
+            <div id="lang-alert" class="hidden text-[10px] lg:text-xs text-emerald-400 font-bold bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-500/30 whitespace-nowrap">Auto-Fix Active</div>
+            
+            <div class="flex bg-slate-700 rounded-lg p-1">
+                <button onclick="setLanguage('TH')" id="btn-th" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm">TH</button>
+                <button onclick="setLanguage('EN')" id="btn-en" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white">EN</button>
+            </div>
+            
+            <button onclick="toggleSound()" class="p-2 text-slate-400 hover:text-indigo-400 transition-colors">
+                <svg id="sound-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-800/50 border-r border-slate-700 flex-col hidden lg:flex shrink-0 backdrop-blur-sm">
+            <div class="p-4 border-b border-slate-700 bg-slate-800/80">
+                <h2 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">หลักสูตรการพิมพ์</h2>
+                <div class="flex justify-between items-center">
+                    <p class="text-[10px] text-slate-500">เป้าหมาย:</p>
+                    <span class="text-xs font-mono bg-slate-700 px-2 py-0.5 rounded text-slate-300"><span id="target-display">...</span> chars</span>
+                </div>
+            </div>
+            <div id="lesson-list" class="flex-1 overflow-y-auto lesson-scroll p-2 space-y-1"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col relative min-w-0 bg-slate-900 overflow-y-auto lg:overflow-hidden">
+            <div id="typing-ui" class="flex flex-col h-full w-full relative">
+                
+                <!-- Stats Bar -->
+                <div class="h-14 bg-slate-900/95 border-b border-slate-700 flex items-center justify-center gap-4 lg:gap-16 px-4 shrink-0 shadow-sm z-20">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">เวลา</span>
+                        <span id="timer" class="text-xl font-mono font-bold text-indigo-400 tabular-nums">00:00</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">WPM</span>
+                        <span id="wpm" class="text-xl font-mono font-bold text-emerald-400 tabular-nums">0</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">แม่นยำ</span>
+                        <span id="accuracy" class="text-xl font-mono font-bold text-blue-400 tabular-nums">100%</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">ผิด</span>
+                        <span id="error-count" class="text-xl font-mono font-bold text-red-400 tabular-nums">0</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <!-- New: Character Count -->
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">ตัวอักษร (เหลือ/รวม)</span>
+                        <p class="text-xl font-mono font-bold text-slate-200 tabular-nums"><span id="char-left" class="text-slate-400">0</span><span class="text-slate-600 text-sm mx-1">/</span><span id="char-total">0</span></p>
+                    </div>
+                </div>
+
+                <!-- Typing Area -->
+                <div class="flex-1 flex flex-col items-center justify-center p-4 relative bg-gradient-to-b from-slate-900 to-slate-800" onclick="focusInput(event)">
+                    <div class="absolute top-4 left-4 lg:hidden">
+                        <div class="text-xs text-slate-500">บทที่ <span id="current-lesson-num-mobile" class="text-indigo-400 font-bold">1</span></div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full max-w-5xl h-1 bg-slate-800 rounded-full mb-6 overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-0 transition-all duration-300"></div>
+                    </div>
+
+                    <div class="w-full max-w-5xl bg-slate-800/80 backdrop-blur rounded-2xl p-8 shadow-2xl border border-slate-700/50 relative h-32 lg:h-40 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-slate-700/50">
+                        <div id="typing-area" class="w-full text-3xl lg:text-4xl leading-relaxed font-mono relative z-10 whitespace-nowrap text-center px-4" style="line-height: 1.5;"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-slate-500 pointer-events-none z-0 text-sm font-medium animate-pulse" id="start-message">กดปุ่มใดก็ได้เพื่อเริ่มฝึก...</div>
+                    </div>
+                    
+                    <div class="mt-6 flex gap-4 items-center">
+                        <button onclick="resetLesson()" class="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 hover:text-white rounded-lg text-xs font-bold text-slate-300 transition shadow border border-slate-600 relative z-20">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            เริ่มใหม่ (Restart)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Keyboard & Hands -->
+                <div class="bg-slate-800 border-t border-slate-700 p-2 pb-6 flex flex-col items-center shrink-0 w-full overflow-x-hidden relative z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
+                    <div class="flex flex-row items-end justify-center gap-2 lg:gap-8 w-full max-w-[90rem]">
+                        <!-- Left Hand -->
+                        <div class="w-32 lg:w-48 h-32 lg:h-48 relative opacity-90 hidden md:block shrink-0">
+                            <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" class="w-full h-full transform -scale-x-100 drop-shadow-lg">
+                                <g transform="translate(10, 10) scale(0.9)">
+                                    <path d="M160,100 Q160,180 100,180 Q40,180 20,100 Q10,60 0,110" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+                                    <path d="M140,50 L140,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/><path d="M105,20 L105,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/><path d="M70,10 L70,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/><path d="M35,30 L35,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/>
+                                    <circle id="f-l-pinky" cx="140" cy="50" r="12" class="finger-tip f-pinky" />
+                                    <circle id="f-l-ring" cx="105" cy="20" r="12" class="finger-tip f-ring" />
+                                    <circle id="f-l-middle" cx="70" cy="10" r="12" class="finger-tip f-middle" />
+                                    <circle id="f-l-index" cx="35" cy="30" r="12" class="finger-tip f-index" />
+                                    <circle id="f-l-thumb" cx="0" cy="110" r="14" class="finger-tip f-thumb" />
+                                </g>
+                            </svg>
+                        </div>
+                        <!-- Keyboard -->
+                        <div class="keyboard-base bg-slate-900 p-2 lg:p-4 rounded-xl shadow-2xl border border-slate-700 inline-block transform scale-[0.7] sm:scale-90 lg:scale-100 origin-bottom transition-transform duration-300">
+                            <div id="keyboard-container" class="flex flex-col gap-1 lg:gap-1.5"></div>
+                        </div>
+                        <!-- Right Hand -->
+                        <div class="w-32 lg:w-48 h-32 lg:h-48 relative opacity-90 hidden md:block shrink-0">
+                            <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-lg">
+                                <g transform="translate(10, 10) scale(0.9)">
+                                    <path d="M160,100 Q160,180 100,180 Q40,180 20,100 Q10,60 0,110" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+                                    <path d="M140,50 L140,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/><path d="M105,20 L105,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/><path d="M70,10 L70,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/><path d="M35,30 L35,100" stroke="#334155" stroke-width="14" stroke-linecap="round" opacity="0.2"/>
+                                    <circle id="f-r-thumb" cx="0" cy="110" r="14" class="finger-tip f-thumb" />
+                                    <circle id="f-r-index" cx="35" cy="30" r="12" class="finger-tip f-index" />
+                                    <circle id="f-r-middle" cx="70" cy="10" r="12" class="finger-tip f-middle" />
+                                    <circle id="f-r-ring" cx="105" cy="20" r="12" class="finger-tip f-ring" />
+                                    <circle id="f-r-pinky" cx="140" cy="50" r="12" class="finger-tip f-pinky" />
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur z-[130] p-4 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl mx-auto bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-6 lg:p-8">
+            <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">🛠 Admin Dashboard</h2>
+                    <div id="connection-status" class="text-sm font-mono mt-1 text-slate-500">System Ready</div>
+                </div>
+                <button onclick="closeAdmin()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition">ปิดหน้าต่าง</button>
+            </div>
+            
+            <div class="flex flex-col gap-8">
+                <!-- Settings Section -->
+                <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-lg font-bold text-indigo-400 mb-4 flex items-center gap-2">⚙️ ตั้งค่าระบบ</h3>
+                    <div>
+                        <label class="text-slate-300 text-sm block mb-2">จำนวนตัวอักษรเป้าหมาย:</label>
+                        <div class="flex gap-3 sm:max-w-md">
+                            <input type="number" id="admin-target-length" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white text-center focus:ring-2 focus:ring-indigo-500 outline-none" value="1000">
+                            <button onclick="saveAdminSettings()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-medium whitespace-nowrap transition-transform hover:scale-105 active:scale-95">บันทึก</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management Section -->
+                <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700 flex flex-col overflow-hidden" style="min-height: 500px; max-height: 70vh;">
+                    <div class="flex flex-col gap-4 mb-4 shrink-0">
+                        <div class="flex flex-wrap justify-between items-center gap-3">
+                            <h3 class="text-lg font-bold text-indigo-400 flex items-center gap-2">👥 จัดการรายชื่อและความคืบหน้า <span id="student-count-badge" class="text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full ml-2 border border-indigo-500/30">0 คน</span></h3>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs text-slate-400">แสดงห้อง:</label>
+                                <select id="admin-room-filter" onchange="updateAdminView(mockData)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-1.5 text-white text-xs focus:ring-2 focus:ring-indigo-400 outline-none">
+                                    <option value="__ALL__">ทุกห้อง</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- เพิ่มผู้ใช้แบบกลุ่ม -->
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600/50 flex flex-col gap-3">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="new-grade" placeholder="ระดับชั้น (เช่น ม.1)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full sm:w-1/4">
+                                <input type="text" id="new-room" placeholder="ห้องเรียน (เช่น 1)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full sm:w-1/4">
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-3 items-end">
+                                <textarea id="new-usernames-batch" placeholder="รายชื่อนักเรียน (กด Enter เพื่อขึ้นบรรทัดใหม่ พิมพ์เพิ่มได้หลายคนพร้อมกัน)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full h-16 resize-none custom-scroll"></textarea>
+                                <button onclick="addMultipleUsers()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-bold whitespace-nowrap transition-transform hover:scale-105 active:scale-95 h-10 w-full sm:w-auto">
+                                    + เพิ่มรายชื่อ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-y-auto custom-scroll rounded-xl border border-slate-700 bg-slate-800/50 flex-1">
+                        <table class="w-full text-left text-xs sm:text-sm text-slate-300">
+                            <thead class="bg-slate-700 text-slate-200 sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold align-middle w-12 text-center">#</th>
+                                    <th class="px-4 py-3 font-semibold align-middle">ชื่อผู้ใช้</th>
+                                    <th class="px-2 py-3 font-semibold text-center whitespace-nowrap border-l border-slate-600/50">
+                                        <div class="flex flex-col items-center">
+                                            <span class="mb-1 text-emerald-400">LV (TH)</span>
+                                            <div class="flex gap-1">
+                                                <input type="number" id="global-th-level" class="w-14 bg-slate-900 border border-slate-500 text-center text-[10px] py-1 rounded-md focus:outline-none focus:border-emerald-400" placeholder="All">
+                                                <button onclick="setAllLevel('TH')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] px-2 rounded-md font-bold transition-colors">Set</button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-2 py-3 font-semibold text-center whitespace-nowrap border-l border-slate-600/50">
+                                        <div class="flex flex-col items-center">
+                                            <span class="mb-1 text-blue-400">LV (EN)</span>
+                                            <div class="flex gap-1">
+                                                <input type="number" id="global-en-level" class="w-14 bg-slate-900 border border-slate-500 text-center text-[10px] py-1 rounded-md focus:outline-none focus:border-blue-400" placeholder="All">
+                                                <button onclick="setAllLevel('EN')" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2 rounded-md font-bold transition-colors">Set</button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold text-right align-middle">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-user-list" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[110] flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border border-slate-700 relative transform transition-all scale-100 z-[120]">
+            <!-- Close Button -->
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition p-1 hover:bg-slate-700 rounded-full z-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center font-bold text-white text-3xl mx-auto mb-6 shadow-[0_0_20px_rgba(99,102,241,0.5)]">N</div>
+            <h2 id="login-title" class="text-2xl font-bold text-white mb-2">ยินดีต้อนรับ</h2>
+            
+            <!-- User Login Form -->
+            <div id="user-login-form">
+                <p class="text-slate-400 mb-6 text-sm">กรุณาเลือกชื่อผู้ใช้เพื่อเริ่มเก็บสถิติ</p>
+                
+                <div class="flex flex-col gap-3 mb-6 z-10">
+                    <select id="login-room-select" onchange="onLoginRoomChange()" class="w-full bg-slate-900 border border-slate-600 text-white text-lg rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="">-- เลือกห้องเรียน --</option>
+                    </select>
+                    <select id="login-student-select" disabled class="w-full bg-slate-900 border border-slate-600 text-white text-lg rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed">
+                        <option value="">-- เลือกชื่อ --</option>
+                    </select>
+                </div>
+                <button type="button" onclick="performUserLogin()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg transition shadow-lg hover:translate-y-[-2px]">เข้าสู่ระบบ</button>
+                <div class="mt-6 pt-4 border-t border-slate-700">
+                    <button type="button" onclick="showAdminLoginForm()" class="text-xs text-slate-500 hover:text-slate-300 underline transition">สำหรับผู้ดูแลระบบ (Admin)</button>
+                </div>
+            </div>
+
+            <!-- Admin Login Form -->
+            <div id="admin-login-form" class="hidden">
+                <p class="text-slate-400 mb-4 text-sm">กรุณากรอกรหัสผ่านผู้ดูแลระบบ</p>
+                <div class="mb-4">
+                    <!-- Added onkeydown to trigger login on Enter -->
+                    <input type="password" id="admin-password" placeholder="รหัสผ่าน (เช่น 1234)" class="w-full bg-slate-900 border border-slate-600 text-white text-lg rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:outline-none placeholder-slate-500" onkeydown="if(event.key === 'Enter') performAdminLogin()">
+                </div>
+                <button type="button" onclick="performAdminLogin()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg transition shadow-lg border border-red-700">เข้าสู่ระบบ Admin</button>
+                <div class="mt-6 pt-4 border-t border-slate-700">
+                    <button type="button" onclick="showUserLoginForm()" class="text-xs text-slate-500 hover:text-slate-300 underline transition">กลับไปหน้าผู้ใช้ทั่วไป</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Input (Fixed: 1px for reliability) -->
+    <input type="text" id="hidden-input" class="absolute top-0 left-0 w-1 h-1 opacity-0 -z-10" autocomplete="off">
+
+    <!-- Modal: Lesson Complete -->
+    <div id="modal-complete" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center">
+        <div class="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center mx-4 transform transition-all scale-100">
+            <div id="modal-icon-container" class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500/30 text-3xl">✓</div>
+            <h2 id="modal-title" class="text-2xl font-bold text-white mb-1">ยอดเยี่ยม!</h2>
+            <p id="modal-message" class="text-slate-400 text-sm mb-6">คุณทำสำเร็จแล้ว</p>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                <div class="text-center">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">ความเร็ว</p>
+                    <p class="text-3xl font-bold text-white mt-1"><span id="modal-wpm">0</span> <span class="text-xs text-slate-500 font-normal">WPM</span></p>
+                </div>
+                <div class="text-center border-l border-slate-700">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">ความแม่นยำ</p>
+                    <p class="text-3xl font-bold text-blue-400 mt-1"><span id="modal-acc">0%</span></p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 relative z-10">
+                <button onclick="startMiniGame()" id="btn-mini-game" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-sm font-bold transition-all transform hover:scale-[1.02] cursor-pointer hidden">🌳 เล่นเกมปีนหอคอยตัวอักษร</button>
+                <button onclick="nextLesson()" id="btn-next-lesson" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-bold transition-colors cursor-pointer hidden">บทเรียนถัดไป →</button>
+                <button onclick="resetLessonAndClose()" class="text-xs text-slate-500 hover:text-slate-300 mt-2 cursor-pointer relative z-20">พิมพ์ซ้ำอีกครั้ง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Letter Tower Climb Game UI -->
+    <div id="game-ui" class="hidden flex-col absolute inset-0 bg-slate-900 z-[120]">
+        <!-- Game Header HUD -->
+        <div class="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-white/10 bg-slate-900/85 backdrop-blur shadow-xl z-30 shrink-0">
+            <h2 id="climb-title" class="text-base sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3 tracking-wide">
+                <span class="text-2xl">🌳</span> <span id="climb-title-text">หอคอยตัวอักษร</span>
+            </h2>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="flex items-center gap-2 bg-white/10 px-3 sm:px-4 py-1.5 rounded-lg border border-white/10">
+                    <span class="text-xs text-slate-300 font-bold hidden sm:inline">ความสูง</span>
+                    <span id="climb-height" class="text-amber-300 text-lg sm:text-xl font-bold tracking-wide">0</span>
+                    <span class="text-xs text-slate-400">/ <span id="climb-total">10</span></span>
+                </div>
+
+                <div class="text-slate-200 font-mono text-sm sm:text-lg bg-white/10 px-3 sm:px-4 py-1.5 rounded-lg border border-white/10">
+                    ⏱️ <span id="climb-time" class="text-emerald-300 font-bold">0.0s</span>
+                </div>
+
+                <button onclick="exitGameAndNext()" class="px-3 sm:px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-bold shadow transition-all flex items-center gap-2 text-sm border border-white/10 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <span class="hidden sm:inline">ออก</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tower Area -->
+        <div class="flex-1 relative overflow-hidden" id="climb-area">
+            <!-- Themed background -->
+            <div id="climb-bg" class="absolute inset-0 transition-[background] duration-700"></div>
+            <div id="climb-bg-decor" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+            <!-- The moving tower world (planks + character live here) -->
+            <div id="climb-world" class="absolute left-0 right-0 bottom-0"></div>
+
+            <!-- Start Overlay -->
+            <div id="climb-start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/70 backdrop-blur-sm z-30 p-4 text-center">
+                <div class="text-6xl mb-4 animate-bounce">🐰</div>
+                <h1 class="text-4xl sm:text-5xl font-black text-white mb-3 tracking-tight">หอคอยตัวอักษร</h1>
+                <p class="text-slate-100 mb-8 text-base sm:text-lg max-w-md leading-relaxed">พิมพ์ตัวอักษรบน<span class="text-amber-300 font-bold">แผ่นไม้ที่เรืองแสง</span> เพื่อกระโดดขึ้นไปทีละขั้น<br>ปีนให้ถึงยอด 🚩 เพื่อจบด่าน<br><span class="text-sm text-slate-300 mt-2 block">พิมพ์ผิดไม่เป็นไร ตัวละครแค่ยังไม่ขยับ</span></p>
+                <button onclick="startGame()" class="px-10 py-4 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-full text-xl font-bold shadow-lg transform transition hover:scale-105 active:scale-95 tracking-wide cursor-pointer">
+                    เริ่มปีน! 🧗
+                </button>
+            </div>
+
+            <!-- Win Modal -->
+            <div id="climb-win-modal" class="hidden absolute inset-0 bg-slate-950/85 z-[60] flex flex-col items-center justify-center backdrop-blur-md p-4">
+                 <div class="bg-slate-900 border border-amber-400/30 p-8 sm:p-10 rounded-3xl shadow-2xl max-w-md w-full text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-500 to-yellow-400"></div>
+                    <div class="text-6xl mb-3 animate-bounce">🏆</div>
+                    <h2 class="text-3xl sm:text-4xl font-black text-amber-400 mb-2 tracking-wide">ถึงยอดแล้ว!</h2>
+                    <p class="text-slate-400 mb-6 text-sm">เก่งมาก ปีนจบด่านสำเร็จ 🎉</p>
+
+                    <div class="grid grid-cols-2 gap-3 mb-8">
+                        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <p class="text-xs text-slate-500 font-bold mb-1">เวลา</p>
+                            <p class="text-2xl font-black text-white"><span id="win-time">0.0</span>s</p>
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <p class="text-xs text-slate-500 font-bold mb-1">พิมพ์ถูก</p>
+                            <p class="text-2xl font-black text-white" id="win-hits">0</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 relative z-10">
+                        <button onclick="finishGameAndGoNext()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg tracking-wider transition-all transform hover:-translate-y-1 cursor-pointer">ไปบทเรียนถัดไป →</button>
+                        <button onclick="resetGame(); startGame();" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors text-sm cursor-pointer">เล่นอีกครั้ง 🔁</button>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- SETUP: URL สำหรับเชื่อมต่อฐานข้อมูล (กรณีเปิด Local) ---
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz-OVRiNcWzXwtLxe8HKZuvIVAso5jdjJqFo2AfHzOCjardk8V3tJnMvQL2Yc-Q22K2gw/exec";
+
+    // ส่งคำสั่งบันทึกไป Apps Script เมื่อรันนอก Google (เช่น GitHub Pages)
+    // ใช้ Content-Type แบบ text/plain (default) เพื่อเลี่ยง CORS preflight
+    function apiCall(action, payload) {
+        if (!WEB_APP_URL || !WEB_APP_URL.startsWith('http')) return;
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({ action: action }, payload))
+        }).catch(err => console.error('บันทึกไม่สำเร็จ:', action, err));
+    }
+
+    // --- Data Configuration ---
+    const curriculum = {
+        TH: [
+            { chars: "ฟหกด่าสว", name: "แป้นเหย้า (Home Row)" }, 
+            { chars: "เอกอาสวฟหกด่", name: "แป้นเหย้า + สระเอ" }, 
+            { chars: "รนยบล", name: "นิ้วชี้ แถวบน" }, 
+            { chars: "ตคจขช", name: "นิ้วกลาง-ก้อย แถวบน" }, 
+            { chars: "งพะัี", name: "นิ้วชี้-กลาง แถวล่าง" }, 
+            { chars: "ไม้เอกไม้โท", name: "วรรณยุกต์พื้นฐาน" }, 
+            { chars: "ปแอิืทมใฝ", name: "แถวล่างและสระ" }, 
+            { chars: "1234567890", name: "แถวตัวเลข" }, 
+            { chars: "โฌธํ๊ณฯญฐ,", name: "อักษรยกแคร่ (Shift) 1" }, 
+            { chars: "ฤฆฏโฌธํ๊ณฯญฐ,", name: "อักษรยกแคร่ (Shift) 2" }, 
+            { chars: "ผสมคำง่าย 1", type: "words", source: ["กา", "ดารา", "หาสู", "ฟาก", "วาด", "กาด", "สาก", "ด่า", "ว่า"] }, 
+            { chars: "ผสมคำง่าย 2", type: "words", source: ["รอน", "ยาย", "บน", "คน", "จน", "ชบ", "ตบ", "รบ"] }, 
+            { chars: "ประโยคสั้น 1", type: "sentence", source: ["ตากลม", "มากา", "ไปนา", "หาอา", "กาดำ"] }, 
+            { chars: "อักษรยาก 1", chars: "ศซฉฮฺ?" }, 
+            { chars: "อักษรยาก 2", chars: "ฃฅฒฬฦ" }, 
+            { chars: "สัญลักษณ์พิเศษ", chars: "_-+/.,\"" }, 
+            { chars: "รวมมิตร 1", chars: "ก-ฮ" }, 
+            { chars: "รวมมิตร 2", chars: "ก-ฮะ-ู" }, 
+            { chars: "บทความสั้น", type: "sentence", source: ["การฝึกพิมพ์ดีดช่วยให้ทำงานเร็วขึ้น", "ความพยายามอยู่ที่ไหนความสำเร็จอยู่ที่นั่น", "วันนี้อากาศแจ่มใสมาก"] }, 
+            { chars: "บททดสอบสุดท้าย", type: "mix", chars: "all" }
+        ],
+        EN: [
+            { chars: "asdfjkl;", name: "Home Row" }, 
+            { chars: "gh", name: "Index Reaches (G, H)" }, 
+            { chars: "ertyuiop", name: "Top Row" }, 
+            { chars: "qw", name: "Pinky Reaches (Q, P)" }, 
+            { chars: "zxcvbnm", name: "Bottom Row" }, 
+            { chars: "ASDFJKL;", name: "Capital Letters (Home)" }, 
+            { chars: "Common Words 1", type: "words", source: ["the", "and", "for", "are", "but", "not", "you", "all"] }, 
+            { chars: "Common Words 2", type: "words", source: ["can", "her", "was", "one", "our", "out", "day", "get"] }, 
+            { chars: "1234567890", name: "Numbers Row" }, 
+            { chars: "!@#$%^&*", name: "Symbols (Shift+Num)" }, 
+            { chars: "()_+{}|:\"<>?", name: "Advanced Symbols" }, 
+            { chars: "Sentences 1", type: "sentence", source: ["The quick brown fox.", "Jump over the dog.", "She sells sea shells."] }, 
+            { chars: "Left Hand Only", chars: "qwerasdfzxcv" }, 
+            { chars: "Right Hand Only", chars: "uiopjkl;nm,." }, 
+            { chars: "Programming Keys", chars: "{}[]();:=" }, 
+            { chars: "Complex Words", type: "words", source: ["javascript", "function", "variable", "constant", "browser", "interface"] }, 
+            { chars: "Pangrams", type: "sentence", source: ["The five boxing wizards jump quickly.", "Pack my box with five dozen liquor jugs."] }, 
+            { chars: "Speed Drill 1", type: "mix", chars: "common" }, 
+            { chars: "Speed Drill 2", type: "mix", chars: "all" }, 
+            { chars: "Final Master", type: "mix", chars: "all" }
+        ]
+    };
+
+    const keyboardLayout = [
+        [ { en: '`~', th: '_%', width: 'w-10' }, { en: '1!', th: 'ๅ+', width: 'w-10' }, { en: '2@', th: '/๑', width: 'w-10' }, { en: '3#', th: '-๒', width: 'w-10' }, { en: '4$', th: 'ภ๓', width: 'w-10' }, { en: '5%', th: 'ถ๔', width: 'w-10' }, { en: '6^', th: 'ุู', width: 'w-10' }, { en: '7&', th: 'ึ฿', width: 'w-10' }, { en: '8*', th: 'ค๕', width: 'w-10' }, { en: '9(', th: 'ต๖', width: 'w-10' }, { en: '0)', th: 'จ๗', width: 'w-10' }, { en: '-_', th: 'ข๘', width: 'w-10' }, { en: '=+', th: 'ช๙', width: 'w-10' }, { label: 'Backspace', width: 'w-16 sm:w-20', type: 'special', id: 'backspace' } ],
+        [ { label: 'Tab', width: 'w-12 sm:w-14', type: 'special', id: 'tab' }, { en: 'qQ', th: 'ๆ๐', width: 'w-10' }, { en: 'wW', th: 'ไ"', width: 'w-10' }, { en: 'eE', th: 'ำฎ', width: 'w-10' }, { en: 'rR', th: 'พฑ', width: 'w-10' }, { en: 'tT', th: 'ะธ', width: 'w-10' }, { en: 'yY', th: 'ัํ', width: 'w-10' }, { en: 'uU', th: 'ี๊', width: 'w-10' }, { en: 'iI', th: 'รณ', width: 'w-10' }, { en: 'oO', th: 'นฯ', width: 'w-10' }, { en: 'pP', th: 'ยญ', width: 'w-10' }, { en: '[{', th: 'บฐ', width: 'w-10' }, { en: ']}', th: 'ล,', width: 'w-10' }, { en: '\\|', th: 'ฃฅ', width: 'w-10' } ],
+        [ { label: 'Caps Lock', width: 'w-14 sm:w-16', type: 'special', id: 'capslock' }, { en: 'aA', th: 'ฟฤ', width: 'w-10' }, { en: 'sS', th: 'หฆ', width: 'w-10' }, { en: 'dD', th: 'กฏ', width: 'w-10' }, { en: 'fF', th: 'ดโ', width: 'w-10' }, { en: 'gG', th: 'เฌ', width: 'w-10' }, { en: 'hH', th: '้็', width: 'w-10' }, { en: 'jJ', th: '่๋', width: 'w-10' }, { en: 'kK', th: 'าษ', width: 'w-10' }, { en: 'lL', th: 'สศ', width: 'w-10' }, { en: ';:', th: 'วซ', width: 'w-10' }, { en: '\'"', th: 'ง.', width: 'w-10' }, { label: 'Enter', width: 'w-20', type: 'special', id: 'enter' } ],
+        [ { label: 'Shift', width: 'w-24', type: 'special', id: 'ShiftLeft' }, { en: 'zZ', th: 'ผ(', width: 'w-10' }, { en: 'xX', th: 'ป)', width: 'w-10' }, { en: 'cC', th: 'แฉ', width: 'w-10' }, { en: 'vV', th: 'อฮ', width: 'w-10' }, { en: 'bB', th: 'ิฺ', width: 'w-10' }, { en: 'nN', th: 'ื์', width: 'w-10' }, { en: 'mM', th: 'ท?', width: 'w-10' }, { en: ',<', th: 'มฒ', width: 'w-10' }, { en: '.>', th: 'ใฬ', width: 'w-10' }, { en: '/?', th: 'ฝฦ', width: 'w-10' }, { label: 'Shift', width: 'w-24', type: 'special', id: 'ShiftRight' } ],
+        [ { label: '', width: 'w-64', type: 'space', id: 'Space' } ]
+    ];
+
+    const charToKeyIdMap = {};
+    const keyIdToFingerMap = {};
+    const enToThMap = {};
+    const thToEnMap = {};
+
+    keyboardLayout.forEach(row => {
+        row.forEach(key => {
+            if (key.type === 'special' || key.type === 'space') {
+                if(key.id) charToKeyIdMap[key.id.toLowerCase()] = key.id;
+            } else {
+                const mainKey = key.en[0].toLowerCase();
+                const chars = (key.en + (key.th || '')).split('');
+                chars.forEach(c => { charToKeyIdMap[c] = mainKey; });
+                enToThMap[key.en[0]] = key.th[0]; thToEnMap[key.th[0]] = key.en[0];
+                if(key.en[1] && key.th[1]) { enToThMap[key.en[1]] = key.th[1]; thToEnMap[key.th[1]] = key.en[1]; }
+            }
+        });
+    });
+
+    const fingerMapping = { 'f-l-pinky': ['`','1','q','a','z'], 'f-l-ring': ['2','w','s','x'], 'f-l-middle': ['3','e','d','c'], 'f-l-index': ['4','5','r','t','f','g','v','b'], 'f-l-thumb': ['space'], 'f-r-thumb': ['space'], 'f-r-index': ['6','7','y','u','h','j','n','m'], 'f-r-middle': ['8','i','k',','], 'f-r-ring': ['9','o','l','.'], 'f-r-pinky': ['0','-','=','p','[',']','\\',';','\'','/','backspace','enter','shift'] };
+    const fingerClassMap = { 'f-l-pinky': 'active-pinky', 'f-l-ring': 'active-ring', 'f-l-middle': 'active-middle', 'f-l-index': 'active-index', 'f-l-thumb': 'active-thumb', 'f-r-thumb': 'active-thumb', 'f-r-index': 'active-index', 'f-r-middle': 'active-middle', 'f-r-ring': 'active-ring', 'f-r-pinky': 'active-pinky' };
+    Object.entries(fingerMapping).forEach(([finger, keys]) => keys.forEach(k => keyIdToFingerMap[k] = finger));
+
+    // --- MOCK DATA STORE ---
+    let mockData = {
+        users: ['Guest', 'Student 1', 'Teacher'],
+        settings: { targetLength: 100 },
+        // Progress Persistence (Lesson Index)
+        progress: {
+            'Student 1': { 'TH': 2, 'EN': 0 },
+            'Teacher': { 'TH': 18, 'EN': 10 }
+        }
+    };
+
+    // --- ROOM HELPERS ---
+    const NO_ROOM_LABEL = 'ไม่ระบุห้อง';
+
+    // "[ม.1/1] สมชาย" -> { room: "ม.1/1", name: "สมชาย" }
+    // "สมชาย"          -> { room: null,    name: "สมชาย" }
+    function parseRoom(username) {
+        const m = /^\[([^\]]+)\]\s*(.*)$/.exec(username || '');
+        if (m) return { room: m[1].trim(), name: (m[2].trim() || username) };
+        return { room: null, name: username };
+    }
+
+    // รายชื่อห้องไม่ซ้ำ (ไม่รวม Guest) เรียงแบบไทย+ตัวเลข
+    function getRooms(users) {
+        const set = new Set();
+        (users || []).forEach(u => {
+            if (u === 'Guest') return;
+            const { room } = parseRoom(u);
+            set.add(room || NO_ROOM_LABEL);
+        });
+        return Array.from(set).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+    }
+
+    // ชื่อเต็มของนักเรียนในห้องที่ระบุ เรียงตามชื่อที่แสดง
+    function getStudentsInRoom(users, roomLabel) {
+        return (users || [])
+            .filter(u => u !== 'Guest')
+            .filter(u => (parseRoom(u).room || NO_ROOM_LABEL) === roomLabel)
+            .sort((a, b) => parseRoom(a).name.localeCompare(parseRoom(b).name, 'th', { numeric: true }));
+    }
+
+    // --- GLOBAL STATE ---
+    let state = {
+        lang: 'TH', 
+        lessonIndex: 0, 
+        text: '', 
+        userInput: '', 
+        startTime: null, 
+        errors: 0, 
+        timerInterval: null, 
+        isSoundOn: true,
+        currentUser: null,
+        userSettings: { targetLength: 1000 },
+        isDataLoaded: false,
+        // Game State (Letter Tower Climb)
+        isGameMode: false,
+        climb: null,
+        displayIndex: 0
+    };
+
+    // --- INITIALIZATION ---
+    function init() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+
+        renderKeyboard();
+        
+        if (typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((data) => onDataLoaded(data, true))
+                .withFailureHandler((error) => {
+                    console.error("Failed to load from GAS:", error);
+                    alert("⚠️ เชื่อมต่อฐานข้อมูลไม่ได้: " + error.message);
+                    onDataLoaded(mockData, false); 
+                })
+                .getData();
+        } else {
+            console.log("Running Locally. Trying to fetch from WEB_APP_URL...");
+            
+            if (WEB_APP_URL && WEB_APP_URL.startsWith('http')) {
+                fetch(`${WEB_APP_URL}?action=getData`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Fetched Data Successfully:", data);
+                        onDataLoaded(data, true); 
+                    })
+                    .catch(err => {
+                        console.error("Fetch Error:", err);
+                        alert(`⚠️ ไม่สามารถดึงข้อมูลจาก Server ได้\n(${err.message})\n\nระบบจะใช้ข้อมูลจำลอง (Mock Data) แทน`);
+                        onDataLoaded(mockData, false);
+                    });
+            } else {
+                setTimeout(() => {
+                    console.warn("No WEB_APP_URL configured for local mode.");
+                    onDataLoaded(mockData, false);
+                }, 500);
+            }
+        }
+
+        document.addEventListener('keydown', handleGlobalKeydown);
+        document.addEventListener('click', (e) => focusInput(e));
+        
+        window.addEventListener('resize', () => {
+            if(state.isGameMode) climbApplyScroll(false);
+        });
+    }
+
+    function onDataLoaded(data, isRemote) {
+        state.isDataLoaded = true;
+        
+        if(data) {
+            mockData.users = data.users || ['Guest'];
+            mockData.settings = data.settings || { targetLength: 1000 };
+            if(data.progress) mockData.progress = data.progress;
+        }
+
+        // เตรียม dropdown ห้องสำหรับหน้า Login
+        populateLoginRooms();
+
+        state.userSettings = mockData.settings;
+        const targetDisplay = document.getElementById('target-display');
+        if(targetDisplay) targetDisplay.innerText = state.userSettings.targetLength;
+
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        
+        // Auto Login Check
+        const savedUser = localStorage.getItem('ngt_currentUser');
+        if (savedUser && mockData.users.includes(savedUser)) {
+            loginUser(savedUser);
+        } else {
+            updateAuthUI();
+            loadLesson(0);
+        }
+    }
+
+    // --- LOGIN SYSTEM ---
+    function updateAuthUI() {
+        const loggedInView = document.getElementById('logged-in-view');
+        const guestView = document.getElementById('guest-view');
+        const usernameDisplay = document.getElementById('current-username');
+
+        if (state.currentUser) {
+            if(loggedInView) loggedInView.classList.remove('hidden');
+            if(guestView) guestView.classList.add('hidden');
+            if(usernameDisplay) usernameDisplay.innerText = state.currentUser;
+        } else {
+            if(loggedInView) loggedInView.classList.add('hidden');
+            if(guestView) guestView.classList.remove('hidden');
+        }
+    }
+
+    function populateLoginRooms() {
+        const roomSelect = document.getElementById('login-room-select');
+        const studentSelect = document.getElementById('login-student-select');
+        if (!roomSelect || !studentSelect) return;
+        const rooms = getRooms(mockData.users);
+        roomSelect.innerHTML = '<option value="">-- เลือกห้องเรียน --</option>' +
+            rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+        studentSelect.innerHTML = '<option value="">-- เลือกชื่อ --</option>';
+        studentSelect.disabled = true;
+    }
+
+    function onLoginRoomChange() {
+        const roomLabel = document.getElementById('login-room-select').value;
+        const studentSelect = document.getElementById('login-student-select');
+        if (!roomLabel) {
+            studentSelect.innerHTML = '<option value="">-- เลือกชื่อ --</option>';
+            studentSelect.disabled = true;
+            return;
+        }
+        const students = getStudentsInRoom(mockData.users, roomLabel);
+        studentSelect.innerHTML = '<option value="">-- เลือกชื่อ --</option>' +
+            students.map(u => `<option value="${u}">${parseRoom(u).name}</option>`).join('');
+        studentSelect.disabled = false;
+    }
+
+    function showLoginModal() {
+        showUserLoginForm();
+        populateLoginRooms();
+        document.getElementById('login-modal').classList.remove('hidden');
+    }
+    
+    function closeLoginModal() {
+        document.getElementById('login-modal').classList.add('hidden');
+        focusInput();
+    }
+    
+    function showUserLoginForm() {
+        document.getElementById('login-title').innerText = "ยินดีต้อนรับ";
+        document.getElementById('user-login-form').classList.remove('hidden');
+        document.getElementById('admin-login-form').classList.add('hidden');
+    }
+    
+    function showAdminLoginForm() {
+        document.getElementById('login-title').innerText = "ผู้ดูแลระบบ";
+        document.getElementById('user-login-form').classList.add('hidden');
+        document.getElementById('admin-login-form').classList.remove('hidden');
+        const pwdInput = document.getElementById('admin-password');
+        if(pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
+    }
+
+    function performUserLogin() {
+        const sel = document.getElementById('login-student-select');
+        const user = sel ? sel.value.trim() : '';
+
+        if (!user) { alert('กรุณาเลือกห้องและชื่อผู้ใช้'); return; }
+        if (!mockData.users.includes(user)) { alert('ไม่พบชื่อผู้ใช้นี้ในระบบ กรุณาเลือกจากรายการที่มีอยู่'); return; }
+
+        localStorage.setItem('ngt_currentUser', user); // Save to localStorage
+        loginUser(user);
+        document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    function performAdminLogin() {
+        const pwd = document.getElementById('admin-password').value;
+        if(pwd === 'admin' || pwd === '1234') {
+            document.getElementById('login-modal').classList.add('hidden');
+            openAdminPanel();
+        } else {
+            alert('รหัสผ่านไม่ถูกต้อง (ลองใช้: 1234)');
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-password').focus();
+        }
+    }
+
+    function getUserProgress(user, lang) {
+        if (!mockData.progress) mockData.progress = {};
+        if (mockData.progress[user] === undefined || mockData.progress[user] === null) {
+            mockData.progress[user] = { 'TH': 0, 'EN': 0 };
+        } else if (typeof mockData.progress[user] === 'number' || typeof mockData.progress[user] === 'string') {
+            mockData.progress[user] = { 'TH': parseInt(mockData.progress[user]) || 0, 'EN': 0 };
+        }
+        return mockData.progress[user][lang] || 0;
+    }
+
+    function loginUser(user) {
+        state.currentUser = user;
+        updateAuthUI();
+        let savedLesson = user !== 'Guest' ? getUserProgress(user, state.lang) : 0;
+        if (savedLesson >= curriculum[state.lang].length) savedLesson = curriculum[state.lang].length - 1;
+        loadLesson(savedLesson);
+        focusInput();
+    }
+
+    function logout() {
+        state.currentUser = null;
+        localStorage.removeItem('ngt_currentUser'); 
+        updateAuthUI();
+        focusInput();
+        loadLesson(0);
+    }
+
+    function openAdminPanel() {
+        document.getElementById('admin-panel').classList.remove('hidden');
+        if (typeof google !== 'undefined' && google.script) {
+             google.script.run.withSuccessHandler((data) => { onDataLoaded(data, true); updateAdminView(mockData); }).getData();
+        } else { updateAdminView(mockData); }
+    }
+
+    function updateAdminView(data) {
+        const list = document.getElementById('admin-user-list');
+        const filterSelect = document.getElementById('admin-room-filter');
+
+        // รีเฟรชตัวเลือกห้องในฟิลเตอร์ (คงค่าที่เลือกไว้ถ้ายังมีห้องนั้น)
+        const rooms = getRooms(data.users);
+        const prev = filterSelect ? filterSelect.value : '__ALL__';
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="__ALL__">ทุกห้อง</option>' +
+                rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+            filterSelect.value = (prev === '__ALL__' || rooms.includes(prev)) ? prev : '__ALL__';
+        }
+        const selected = filterSelect ? filterSelect.value : '__ALL__';
+
+        const allStudents = (data.users || []).filter(u => u !== 'Guest');
+        const countBadge = document.getElementById('student-count-badge');
+        if (countBadge) countBadge.innerText = `${allStudents.length} คน`;
+
+        const roomsToRender = selected === '__ALL__' ? rooms : [selected];
+        let html = '';
+        let rowNum = 0;
+
+        roomsToRender.forEach(roomLabel => {
+            const students = getStudentsInRoom(data.users, roomLabel);
+            html += `
+                <tr class="bg-slate-700/40">
+                    <td colspan="5" class="px-4 py-2 text-indigo-300 font-bold text-sm border-y border-slate-600">
+                        🏫 ${roomLabel} <span class="text-slate-400 font-normal text-xs">(${students.length} คน)</span>
+                    </td>
+                </tr>`;
+            html += students.map(u => {
+                rowNum++;
+                const display = parseRoom(u).name;
+                return `
+                <tr class="hover:bg-slate-700/50 transition border-b border-slate-700">
+                    <td class="px-4 py-3 text-center text-slate-500 font-mono text-xs">${rowNum}</td>
+                    <td class="px-4 py-3 font-medium text-slate-200 truncate max-w-[140px]" title="${u}">${display}</td>
+                    <td class="px-2 py-3 text-center">
+                        <input type="number" value="${getUserProgress(u, 'TH')}" class="w-14 bg-slate-900 border border-slate-600 rounded-md text-center text-xs py-1 focus:ring-1 focus:ring-emerald-400 outline-none" onchange="updateUserLevel('${u}', 'TH', this.value)">
+                    </td>
+                    <td class="px-2 py-3 text-center">
+                        <input type="number" value="${getUserProgress(u, 'EN')}" class="w-14 bg-slate-900 border border-slate-600 rounded-md text-center text-xs py-1 focus:ring-1 focus:ring-blue-400 outline-none" onchange="updateUserLevel('${u}', 'EN', this.value)">
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="deleteUser('${u}')" class="text-red-400 hover:text-red-300 text-xs bg-red-900/20 px-3 py-1.5 rounded-md transition-colors">ลบ</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        });
+
+        list.innerHTML = html || `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">ยังไม่มีรายชื่อนักเรียน</td></tr>`;
+        document.getElementById('admin-target-length').value = state.userSettings.targetLength;
+    }
+    
+    function updateUserLevel(user, lang, val) {
+        let idx = parseInt(val); if(isNaN(idx)) idx = 0;
+        getUserProgress(user, lang); 
+        mockData.progress[user][lang] = idx;
+        if (typeof google !== 'undefined' && google.script) { google.script.run.saveProgress(user, idx, lang); }
+        else { apiCall('saveProgress', { username: user, level: idx, lang: lang }); }
+    }
+
+    function closeAdmin() {
+        document.getElementById('admin-panel').classList.add('hidden');
+        if (!state.currentUser) showLoginModal();
+        else {
+            loginUser(state.currentUser);
+        }
+    }
+
+    function addMultipleUsers() {
+        const gradeInput = document.getElementById('new-grade').value.trim();
+        const roomInput = document.getElementById('new-room').value.trim();
+        const namesInput = document.getElementById('new-usernames-batch').value;
+        
+        if (!namesInput.trim()) {
+            alert('กรุณากรอกรายชื่อนักเรียนอย่างน้อย 1 คน');
+            return;
+        }
+
+        const namesList = namesInput.split('\n').map(n => n.trim()).filter(n => n !== '');
+        let addedCount = 0;
+        let prefix = "";
+        
+        if (gradeInput && roomInput) {
+            prefix = `[${gradeInput}/${roomInput}] `;
+        } else if (gradeInput) {
+            prefix = `[${gradeInput}] `;
+        }
+
+        namesList.forEach(name => {
+            const finalName = prefix + name;
+            if(!mockData.users.includes(finalName)) {
+                mockData.users.push(finalName);
+                addedCount++;
+                
+                if (typeof google !== 'undefined' && google.script) {
+                    google.script.run.saveUser(finalName);
+                } else { apiCall('saveUser', { username: finalName }); }
+            }
+        });
+
+        if (addedCount > 0) {
+            updateAdminView(mockData);
+            document.getElementById('new-usernames-batch').value = '';
+            
+            // อัปเดต dropdown ห้องของหน้า Login ให้เห็นห้อง/ชื่อใหม่ทันที
+            populateLoginRooms();
+
+            alert(`บันทึกเสร็จเรียบร้อย! (เพิ่มนักเรียนใหม่ ${addedCount} คน)`);
+        } else {
+            alert('ไม่มีรายชื่อใหม่ถูกเพิ่ม (อาจมีชื่อที่ซ้ำอยู่ในระบบอยู่แล้ว)');
+        }
+    }
+
+    function deleteUser(name) {
+        if(!confirm(`ลบผู้ใช้ ${name}?`)) return;
+        mockData.users = mockData.users.filter(u => u !== name); updateAdminView(mockData); populateLoginRooms();
+        if (typeof google !== 'undefined' && google.script) { google.script.run.deleteUser(name); }
+        else { apiCall('deleteUser', { username: name }); }
+    }
+    
+    function setAllLevel(lang) {
+        const inputId = lang === 'TH' ? 'global-th-level' : 'global-en-level';
+        const val = document.getElementById(inputId).value;
+        if(val === '') return;
+        let idx = parseInt(val); if(isNaN(idx)) idx = 0; if(idx === 99) idx = 999;
+
+        const filterSelect = document.getElementById('admin-room-filter');
+        const selected = filterSelect ? filterSelect.value : '__ALL__';
+        const targets = selected === '__ALL__'
+            ? mockData.users.filter(u => u !== 'Guest')
+            : getStudentsInRoom(mockData.users, selected);
+        const scopeText = selected === '__ALL__' ? 'ทุกห้อง' : `ห้อง ${selected}`;
+
+        if(confirm(`ตั้งค่า Level (${lang}) ของ ${scopeText} จำนวน ${targets.length} คน เป็น ${idx}?`)) {
+            targets.forEach(u => {
+                getUserProgress(u, lang);
+                mockData.progress[u][lang] = idx;
+                if (typeof google !== 'undefined' && google.script) { google.script.run.saveProgress(u, idx, lang); }
+                else { apiCall('saveProgress', { username: u, level: idx, lang: lang }); }
+            });
+            updateAdminView(mockData); document.getElementById(inputId).value = ''; alert(`อัปเดตระดับของ ${scopeText} เรียบร้อยแล้ว!`);
+        }
+    }
+
+    function saveAdminSettings() {
+        const len = parseInt(document.getElementById('admin-target-length').value) || 100;
+        state.userSettings.targetLength = len; mockData.settings.targetLength = len;
+        document.getElementById('target-display').innerText = len;
+        if (typeof google !== 'undefined' && google.script) { google.script.run.saveSettings({ targetLength: len }); }
+        else { apiCall('saveSettings', { settings: { targetLength: len } }); }
+        alert('บันทึกการตั้งค่าแล้ว'); if(state.currentUser) loadLesson(state.lessonIndex); 
+    }
+
+    function handleGlobalKeydown(e) {
+        if ((e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') && e.target.id !== 'hidden-input') return;
+        if(state.isGameMode) handleGameInput(e); else handleTyping(e);
+    }
+
+    function setLanguage(lang) {
+        state.lang = lang;
+        document.getElementById('btn-th').className = lang==='TH' ? "px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm" : "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
+        document.getElementById('btn-en').className = lang==='EN' ? "px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm" : "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
+        renderKeyboard(); 
+        if (state.currentUser && state.currentUser !== 'Guest') {
+            let savedLesson = getUserProgress(state.currentUser, lang);
+            if (savedLesson >= curriculum[lang].length) savedLesson = 0;
+            state.lessonIndex = savedLesson;
+        } else { state.lessonIndex = 0; }
+        renderLessonList(); loadLesson(state.lessonIndex);
+    }
+
+    function renderLessonList() {
+        const list = document.getElementById('lesson-list'); list.innerHTML = '';
+        let maxUnlocked = state.currentUser && state.currentUser !== 'Guest' ? getUserProgress(state.currentUser, state.lang) : getUserProgress('Guest', state.lang);
+
+        curriculum[state.lang].forEach((lesson, index) => {
+            const btn = document.createElement('button');
+            const isActive = index === state.lessonIndex;
+            const isLocked = index > maxUnlocked;
+            
+            let baseClass = "w-full text-left px-3 py-2 rounded text-xs mb-1 transition-all flex justify-between items-center ";
+            if (isActive) baseClass += "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 font-bold";
+            else if (isLocked) baseClass += "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50";
+            else baseClass += "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 border border-transparent";
+
+            btn.className = baseClass;
+            
+            if (isLocked) {
+                btn.disabled = true; btn.innerHTML = `<span>${index + 1}. ${lesson.name || 'Lesson ' + (index + 1)}</span><span>🔒</span>`;
+            } else {
+                btn.onclick = () => { loadLesson(index); };
+                const checkMark = index < maxUnlocked ? '✓' : (index === maxUnlocked ? '●' : '');
+                btn.innerHTML = `<span>${index + 1}. ${lesson.name || 'Lesson ' + (index + 1)}</span><span class="text-green-400">${checkMark}</span>`;
+            }
+            list.appendChild(btn);
+        });
+    }
+
+    function generateContent(lesson) {
+        let content = ""; const length = state.userSettings.targetLength;
+        if (lesson.type === 'sentence' || lesson.type === 'words') {
+            while (content.length < length) content += lesson.source[Math.floor(Math.random() * lesson.source.length)] + " ";
+        } else {
+            for (let i = 0; i < length; i++) content += (i > 0 && i % 5 === 0) ? " " : lesson.chars[Math.floor(Math.random() * lesson.chars.length)];
+        }
+        return content.trim().substring(0, length);
+    }
+
+    function loadLesson(index) {
+        resetStats();
+        state.lessonIndex = index;
+        const lesson = curriculum[state.lang][index];
+        const numEl = document.getElementById('current-lesson-num-mobile');
+        if(numEl) numEl.parentElement.innerHTML = `${index + 1}: ${lesson.name || 'แบบฝึกหัด'}`;
+
+        state.text = generateContent(lesson);
+        document.getElementById('char-total').innerText = state.text.length;
+        document.getElementById('char-left').innerText = state.text.length;
+
+        state.displayIndex = 0; 
+        renderTypingArea(); renderLessonList();
+        setTimeout(() => highlightKey(state.text[0]), 50);
+    }
+
+    function renderTypingArea() {
+        const area = document.getElementById('typing-area'); if (!area) return; area.innerHTML = '';
+        const windowSize = 30; const currentIndex = state.userInput.length;
+        let startIdx = currentIndex > 0 ? Math.max(0, currentIndex - 2) : 0; 
+        
+        const visibleText = state.text.substring(startIdx, startIdx + windowSize);
+        visibleText.split('').forEach((char, idx) => {
+            const span = document.createElement('span'); const absoluteIdx = startIdx + idx;
+            span.innerHTML = char === ' ' ? '&nbsp;' : char; 
+            span.className = 'transition-colors duration-100 border-b-2 border-transparent py-1 inline-block' + (char === ' ' ? ' min-w-[0.6em] rounded-sm' : ''); 
+            
+            if (absoluteIdx < state.userInput.length) span.classList.add(state.userInput[absoluteIdx] === state.text[absoluteIdx] ? 'text-indigo-400' : 'text-red-400', state.userInput[absoluteIdx] !== state.text[absoluteIdx] ? 'bg-red-500/10' : 'none');
+            else if (absoluteIdx === state.userInput.length) span.classList.add('cursor', 'bg-slate-700', 'text-white', 'rounded');
+            else span.classList.add('text-slate-600');
+            
+            area.appendChild(span);
+        });
+        
+        document.getElementById('progress-bar').style.width = `${(state.userInput.length / state.text.length) * 100}%`;
+        if (state.userInput.length >= state.text.length) area.innerHTML = '<span class="text-green-400 font-bold text-2xl">🎉 เสร็จสิ้น!</span>';
+    }
+
+    function focusInput(e) {
+        if (e && e.target && (['input', 'select', 'textarea', 'button', 'a'].includes(e.target.tagName.toLowerCase()) || e.target.closest('button') || e.target.closest('select'))) return;
+        if ((document.getElementById('login-modal') && !document.getElementById('login-modal').classList.contains('hidden')) || (document.getElementById('admin-panel') && !document.getElementById('admin-panel').classList.contains('hidden'))) return;
+        const input = document.getElementById('hidden-input'); if(input) input.focus();
+        const startMsg = document.getElementById('start-message'); if (startMsg && state.userInput.length > 0) startMsg.style.display = 'none';
+    }
+
+    function getVirtualChar(key) {
+        if (key.length !== 1) return key;
+        if (state.lang === 'TH' && /[a-zA-Z`1234567890\-=,./;'\[\]\\]/.test(key)) return enToThMap[key] || key;
+        if (state.lang === 'EN' && /[\u0E00-\u0E7F]/.test(key)) return thToEnMap[key] || key;
+        return key;
+    }
+
+    function handleTyping(e) {
+        if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && e.target === document.body) e.preventDefault();
+        const input = document.getElementById('hidden-input');
+        if (document.activeElement !== input && input && document.getElementById('login-modal').classList.contains('hidden') && document.getElementById('admin-panel').classList.contains('hidden')) input.focus();
+        if (['Shift', 'Control', 'Alt', 'CapsLock', 'Tab', 'Meta'].includes(e.key)) return;
+        
+        if (!state.startTime) { startTimer(); const m = document.getElementById('start-message'); if (m) m.style.display = 'none'; }
+        
+        if (e.key === 'Backspace' || state.userInput.length >= state.text.length) return;
+
+        const typedChar = getVirtualChar(e.key);
+        const currentChar = state.text[state.userInput.length];
+        
+        // แก้ไข: เพิ่ม e.key === currentChar เพื่อรองรับการพิมพ์ตัวเลขตรงๆ โดยไม่ผ่านการแปลงแป้นพิมพ์
+        if (typedChar === currentChar || e.key === currentChar) {
+             if (state.isSoundOn) playSound(true);
+             state.userInput += currentChar; // แก้ไข: บันทึกค่าตามเป้าหมายจริง
+             renderTypingArea(); 
+             highlightKey(state.text[state.userInput.length]);
+             updateStats();
+             if (state.userInput.length === state.text.length) finishLesson();
+        } else {
+             if (state.isSoundOn) playSound(false);
+             state.errors++;
+             updateStats();
+             
+             const cursor = document.querySelector('.cursor');
+             if(cursor) {
+                 cursor.classList.add('char-error-flash', 'bg-red-500');
+                 setTimeout(() => cursor.classList.remove('char-error-flash', 'bg-red-500'), 150);
+             }
+             if(e.key !== typedChar) {
+                 const alertEl = document.getElementById('lang-alert');
+                 if(alertEl) {
+                     alertEl.classList.remove('hidden');
+                     setTimeout(() => alertEl.classList.add('hidden'), 2000);
+                 }
+             }
+        }
+    }
+
+    function updateStats() {
+        if (!state.startTime) return;
+        const mins = (new Date() - state.startTime) / 60000;
+        document.getElementById('wpm').innerText = Math.round((state.userInput.length / 5) / (mins || 0.001)); 
+        document.getElementById('accuracy').innerText = (state.userInput.length + state.errors === 0 ? 100 : Math.round((state.userInput.length / (state.userInput.length + state.errors)) * 100)) + '%';
+        document.getElementById('error-count').innerText = state.errors;
+        document.getElementById('char-left').innerText = Math.max(0, state.text.length - state.userInput.length);
+    }
+
+    function startTimer() {
+        state.startTime = new Date();
+        state.timerInterval = setInterval(() => {
+            const diff = Math.floor((new Date() - state.startTime) / 1000);
+            document.getElementById('timer').innerText = String(Math.floor(diff / 60)).padStart(2, '0') + ':' + String(diff % 60).padStart(2, '0');
+        }, 1000);
+    }
+
+    function resetStats() {
+        clearInterval(state.timerInterval); state.startTime = null; state.userInput = ''; state.errors = 0;
+        document.getElementById('timer').innerText = '00:00'; document.getElementById('wpm').innerText = '0'; document.getElementById('accuracy').innerText = '100%';
+        const m = document.getElementById('start-message'); if(m) m.style.display = 'flex';
+        document.getElementById('error-count').innerText = '0'; document.getElementById('progress-bar').style.width = '0%';
+        clearKeyHighlights();
+    }
+
+    function resetLessonAndClose() { closeModal(); loadLesson(state.lessonIndex); focusInput(); }
+
+    function finishLesson() {
+        clearInterval(state.timerInterval);
+        const wpmVal = document.getElementById('wpm') ? parseInt(document.getElementById('wpm').innerText) : 0;
+        const accVal = document.getElementById('accuracy') ? parseInt(document.getElementById('accuracy').innerText) : 0;
+        
+        document.getElementById('modal-wpm').innerText = wpmVal;
+        document.getElementById('modal-acc').innerText = accVal + '%';
+        
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalIcon = document.getElementById('modal-icon-container');
+        const btnNext = document.getElementById('btn-next-lesson');
+        const btnMini = document.getElementById('btn-mini-game');
+        
+        if (accVal >= 80) {
+            modalTitle.innerText = "ยอดเยี่ยม!"; modalTitle.className = "text-2xl font-bold text-white mb-1";
+            modalMessage.innerText = "คุณผ่านเกณฑ์แล้ว"; modalMessage.className = "text-slate-400 text-sm mb-6";
+            modalIcon.innerHTML = "✓"; modalIcon.className = "w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500/30 text-3xl";
+            
+            let currentUnlocked = state.currentUser && mockData.progress[state.currentUser] ? getUserProgress(state.currentUser, state.lang) : 0;
+            if (state.lessonIndex === currentUnlocked) {
+                const nextUnlocked = currentUnlocked + 1;
+                if (nextUnlocked < curriculum[state.lang].length) {
+                    const targetUser = (state.currentUser && state.currentUser !== 'Guest') ? state.currentUser : 'Guest';
+                    getUserProgress(targetUser, state.lang); 
+                    mockData.progress[targetUser][state.lang] = nextUnlocked;
+                    if (targetUser !== 'Guest' && typeof google !== 'undefined' && google.script) {
+                        google.script.run.saveProgress(targetUser, nextUnlocked, state.lang);
+                    } else if (targetUser !== 'Guest') {
+                        apiCall('saveProgress', { username: targetUser, level: nextUnlocked, lang: state.lang });
+                    }
+                }
+            }
+            btnNext.classList.remove('hidden'); btnMini.classList.remove('hidden');
+        } else {
+            modalTitle.innerText = "ยังไม่ผ่านเกณฑ์"; modalTitle.className = "text-2xl font-bold text-red-500 mb-1";
+            modalMessage.innerText = `ความแม่นยำต้อง 80% ขึ้นไป (ได้ ${accVal}%)`; modalMessage.className = "text-red-300 text-sm mb-6 font-bold";
+            modalIcon.innerHTML = "✕"; modalIcon.className = "w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-red-500/30 text-3xl";
+            btnNext.classList.add('hidden'); btnMini.classList.add('hidden'); 
+        }
+
+        const modal = document.getElementById('modal-complete');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+    
+    function nextLesson() {
+        closeModal();
+        if (state.lessonIndex < curriculum[state.lang].length - 1) loadLesson(state.lessonIndex + 1); 
+        else { alert("🎉 จบหลักสูตรแล้ว! ยินดีด้วย!"); loadLesson(0); }
+    }
+
+    function closeModal() { 
+        const modal = document.getElementById('modal-complete');
+        modal.classList.add('hidden'); 
+        modal.style.display = 'none';
+        focusInput(); 
+    }
+
+    // --- GAME LOGIC (Letter Tower Climb / หอคอยตัวอักษร) ---
+    // ตัวละครกระโดดขึ้นแผ่นไม้ (ตัวอักษร) ทีละขั้น พิมพ์ถูก = กระโดดขึ้น จนถึงยอด = จบด่าน
+    // พิมพ์ผิดไม่เป็นไร ตัวละครแค่ยังไม่ขยับ (โหมดใจดี ไม่มีแพ้)
+
+    const CHAR_EMOJI = '🐰';
+
+    // ธีมหมุนเวียนตามบท (lessonIndex) — แผ่นไม้เหมือนกันทุกธีม แต่ฉาก/สีเปลี่ยน
+    const CLIMB_THEMES = [
+        { name: 'ป่าไม้',          emoji: '🌳', bg: 'linear-gradient(to top, #14532d 0%, #15803d 45%, #4ade80 100%)', decor: ['🌲','🍃','🦋','🌿','☁️'] },
+        { name: 'ถ้ำลึก',          emoji: '🕯️', bg: 'linear-gradient(to top, #0c0a09 0%, #292524 50%, #57534e 100%)', decor: ['🦇','💎','🪨','🕯️','✨'] },
+        { name: 'ท้องฟ้า',         emoji: '☁️', bg: 'linear-gradient(to top, #0369a1 0%, #38bdf8 50%, #e0f2fe 100%)', decor: ['☁️','🐦','🎈','🪁','☁️'] },
+        { name: 'พระอาทิตย์ตก',    emoji: '🌇', bg: 'linear-gradient(to top, #7c2d12 0%, #ea580c 45%, #fed7aa 100%)', decor: ['🌅','🕊️','🌤️','🦅','☁️'] },
+        { name: 'อวกาศ',           emoji: '🌌', bg: 'linear-gradient(to top, #020617 0%, #1e1b4b 50%, #4c1d95 100%)', decor: ['⭐','🪐','🌟','🛸','✨'] },
+        { name: 'ใต้ทะเล',         emoji: '🐠', bg: 'linear-gradient(to top, #082f49 0%, #0e7490 50%, #67e8f9 100%)', decor: ['🐠','🫧','🐟','🐚','🌊'] }
+    ];
+
+    // ดึงชุดตัวอักษรของบทปัจจุบันมาทำเป็นแผ่นไม้
+    function climbCharPool() {
+        const lesson = curriculum[state.lang][state.lessonIndex];
+        let src = '';
+        if (lesson.source && lesson.source.length) src = lesson.source.join('');
+        else src = lesson.chars || '';
+        // บทแบบ mix (chars: 'all' / 'common') ไม่มีตัวอักษรจริง ใช้ชุดเต็มแทน
+        if (src === 'all' || src === 'common') {
+            src = state.lang === 'TH' ? 'ฟหกดเ้่าสวงยรนบลปแอิืทมใฝ' : 'abcdefghijklmnopqrstuvwxyz';
+        }
+        src = src.replace(/\s/g, '');
+        let uniq = [...new Set(src.split(''))];
+        if (uniq.length < 2) {
+            uniq = (state.lang === 'TH' ? 'ฟหกดเ้าสวง' : 'asdfghjkl').split('');
+        }
+        return uniq;
+    }
+
+    function climbPickOne(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
+
+    function climbPickTwo(pool) {
+        const a = climbPickOne(pool);
+        if (pool.length === 1) return [a, a];
+        let b, guard = 0;
+        do { b = climbPickOne(pool); guard++; } while (b === a && guard < 25);
+        return [a, b];
+    }
+
+    // สร้างหอคอย: พื้น + แถวแผ่นไม้ (2 แผ่น/แถว) + ยอด (ธง) + ตัวละคร
+    function climbBuildTower() {
+        const c = state.climb;
+        const world = document.getElementById('climb-world');
+        world.innerHTML = '';
+        c.rows = [];
+
+        // พื้นล่างสุด (แถว 0)
+        const ground = document.createElement('div');
+        ground.className = 'climb-ground';
+        world.appendChild(ground);
+        c.rows[0] = { planks: [], surface: c.GROUND_H, isGround: true };
+
+        // แถวแผ่นไม้ 1 .. TOTAL_ROWS-1
+        for (let r = 1; r < c.TOTAL_ROWS; r++) {
+            const xs = (r % 2 === 1) ? [27, 65] : [35, 73];
+            const [chA, chB] = climbPickTwo(c.charPool);
+            const surface = c.GROUND_H + r * c.ROW_HEIGHT;
+            const planks = [];
+            [{ x: xs[0], ch: chA }, { x: xs[1], ch: chB }].forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'climb-plank';
+                el.style.left = p.x + '%';
+                el.style.bottom = (surface - 26) + 'px';
+                el.textContent = p.ch;
+                world.appendChild(el);
+                planks.push({ x: p.x, ch: p.ch, el });
+            });
+            c.rows[r] = { planks, surface };
+        }
+
+        // ยอดหอคอย (แถวสุดท้าย) = แผ่นไม้กว้าง 1 แผ่น + ธง
+        const goalSurface = c.GROUND_H + c.TOTAL_ROWS * c.ROW_HEIGHT;
+        const goalChar = climbPickOne(c.charPool);
+        const gp = document.createElement('div');
+        gp.className = 'climb-plank';
+        gp.style.width = '150px';
+        gp.style.left = '50%';
+        gp.style.bottom = (goalSurface - 26) + 'px';
+        gp.textContent = goalChar;
+        world.appendChild(gp);
+
+        const flag = document.createElement('div');
+        flag.textContent = '🚩';
+        flag.style.position = 'absolute';
+        flag.style.left = '50%';
+        flag.style.bottom = (goalSurface + 8) + 'px';
+        flag.style.fontSize = '42px';
+        flag.style.transform = 'translateX(-50%)';
+        flag.style.zIndex = '3';
+        flag.style.filter = 'drop-shadow(0 3px 2px rgba(0,0,0,0.4))';
+        world.appendChild(flag);
+
+        c.rows[c.TOTAL_ROWS] = { planks: [{ x: 50, ch: goalChar, el: gp, isGoal: true }], surface: goalSurface, isGoal: true };
+
+        world.style.height = (goalSurface + 180) + 'px';
+
+        // ตัวละคร: outer = เลื่อนระหว่างแผ่น, inner = อนิเมชันกระโดด
+        const outer = document.createElement('div');
+        outer.id = 'climb-char-outer';
+        outer.innerHTML = '<div id="climb-char-inner">' + CHAR_EMOJI + '</div>';
+        world.appendChild(outer);
+        climbPlaceChar(false, c.GROUND_H, 50);
+        c.charX = 50;
+    }
+
+    function climbPlaceChar(animate, surface, xPct) {
+        const outer = document.getElementById('climb-char-outer');
+        if (!outer) return;
+        outer.style.left = xPct + '%';
+        outer.style.bottom = surface + 'px';
+        if (animate) {
+            const inner = document.getElementById('climb-char-inner');
+            if (inner) { inner.classList.remove('climb-hop'); void inner.offsetWidth; inner.classList.add('climb-hop'); }
+        }
+    }
+
+    // เน้นแผ่นไม้ของแถวถัดไป (ที่ปีนได้)
+    function climbHighlightReachable() {
+        const c = state.climb;
+        if (!c) return;
+        c.rows.forEach(r => r.planks.forEach(p => { if (p.el) p.el.classList.remove('reachable'); }));
+        const nr = c.currentRow + 1;
+        if (nr <= c.TOTAL_ROWS && c.rows[nr]) {
+            c.rows[nr].planks.forEach(p => { if (p.el && !p.el.classList.contains('stepped')) p.el.classList.add('reachable'); });
+        }
+    }
+
+    // เลื่อนหอคอยให้แถวปัจจุบันอยู่ช่วงล่างของจอ (เห็นแผ่นเหนือหัว)
+    function climbApplyScroll(animate) {
+        const c = state.climb;
+        if (!c) return;
+        const area = document.getElementById('climb-area');
+        const world = document.getElementById('climb-world');
+        if (!area || !world) return;
+        const areaH = area.clientHeight || 400;
+        const anchor = Math.min(areaH * 0.34, 190);
+        const surface = c.GROUND_H + c.currentRow * c.ROW_HEIGHT;
+        const shift = Math.max(0, surface - anchor);
+        if (!animate) world.style.transition = 'none';
+        world.style.transform = 'translateY(' + shift + 'px)';
+        if (!animate) { void world.offsetHeight; world.style.transition = ''; }
+    }
+
+    function climbApplyTheme() {
+        const t = CLIMB_THEMES[state.lessonIndex % CLIMB_THEMES.length];
+        state.climb.theme = t;
+        document.getElementById('climb-bg').style.background = t.bg;
+        document.getElementById('climb-title-text').innerText = 'หอคอยตัวอักษร • ' + t.name;
+        const emojiSpan = document.querySelector('#climb-title span');
+        if (emojiSpan) emojiSpan.innerText = t.emoji;
+
+        const layer = document.getElementById('climb-bg-decor');
+        layer.innerHTML = '';
+        for (let i = 0; i < 8; i++) {
+            const d = document.createElement('div');
+            d.className = 'climb-decor';
+            d.textContent = t.decor[Math.floor(Math.random() * t.decor.length)];
+            d.style.left = (Math.random() * 90 + 3) + '%';
+            d.style.top = (Math.random() * 78 + 4) + '%';
+            d.style.fontSize = (20 + Math.random() * 26) + 'px';
+            d.style.animationDelay = (Math.random() * 4) + 's';
+            d.style.animationDuration = (5 + Math.random() * 4) + 's';
+            layer.appendChild(d);
+        }
+    }
+
+    function climbUpdateHUD() {
+        const el = document.getElementById('climb-height');
+        if (el) el.innerText = state.climb.currentRow;
+    }
+
+    function climbStartTimer() {
+        const c = state.climb;
+        clearInterval(c.timerInterval);
+        c.timerInterval = setInterval(() => {
+            if (!state.isGameMode || !c || c.won) { clearInterval(c.timerInterval); return; }
+            const secs = ((Date.now() - c.startTime) / 1000).toFixed(1);
+            const el = document.getElementById('climb-time');
+            if (el) el.innerText = secs + 's';
+        }, 100);
+    }
+
+    function climbConfetti() {
+        const layer = document.getElementById('climb-bg-decor');
+        const area = document.getElementById('climb-area');
+        if (!layer || !area) return;
+        const fall = (area.clientHeight || 500) + 80;
+        const emojis = ['🎉', '⭐', '🎊', '✨', '🌟', '🎈'];
+        for (let i = 0; i < 26; i++) {
+            const s = document.createElement('div');
+            s.textContent = emojis[i % emojis.length];
+            s.style.position = 'absolute';
+            s.style.left = (Math.random() * 100) + '%';
+            s.style.top = '-40px';
+            s.style.fontSize = (18 + Math.random() * 20) + 'px';
+            s.style.zIndex = '45';
+            layer.appendChild(s);
+            const dur = 1800 + Math.random() * 1600;
+            s.animate([
+                { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                { transform: 'translateY(' + fall + 'px) rotate(' + (Math.random() * 720 - 360) + 'deg)', opacity: 0.9 }
+            ], { duration: dur, easing: 'ease-in' });
+            setTimeout(() => s.remove(), dur);
+        }
+    }
+
+    function climbWin() {
+        const c = state.climb;
+        c.won = true;
+        clearInterval(c.timerInterval);
+        const secs = ((Date.now() - (c.startTime || Date.now())) / 1000).toFixed(1);
+        document.getElementById('win-time').innerText = secs;
+        document.getElementById('win-hits').innerText = c.hits;
+        if (state.isSoundOn) playSound(true);
+        climbConfetti();
+        setTimeout(() => {
+            const m = document.getElementById('climb-win-modal');
+            if (m) m.classList.remove('hidden');
+        }, 650);
+    }
+
+    // --- Entry points (เชื่อมกับปุ่มต่าง ๆ ในหน้าจบบท) ---
+    function startMiniGame() {
+        closeModal();
+        state.isGameMode = true;
+        const ui = document.getElementById('game-ui');
+        ui.classList.remove('hidden');
+        ui.style.display = 'flex';
+        document.getElementById('typing-ui').style.display = 'none';
+        resetGame();
+    }
+
+    function resetGame() {
+        if (state.climb && state.climb.timerInterval) clearInterval(state.climb.timerInterval);
+        state.climb = {
+            TOTAL_ROWS: 10,
+            ROW_HEIGHT: 92,
+            GROUND_H: 40,
+            currentRow: 0,
+            charX: 50,
+            hits: 0,
+            startTime: null,
+            timerInterval: null,
+            won: false,
+            rows: [],
+            charPool: climbCharPool(),
+            theme: null
+        };
+        document.getElementById('climb-total').innerText = state.climb.TOTAL_ROWS;
+        document.getElementById('climb-height').innerText = 0;
+        document.getElementById('climb-time').innerText = '0.0s';
+        document.getElementById('climb-win-modal').classList.add('hidden');
+        document.getElementById('climb-start-overlay').style.display = 'flex';
+
+        climbApplyTheme();
+        climbBuildTower();
+        climbHighlightReachable();
+        climbApplyScroll(false);
+    }
+
+    function startGame() {
+        if (!state.climb) resetGame();
+        document.getElementById('climb-start-overlay').style.display = 'none';
+        climbApplyScroll(false);
+        climbHighlightReachable();
+        focusInput();
+    }
+
+    function climbCleanup() {
+        state.isGameMode = false;
+        if (state.climb) clearInterval(state.climb.timerInterval);
+        const world = document.getElementById('climb-world');
+        if (world) world.innerHTML = '';
+        const decor = document.getElementById('climb-bg-decor');
+        if (decor) decor.innerHTML = '';
+    }
+
+    function finishGameAndGoNext() {
+        climbCleanup();
+        const ui = document.getElementById('game-ui');
+        ui.classList.add('hidden');
+        ui.style.display = 'none';
+        document.getElementById('typing-ui').style.display = 'flex';
+        nextLesson();
+    }
+
+    function exitGameAndNext() {
+        climbCleanup();
+        const ui = document.getElementById('game-ui');
+        ui.classList.add('hidden');
+        ui.style.display = 'none';
+        document.getElementById('typing-ui').style.display = 'flex';
+        renderLessonList();
+    }
+
+    // รับคีย์บอร์ดระหว่างเล่นเกม
+    function handleGameInput(e) {
+        const c = state.climb;
+        if (!c || c.won) return;
+        if (['Shift', 'Control', 'Alt', 'CapsLock', 'Tab', 'Meta', 'Backspace'].includes(e.key)) return;
+        if (e.key.length !== 1) return;
+
+        // ยังไม่กดเริ่ม (overlay ยังโชว์) → ไม่ทำอะไร
+        const ov = document.getElementById('climb-start-overlay');
+        if (ov && ov.style.display !== 'none') return;
+
+        const nextRow = c.currentRow + 1;
+        if (nextRow > c.TOTAL_ROWS) return;
+        const row = c.rows[nextRow];
+        if (!row) return;
+
+        const typed = getVirtualChar(e.key);
+        const match = row.planks.find(p => p.ch === typed || p.ch === e.key);
+
+        if (!match) return; // พิมพ์ผิด = ไม่กระโดด (ใจดี ไม่มีโทษ)
+
+        if (!c.startTime) { c.startTime = Date.now(); climbStartTimer(); }
+
+        c.currentRow = nextRow;
+        c.charX = match.x;
+        c.hits++;
+
+        match.el.classList.remove('reachable');
+        match.el.classList.add('stepped');
+
+        climbPlaceChar(true, row.surface, match.x);
+        if (state.isSoundOn) playSound(true);
+        climbApplyScroll(true);
+        climbUpdateHUD();
+        climbHighlightReachable();
+
+        if (c.currentRow >= c.TOTAL_ROWS) climbWin();
+    }
+
+    // --- KEYBOARD RENDERING & VISUALS ---
+    function renderKeyboard() {
+        const container = document.getElementById('keyboard-container');
+        if(!container) return;
+        container.innerHTML = '';
+
+        keyboardLayout.forEach(row => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'flex justify-center gap-1 lg:gap-1.5';
+            row.forEach(key => {
+                const keyDiv = document.createElement('div');
+                keyDiv.className = `${key.width} h-10 sm:h-12 bg-slate-800 rounded-lg text-slate-300 relative shadow-[0_4px_0_0_rgba(15,23,42,0.5)] transition-all duration-75 select-none border-t border-slate-700 active:shadow-none active:translate-y-[4px]`;
+                
+                if (key.type === 'space') keyDiv.dataset.key = 'space';
+                else if (key.type === 'special') {
+                    keyDiv.dataset.key = key.id ? key.id.toLowerCase() : key.label.toLowerCase();
+                    keyDiv.className += " flex items-center justify-center text-[10px] sm:text-xs font-bold bg-slate-700";
+                    keyDiv.innerText = key.label;
+                } else {
+                    const mainKey = key.en[0].toLowerCase();
+                    keyDiv.dataset.key = mainKey;
+                    
+                    const enLower = key.en[0], enUpper = key.en[1] || '';
+                    const thLower = key.th ? key.th[0] : '', thUpper = key.th ? key.th[1] : '';
+                    let innerContent = '';
+                    
+                    if (state.lang === 'EN') {
+                        innerContent = `
+                            <span id="label-${mainKey}-en-shift" class="absolute top-1 left-2 text-[9px] sm:text-[10px] text-slate-500 font-semibold">${enUpper}</span>
+                            <span id="label-${mainKey}-en" class="absolute bottom-1 right-2 text-sm sm:text-base font-bold text-slate-200">${enLower}</span>
+                        `;
+                    } else {
+                        innerContent = `
+                            <span id="label-${mainKey}-th-shift" class="absolute top-0.5 left-2 text-[10px] sm:text-xs text-slate-500 font-normal">${thUpper}</span>
+                            <span id="label-${mainKey}-th" class="absolute bottom-0 right-2 text-sm sm:text-lg font-bold text-slate-200">${thLower}</span>
+                        `;
+                    }
+                    keyDiv.innerHTML = innerContent;
+                }
+                rowDiv.appendChild(keyDiv);
+            });
+            container.appendChild(rowDiv);
+        });
+    }
+
+    function highlightKey(char) {
+        clearKeyHighlights();
+        if (!char) return;
+        let keyId = charToKeyIdMap[char];
+        if (char === ' ') keyId = 'space';
+        if (keyId) {
+            let foundKeyDef = null;
+            for(const row of keyboardLayout) {
+                const k = row.find(item => item.en && item.en[0].toLowerCase() === keyId);
+                if(k) { foundKeyDef = k; break; }
+            }
+            let isShifted = false;
+            if (foundKeyDef) {
+                if (state.lang === 'EN' && foundKeyDef.en[1] === char) isShifted = true;
+                if (state.lang === 'TH' && foundKeyDef.th && foundKeyDef.th[1] === char) isShifted = true;
+            }
+            const fingerId = keyIdToFingerMap[keyId];
+            const activeClass = fingerClassMap[fingerId] || 'bg-indigo-600';
+            const keyEl = document.querySelector(`[data-key="${keyId}"]`);
+            
+            if (keyEl) {
+                keyEl.classList.remove('bg-slate-800');
+                keyEl.classList.add(activeClass, 'key-active-anim');
+                
+                if (char !== ' ') {
+                    let spanId = '';
+                    if (state.lang === 'EN') {
+                        spanId = isShifted ? `label-${keyId}-en-shift` : `label-${keyId}-en`;
+                    } else {
+                        spanId = isShifted ? `label-${keyId}-th-shift` : `label-${keyId}-th`;
+                    }
+                    const targetSpan = document.getElementById(spanId);
+                    if(targetSpan) targetSpan.classList.add('target-char');
+                }
+            }
+            if (isShifted) {
+                document.querySelectorAll('[data-key*="shift"]').forEach(s => { 
+                    s.classList.remove('bg-slate-700'); 
+                    s.classList.add(activeClass, 'key-active-anim'); 
+                });
+            }
+            if (fingerId) {
+                const fingerEl = document.getElementById(fingerId);
+                if (fingerEl) fingerEl.classList.add('finger-active');
+            }
+        }
+    }
+
+    function clearKeyHighlights() {
+        const allActiveClasses = ['active-pinky', 'active-ring', 'active-middle', 'active-index', 'active-thumb', 'key-active-anim'];
+        document.querySelectorAll('.key-active-anim').forEach(k => { 
+            k.classList.remove(...allActiveClasses); 
+            k.classList.add('bg-slate-800'); 
+        });
+        document.querySelectorAll('.target-char').forEach(el => el.classList.remove('target-char'));
+        document.querySelectorAll('.finger-active').forEach(f => f.classList.remove('finger-active'));
+        
+        document.querySelectorAll('[data-key*="shift"]').forEach(s => {
+             s.classList.remove('key-active-anim', ...allActiveClasses);
+             s.classList.add('bg-slate-700');
+        });
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(success) {
+        if (!state.isSoundOn) return;
+        if (!audioCtx || audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        if (success) { 
+            osc.type = 'triangle'; 
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05); 
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        } else { 
+            osc.type = 'sawtooth'; 
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.1); 
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        }
+        
+        osc.start(); 
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+    
+    function toggleSound() {
+        state.isSoundOn = !state.isSoundOn;
+        const icon = document.getElementById('sound-icon');
+        if(icon) icon.style.opacity = state.isSoundOn ? 1 : 0.4;
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
