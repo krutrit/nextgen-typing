@@ -351,6 +351,24 @@
                     </div>
                 </div>
 
+                <!-- Custom Lesson Text Section -->
+                <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-lg font-bold text-indigo-400 mb-4 flex items-center gap-2">📝 ตั้งค่าเนื้อหาบทเรียน</h3>
+                    <p class="text-xs text-slate-400 mb-4">กำหนดข้อความที่ต้องการฝึกพิมพ์เอง หรือปล่อยว่างเพื่อใช้เนื้อหาเริ่มต้น</p>
+                    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                        <select id="custom-lang-select" onchange="loadCustomLessonText()" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none">
+                            <option value="TH">ภาษาไทย</option>
+                            <option value="EN">English</option>
+                        </select>
+                        <select id="custom-lesson-select" onchange="loadCustomLessonText()" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none flex-1"></select>
+                    </div>
+                    <textarea id="custom-lesson-text" rows="4" placeholder="พิมพ์ข้อความที่ต้องการฝึกพิมพ์เองที่นี่... (ปล่อยว่าง = ใช้เนื้อหาเดิม)" class="w-full bg-slate-800 border border-slate-500 rounded-lg px-4 py-3 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none resize-y custom-scroll mb-3"></textarea>
+                    <div class="flex gap-3">
+                        <button onclick="saveCustomLessonText()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-medium whitespace-nowrap transition-transform hover:scale-105 active:scale-95">💾 บันทึก</button>
+                        <button onclick="clearCustomLessonText()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition">🗑️ ลบเนื้อหาที่กำหนดเอง</button>
+                    </div>
+                </div>
+
                 <!-- User Management Section -->
                 <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700 flex flex-col overflow-hidden" style="min-height: 500px; max-height: 70vh;">
                     <div class="flex flex-col gap-4 mb-4 shrink-0">
@@ -1122,6 +1140,11 @@
     }
 
     function generateContent(lesson) {
+        // ใช้ customText ถ้ามีการตั้งค่าไว้
+        const customKey = `ngt_custom_${state.lang}_${state.lessonIndex}`;
+        const customText = localStorage.getItem(customKey);
+        if (customText && customText.trim().length > 0) return customText.trim();
+
         let content = ""; const length = state.userSettings.targetLength;
         if (lesson.type === 'sentence' || lesson.type === 'words') {
             while (content.length < length) content += lesson.source[Math.floor(Math.random() * lesson.source.length)] + " ";
@@ -1176,10 +1199,35 @@
         const startMsg = document.getElementById('start-message'); if (startMsg && state.userInput.length > 0) startMsg.style.display = 'none';
     }
 
+    // สร้าง reverse map สำหรับตัวอักษร shifted (Shift+key)
+    const enShiftToThShiftMap = {};
+    const thShiftToEnShiftMap = {};
+    keyboardLayout.forEach(row => {
+        row.forEach(key => {
+            if (key.type === 'special' || key.type === 'space') return;
+            if (key.en[1] && key.th && key.th[1]) {
+                enShiftToThShiftMap[key.en[1]] = key.th[1];
+                thShiftToEnShiftMap[key.th[1]] = key.en[1];
+            }
+        });
+    });
+
     function getVirtualChar(key) {
         if (key.length !== 1) return key;
-        if (state.lang === 'TH' && /[a-zA-Z`1234567890\-=,./;'\[\]\\]/.test(key)) return enToThMap[key] || key;
-        if (state.lang === 'EN' && /[\u0E00-\u0E7F]/.test(key)) return thToEnMap[key] || key;
+        if (state.lang === 'TH') {
+            // กรณีกด Shift+key บนแป้น EN (e.key = !, @, #, $, etc.)
+            if (enShiftToThShiftMap[key]) return enShiftToThShiftMap[key];
+            // กรณีกด key ปกติบนแป้น EN (a-z, 0-9, etc.)
+            if (enToThMap[key]) return enToThMap[key];
+            return key;
+        }
+        if (state.lang === 'EN') {
+            // กรณีกด Shift+key บนแป้น TH (e.key = +, ๑, ๒, etc.)
+            if (thShiftToEnShiftMap[key]) return thShiftToEnShiftMap[key];
+            // กรณีกด key ปกติบนแป้น TH (ฟ, ห, ก, etc.)
+            if (thToEnMap[key]) return thToEnMap[key];
+            return key;
+        }
         return key;
     }
 
@@ -1789,6 +1837,76 @@
         const icon = document.getElementById('sound-icon');
         if(icon) icon.style.opacity = state.isSoundOn ? 1 : 0.4;
     }
+
+    // --- CUSTOM LESSON TEXT ---
+    function populateCustomLessonSelect() {
+        const langSelect = document.getElementById('custom-lang-select');
+        const lessonSelect = document.getElementById('custom-lesson-select');
+        if (!langSelect || !lessonSelect) return;
+        const lang = langSelect.value;
+        const lessons = curriculum[lang];
+        lessonSelect.innerHTML = lessons.map((l, i) => {
+            const customKey = `ngt_custom_${lang}_${i}`;
+            const hasCustom = localStorage.getItem(customKey) ? ' ✏️' : '';
+            return `<option value="${i}">${i + 1}. ${l.name || 'Lesson ' + (i + 1)}${hasCustom}</option>`;
+        }).join('');
+        loadCustomLessonText();
+    }
+
+    function loadCustomLessonText() {
+        const langSelect = document.getElementById('custom-lang-select');
+        const lessonSelect = document.getElementById('custom-lesson-select');
+        const textarea = document.getElementById('custom-lesson-text');
+        if (!langSelect || !lessonSelect || !textarea) return;
+        const lang = langSelect.value;
+        const idx = lessonSelect.value;
+        const customKey = `ngt_custom_${lang}_${idx}`;
+        textarea.value = localStorage.getItem(customKey) || '';
+    }
+
+    function saveCustomLessonText() {
+        const langSelect = document.getElementById('custom-lang-select');
+        const lessonSelect = document.getElementById('custom-lesson-select');
+        const textarea = document.getElementById('custom-lesson-text');
+        if (!langSelect || !lessonSelect || !textarea) return;
+        const lang = langSelect.value;
+        const idx = lessonSelect.value;
+        const text = textarea.value.trim();
+        const customKey = `ngt_custom_${lang}_${idx}`;
+        if (text.length > 0) {
+            localStorage.setItem(customKey, text);
+        } else {
+            localStorage.removeItem(customKey);
+        }
+        // อัปเดต dropdown ให้แสดงไอคอน ✏️
+        populateCustomLessonSelect();
+        langSelect.value = lang;
+        lessonSelect.value = idx;
+        alert('บันทึกเนื้อหาบทเรียนเรียบร้อย!');
+    }
+
+    function clearCustomLessonText() {
+        const langSelect = document.getElementById('custom-lang-select');
+        const lessonSelect = document.getElementById('custom-lesson-select');
+        const textarea = document.getElementById('custom-lesson-text');
+        if (!langSelect || !lessonSelect || !textarea) return;
+        const lang = langSelect.value;
+        const idx = lessonSelect.value;
+        const customKey = `ngt_custom_${lang}_${idx}`;
+        localStorage.removeItem(customKey);
+        textarea.value = '';
+        populateCustomLessonSelect();
+        langSelect.value = lang;
+        lessonSelect.value = idx;
+        alert('ลบเนื้อหาที่กำหนดเองแล้ว จะใช้เนื้อหาเริ่มต้น');
+    }
+
+    // เรียก populateCustomLessonSelect เมื่อเปิด Admin Panel
+    const origOpenAdmin = openAdminPanel;
+    openAdminPanel = function() {
+        origOpenAdmin();
+        setTimeout(() => populateCustomLessonSelect(), 100);
+    };
 
     window.onload = init;
 </script>
