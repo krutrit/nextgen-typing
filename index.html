@@ -1092,22 +1092,31 @@
         curriculum[state.lang].forEach((lesson, index) => {
             const btn = document.createElement('button');
             const isActive = index === state.lessonIndex;
-            const isLocked = index > maxUnlocked;
-            
+            const isCompleted = index < maxUnlocked;   // ทำผ่านแล้ว = ล็อก กดย้อนกลับไม่ได้
+            const isCurrent = index === maxUnlocked;    // บทปัจจุบัน = เล่นได้บทเดียว
+            const isFuture = index > maxUnlocked;       // ยังไม่ปลดล็อก
+
+            const label = `${index + 1}. ${lesson.name || 'Lesson ' + (index + 1)}`;
+
             let baseClass = "w-full text-left px-3 py-2 rounded text-xs mb-1 transition-all flex justify-between items-center ";
             if (isActive) baseClass += "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 font-bold";
-            else if (isLocked) baseClass += "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50";
-            else baseClass += "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 border border-transparent";
+            else if (isCompleted) baseClass += "bg-slate-800/60 text-slate-500 cursor-not-allowed border border-slate-700/40";
+            else if (isCurrent) baseClass += "text-slate-200 hover:bg-slate-700/50 border border-indigo-500/30";
+            else baseClass += "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50";
 
             btn.className = baseClass;
-            
-            if (isLocked) {
-                btn.disabled = true; btn.innerHTML = `<span>${index + 1}. ${lesson.name || 'Lesson ' + (index + 1)}</span><span>🔒</span>`;
-            } else {
+
+            // กดได้เฉพาะบทปัจจุบันเท่านั้น (บทที่ทำผ่านแล้วและบทข้างหน้ากดไม่ได้)
+            if (isCurrent) {
                 btn.onclick = () => { loadLesson(index); };
-                const checkMark = index < maxUnlocked ? '✓' : (index === maxUnlocked ? '●' : '');
-                btn.innerHTML = `<span>${index + 1}. ${lesson.name || 'Lesson ' + (index + 1)}</span><span class="text-green-400">${checkMark}</span>`;
+            } else {
+                btn.disabled = true;
             }
+
+            const icon = isCompleted ? '<span class="text-green-500">✓</span>'
+                       : isCurrent   ? '<span class="text-green-400">●</span>'
+                       :               '<span>🔒</span>';
+            btn.innerHTML = `<span>${label}</span>${icon}`;
             list.appendChild(btn);
         });
     }
@@ -1290,8 +1299,8 @@
     
     function nextLesson() {
         closeModal();
-        if (state.lessonIndex < curriculum[state.lang].length - 1) loadLesson(state.lessonIndex + 1); 
-        else { alert("🎉 จบหลักสูตรแล้ว! ยินดีด้วย!"); loadLesson(0); }
+        if (state.lessonIndex < curriculum[state.lang].length - 1) loadLesson(state.lessonIndex + 1);
+        else { alert("🎉 จบหลักสูตรแล้ว! ยินดีด้วย!"); loadLesson(curriculum[state.lang].length - 1); }
     }
 
     function closeModal() { 
