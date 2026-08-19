@@ -379,7 +379,7 @@
                 <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700 flex flex-col overflow-hidden" style="min-height: 500px; max-height: 70vh;">
                     <div class="flex flex-col gap-4 mb-4 shrink-0">
                         <div class="flex flex-wrap justify-between items-center gap-3">
-                            <h3 class="text-lg font-bold text-indigo-400 flex items-center gap-2">👥 จัดการรายชื่อและความคืบหน้า <span id="student-count-badge" class="text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full ml-2 border border-indigo-500/30">0 คน</span></h3>
+                            <h3 class="text-lg font-bold text-indigo-400 flex items-center gap-2">👥 จัดการห้องเรียนและนักเรียน <span id="student-count-badge" class="text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full ml-2 border border-indigo-500/30">0 คน</span></h3>
                             <div class="flex items-center gap-2">
                                 <label class="text-xs text-slate-400">แสดงห้อง:</label>
                                 <select id="admin-room-filter" onchange="updateAdminView(mockData)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-1.5 text-white text-xs focus:ring-2 focus:ring-indigo-400 outline-none">
@@ -387,18 +387,75 @@
                                 </select>
                             </div>
                         </div>
-                        
-                        <!-- เพิ่มผู้ใช้แบบกลุ่ม -->
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600/50 flex flex-col gap-3">
-                            <div class="flex flex-col sm:flex-row gap-3">
-                                <input type="text" id="new-grade" placeholder="ระดับชั้น (เช่น ม.1)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full sm:w-1/4">
-                                <input type="text" id="new-room" placeholder="ห้องเรียน (เช่น 1)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full sm:w-1/4">
+
+                        <!-- ===== สร้างห้องเรียน ===== -->
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600/50">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-bold text-amber-400 flex items-center gap-1">🏫 สร้างห้องเรียนใหม่</h4>
+                                <button onclick="toggleRoomPanel()" class="text-xs text-slate-400 hover:text-white transition" id="toggle-room-btn">▼ แสดง</button>
                             </div>
-                            <div class="flex flex-col sm:flex-row gap-3 items-end">
-                                <textarea id="new-usernames-batch" placeholder="รายชื่อนักเรียน (กด Enter เพื่อขึ้นบรรทัดใหม่ พิมพ์เพิ่มได้หลายคนพร้อมกัน)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full h-16 resize-none custom-scroll"></textarea>
-                                <button onclick="addMultipleUsers()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-bold whitespace-nowrap transition-transform hover:scale-105 active:scale-95 h-10 w-full sm:w-auto">
-                                    + เพิ่มรายชื่อ
-                                </button>
+                            <div id="room-panel" class="hidden">
+                                <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                                    <input type="text" id="new-grade" placeholder="ระดับชั้น (เช่น ม.1)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-amber-400 outline-none w-full sm:w-1/4">
+                                    <input type="text" id="new-room" placeholder="ห้อง (เช่น 1)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-amber-400 outline-none w-full sm:w-1/4">
+                                    <button onclick="createRoom()" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-bold whitespace-nowrap transition-transform hover:scale-105 active:scale-95">+ สร้างห้อง</button>
+                                </div>
+                                <div id="room-list-admin" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- ===== Tab: เพิ่มนักเรียน ===== -->
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600/50">
+                            <div class="flex items-center gap-2 mb-3">
+                                <button onclick="switchStudentTab('form')" id="tab-student-form" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white">📝 เพิ่มแบบฟอร์ม</button>
+                                <button onclick="switchStudentTab('csv')" id="tab-student-csv" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">📄 อัปโหลด CSV</button>
+                            </div>
+
+                            <!-- Tab: Form -->
+                            <div id="student-tab-form">
+                                <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                                    <select id="add-student-room" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full sm:w-1/3">
+                                        <option value="">-- เลือกห้องเรียน --</option>
+                                    </select>
+                                </div>
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex flex-col sm:flex-row gap-3 items-end">
+                                        <textarea id="new-usernames-batch" placeholder="รายชื่อนักเรียน (กด Enter ขึ้นบรรทัดใหม่ ใส่ได้หลายคนพร้อมกัน)" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full h-20 resize-none custom-scroll"></textarea>
+                                        <button onclick="addMultipleUsers()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-bold whitespace-nowrap transition-transform hover:scale-105 active:scale-95 h-10 w-full sm:w-auto">+ เพิ่มรายชื่อ</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: CSV -->
+                            <div id="student-tab-csv" class="hidden">
+                                <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                                    <select id="csv-student-room" class="bg-slate-800 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full sm:w-1/3">
+                                        <option value="">-- เลือกห้อง (หรือใช้คอลัมน์ Room ใน CSV) --</option>
+                                    </select>
+                                    <label class="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white cursor-pointer transition border border-slate-500 hover:border-indigo-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                        เลือกไฟล์ CSV
+                                        <input type="file" id="csv-file-input" accept=".csv" onchange="handleCSVUpload(event)" class="hidden">
+                                    </label>
+                                    <button onclick="downloadSampleCSV()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-sm text-white font-bold transition whitespace-nowrap">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        ดาวน์โหลดตัวอย่าง CSV
+                                    </button>
+                                </div>
+                                <!-- CSV Preview -->
+                                <div id="csv-preview" class="hidden">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-xs text-slate-400">ตัวอย่างข้อมูลที่จะนำเข้า:</p>
+                                        <span id="csv-count" class="text-xs text-indigo-400 font-bold"></span>
+                                    </div>
+                                    <div class="max-h-40 overflow-y-auto custom-scroll rounded-lg border border-slate-600 bg-slate-900/50 mb-3">
+                                        <table class="w-full text-xs text-slate-300">
+                                            <thead class="bg-slate-700 sticky top-0"><tr><th class="px-3 py-1.5 text-left">Room</th><th class="px-3 py-1.5 text-left">Name</th></tr></thead>
+                                            <tbody id="csv-preview-body"></tbody>
+                                        </table>
+                                    </div>
+                                    <button onclick="importCSV()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-bold transition-transform hover:scale-105 active:scale-95">✅ นำเข้าข้อมูล</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -932,8 +989,8 @@
     function openAdminPanel() {
         document.getElementById('admin-panel').classList.remove('hidden');
         if (typeof google !== 'undefined' && google.script) {
-             google.script.run.withSuccessHandler((data) => { onDataLoaded(data, true); updateAdminView(mockData); }).getData();
-        } else { updateAdminView(mockData); }
+             google.script.run.withSuccessHandler((data) => { onDataLoaded(data, true); updateAdminView(mockData); refreshRoomDropdowns(); }).getData();
+        } else { updateAdminView(mockData); refreshRoomDropdowns(); }
     }
 
     function updateAdminView(data) {
@@ -988,6 +1045,7 @@
 
         list.innerHTML = html || `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">ยังไม่มีรายชื่อนักเรียน</td></tr>`;
         document.getElementById('admin-target-length').value = state.userSettings.targetLength;
+        refreshRoomDropdowns();
     }
     
     function updateUserLevel(user, lang, val) {
@@ -1006,24 +1064,195 @@
         }
     }
 
+    // --- ROOM MANAGEMENT ---
+    function toggleRoomPanel() {
+        const panel = document.getElementById('room-panel');
+        const btn = document.getElementById('toggle-room-btn');
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            btn.textContent = '▲ ซ่อน';
+            renderRoomListAdmin();
+        } else {
+            panel.classList.add('hidden');
+            btn.textContent = '▼ แสดง';
+        }
+    }
+
+    function createRoom() {
+        const grade = document.getElementById('new-grade').value.trim();
+        const room = document.getElementById('new-room').value.trim();
+        if (!grade || !room) { alert('กรุณากรอกระดับชั้นและห้องเรียน'); return; }
+        const roomLabel = `${grade}/${room}`;
+        // เช็คว่ามีห้องนี้อยู่แล้วหรือยัง (จาก users ที่มีอยู่)
+        const existingRooms = getRooms(mockData.users);
+        if (existingRooms.includes(roomLabel)) { alert(`ห้อง ${roomLabel} มีอยู่แล้ว`); return; }
+        // เพิ่ม placeholder user เพื่อให้ห้องปรากฎในระบบ
+        const placeholder = `[${roomLabel}] (ยังไม่มีนักเรียน)`;
+        mockData.users.push(placeholder);
+        if (typeof google !== 'undefined' && google.script) { google.script.run.saveUser(placeholder); }
+        else { apiCall('saveUser', { username: placeholder }); }
+        renderRoomListAdmin();
+        refreshRoomDropdowns();
+        alert(`สร้างห้อง ${roomLabel} สำเร็จ!`);
+    }
+
+    function deleteRoom(roomLabel) {
+        if (!confirm(`ลบห้อง ${roomLabel} และนักเรียนทั้งหมดในห้อง?`)) return;
+        const toDelete = mockData.users.filter(u => {
+            const { room } = parseRoom(u);
+            return (room || NO_ROOM_LABEL) === roomLabel;
+        });
+        toDelete.forEach(u => {
+            mockData.users = mockData.users.filter(x => x !== u);
+            if (typeof google !== 'undefined' && google.script) { google.script.run.deleteUser(u); }
+            else { apiCall('deleteUser', { username: u }); }
+        });
+        renderRoomListAdmin();
+        refreshRoomDropdowns();
+        updateAdminView(mockData);
+        alert(`ลบห้อง ${roomLabel} เรียบร้อย (${toDelete.length} รายการ)`);
+    }
+
+    function renderRoomListAdmin() {
+        const container = document.getElementById('room-list-admin');
+        if (!container) return;
+        const rooms = getRooms(mockData.users);
+        if (rooms.length === 0) { container.innerHTML = '<span class="text-xs text-slate-500">ยังไม่มีห้องเรียน</span>'; return; }
+        container.innerHTML = rooms.map(r => {
+            const students = getStudentsInRoom(mockData.users, r);
+            return `<div class="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg border border-slate-600/50">
+                <span class="text-xs font-bold text-slate-200">🏫 ${r}</span>
+                <span class="text-[10px] text-slate-400">(${students.length} คน)</span>
+                <button onclick="deleteRoom('${r.replace(/'/g, "\\'")}")" class="text-red-400 hover:text-red-300 text-xs ml-1" title="ลบห้อง">✕</button>
+            </div>`;
+        }).join('');
+    }
+
+    function refreshRoomDropdowns() {
+        const rooms = getRooms(mockData.users);
+        const options = '<option value="">-- เลือกห้องเรียน --</option>' + rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+        const addRoomSel = document.getElementById('add-student-room');
+        if (addRoomSel) addRoomSel.innerHTML = options;
+        const csvRoomSel = document.getElementById('csv-student-room');
+        if (csvRoomSel) csvRoomSel.innerHTML = '<option value="">-- เลือกห้อง (หรือใช้คอลัมน์ Room ใน CSV) --</option>' + rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+
+    // --- TAB SWITCHING ---
+    function switchStudentTab(tab) {
+        const formTab = document.getElementById('student-tab-form');
+        const csvTab = document.getElementById('student-tab-csv');
+        const formBtn = document.getElementById('tab-student-form');
+        const csvBtn = document.getElementById('tab-student-csv');
+        if (tab === 'form') {
+            formTab.classList.remove('hidden'); csvTab.classList.add('hidden');
+            formBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white';
+            csvBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
+        } else {
+            formTab.classList.add('hidden'); csvTab.classList.remove('hidden');
+            formBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
+            csvBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white';
+        }
+    }
+
+    // --- CSV UPLOAD ---
+    let csvPendingData = [];
+
+    function handleCSVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length < 2) { alert('ไฟล์ CSV ต้องมีอย่างน้อย 2 บรรทัด (header + data)'); return; }
+            const header = lines[0].toLowerCase();
+            const hasRoomCol = header.includes('room');
+            const nameColIdx = hasRoomCol ? 1 : 0;
+            csvPendingData = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                if (cols.length < 1 || !cols[nameColIdx]) continue;
+                const room = hasRoomCol ? (cols[0] || '') : '';
+                const name = cols[nameColIdx];
+                csvPendingData.push({ room, name });
+            }
+            if (csvPendingData.length === 0) { alert('ไม่พบข้อมูลนักเรียนในไฟล์'); return; }
+            // แสดง preview
+            const previewDiv = document.getElementById('csv-preview');
+            const previewBody = document.getElementById('csv-preview-body');
+            const countEl = document.getElementById('csv-count');
+            previewBody.innerHTML = csvPendingData.slice(0, 20).map(d =>
+                `<tr class="border-t border-slate-700/50"><td class="px-3 py-1.5">${d.room || '-'}</td><td class="px-3 py-1.5">${d.name}</td></tr>`
+            ).join('');
+            if (csvPendingData.length > 20) previewBody.innerHTML += `<tr><td colspan="2" class="px-3 py-1.5 text-center text-slate-500">... อีก ${csvPendingData.length - 20} รายการ</td></tr>`;
+            countEl.textContent = `${csvPendingData.length} รายการ`;
+            previewDiv.classList.remove('hidden');
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function importCSV() {
+        if (csvPendingData.length === 0) { alert('ไม่มีข้อมูลนำเข้า'); return; }
+        const fallbackRoom = document.getElementById('csv-student-room').value;
+        let addedCount = 0, skippedCount = 0;
+        csvPendingData.forEach(d => {
+            let roomLabel = d.room || fallbackRoom;
+            let prefix = '';
+            if (roomLabel) prefix = `[${roomLabel}] `;
+            const finalName = prefix + d.name;
+            if (!mockData.users.includes(finalName)) {
+                mockData.users.push(finalName);
+                addedCount++;
+                if (typeof google !== 'undefined' && google.script) { google.script.run.saveUser(finalName); }
+                else { apiCall('saveUser', { username: finalName }); }
+            } else { skippedCount++; }
+        });
+        csvPendingData = [];
+        document.getElementById('csv-preview').classList.add('hidden');
+        updateAdminView(mockData);
+        refreshRoomDropdowns();
+        populateLoginRooms();
+        let msg = `นำเข้าสำเร็จ ${addedCount} คน`;
+        if (skippedCount > 0) msg += ` (ข้าม ${skippedCount} ชื่อที่ซ้ำ)`;
+        alert(msg);
+    }
+
+    function downloadSampleCSV() {
+        const csv = 'Room,Name\nม.1/1,สมชาย\nม.1/1,สมหญิง\nม.1/1,วิชัย\nม.1/2,สุดา\nม.1/2,ณัฐพล\n';
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'sample_students.csv';
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    // --- ADD USERS (อัปเดตจากระบบเดิม) ---
     function addMultipleUsers() {
-        const gradeInput = document.getElementById('new-grade').value.trim();
-        const roomInput = document.getElementById('new-room').value.trim();
+        const roomSelect = document.getElementById('add-student-room');
+        const selectedRoom = roomSelect ? roomSelect.value : '';
         const namesInput = document.getElementById('new-usernames-batch').value;
         
         if (!namesInput.trim()) {
             alert('กรุณากรอกรายชื่อนักเรียนอย่างน้อย 1 คน');
             return;
         }
+        if (!selectedRoom) {
+            alert('กรุณาเลือกห้องเรียนก่อน');
+            return;
+        }
 
         const namesList = namesInput.split('\n').map(n => n.trim()).filter(n => n !== '');
         let addedCount = 0;
-        let prefix = "";
-        
-        if (gradeInput && roomInput) {
-            prefix = `[${gradeInput}/${roomInput}] `;
-        } else if (gradeInput) {
-            prefix = `[${gradeInput}] `;
+        const prefix = `[${selectedRoom}] `;
+
+        // ลบ placeholder (ยังไม่มีนักเรียน) ของห้องนี้ถ้ามี
+        const placeholderIdx = mockData.users.findIndex(u => u === `[${selectedRoom}] (ยังไม่มีนักเรียน)`);
+        if (placeholderIdx !== -1) {
+            const removed = mockData.users.splice(placeholderIdx, 1)[0];
+            if (typeof google !== 'undefined' && google.script) { google.script.run.deleteUser(removed); }
+            else { apiCall('deleteUser', { username: removed }); }
         }
 
         namesList.forEach(name => {
@@ -1031,7 +1260,6 @@
             if(!mockData.users.includes(finalName)) {
                 mockData.users.push(finalName);
                 addedCount++;
-                
                 if (typeof google !== 'undefined' && google.script) {
                     google.script.run.saveUser(finalName);
                 } else { apiCall('saveUser', { username: finalName }); }
@@ -1041,11 +1269,8 @@
         if (addedCount > 0) {
             updateAdminView(mockData);
             document.getElementById('new-usernames-batch').value = '';
-            
-            // อัปเดต dropdown ห้องของหน้า Login ให้เห็นห้อง/ชื่อใหม่ทันที
             populateLoginRooms();
-
-            alert(`บันทึกเสร็จเรียบร้อย! (เพิ่มนักเรียนใหม่ ${addedCount} คน)`);
+            alert(`บันทึกเสร็จเรียบร้อย! (เพิ่มนักเรียนใหม่ ${addedCount} คน ลงห้อง ${selectedRoom})`);
         } else {
             alert('ไม่มีรายชื่อใหม่ถูกเพิ่ม (อาจมีชื่อที่ซ้ำอยู่ในระบบอยู่แล้ว)');
         }
@@ -1911,7 +2136,11 @@
     const origOpenAdmin = openAdminPanel;
     openAdminPanel = function() {
         origOpenAdmin();
-        setTimeout(() => populateCustomLessonSelect(), 100);
+        setTimeout(() => {
+            populateCustomLessonSelect();
+            renderRoomListAdmin();
+            refreshRoomDropdowns();
+        }, 100);
     };
 
     window.onload = init;
