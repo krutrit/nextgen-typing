@@ -1549,17 +1549,10 @@
         const visibleText = state.text.substring(startIdx, startIdx + windowSize);
         visibleText.split('').forEach((char, idx) => {
             const span = document.createElement('span'); const absoluteIdx = startIdx + idx;
+            span.innerHTML = char === ' ' ? '&nbsp;' : char; 
             
-            const thaiCombiningMarks = /^[ัิีึืฺุู็่้๊๋์ํ๎]$/;
-            let displayChar = char;
-            if (thaiCombiningMarks.test(char)) {
-                displayChar = '\u25CC' + char;
-            } else if (char === ' ') {
-                displayChar = '&nbsp;';
-            }
-            
-            span.innerHTML = displayChar; 
-            span.className = 'transition-colors duration-100 border-b-2 border-transparent py-1 inline-block text-center' + (char === ' ' ? ' min-w-[0.6em] rounded-sm' : ' min-w-[1em]'); 
+            // ใช้ inline แทน inline-block เพื่อให้วรรณยุกต์และสระภาษาไทยสามารถประกอบร่างกับพยัญชนะข้างหน้าได้เป็นปกติ
+            span.className = 'transition-colors duration-100 border-b-2 border-transparent inline ' + (char === ' ' ? ' min-w-[0.6em] rounded-sm' : ''); 
             
             if (absoluteIdx < state.userInput.length) span.classList.add(state.userInput[absoluteIdx] === state.text[absoluteIdx] ? 'text-indigo-400' : 'text-red-400', state.userInput[absoluteIdx] !== state.text[absoluteIdx] ? 'bg-red-500/10' : 'none');
             else if (absoluteIdx === state.userInput.length) span.classList.add('cursor', 'bg-slate-700', 'text-white', 'rounded');
@@ -1678,6 +1671,7 @@
     }
 
     function resetLessonAndClose() { closeModal(); loadLesson(state.lessonIndex); focusInput(); }
+    function resetLesson() { loadLesson(state.lessonIndex); focusInput(); }
 
     function finishLesson() {
         clearInterval(state.timerInterval);
@@ -2596,16 +2590,13 @@
                     ctx.fillRect(-hw, -hh, p.w, p.h);
 
                     // ตัวอักษรเรืองแสงที่ต้องพิมพ์
-                    const thaiCombiningMarks = /^[ัิีึืฺุู็่้๊๋์ํ๎]$/;
-                    const displayCh = thaiCombiningMarks.test(p.ch) ? '\u25CC' + p.ch : p.ch;
-
                     ctx.font = '900 24px "JetBrains Mono", Sarabun, sans-serif';
                     ctx.fillStyle = '#ffffff';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.shadowColor = '#38bdf8';
                     ctx.shadowBlur = 12;
-                    ctx.fillText(displayCh, 0, 0);
+                    ctx.fillText(p.ch, 0, 0);
                     ctx.restore();
                 } else {
                     // แท่นฟิสิกส์ 2.5D Solid Extruded Wood/Stone Block
@@ -2660,16 +2651,13 @@
                     }
 
                     // ตัวอักษรบนแท่น
-                    const thaiCombiningMarks = /^[ัิีึืฺุู็่้๊๋์ํ๎]$/;
-                    const displayCh = thaiCombiningMarks.test(p.ch) ? '\u25CC' + p.ch : p.ch;
-
                     ctx.font = '900 22px "JetBrains Mono", Sarabun, sans-serif';
                     ctx.fillStyle = p.isLight ? '#451a03' : '#ffffff';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
                     ctx.shadowBlur = 4;
-                    ctx.fillText(displayCh, 0, 1);
+                    ctx.fillText(p.ch, 0, 1);
                 }
 
                 // ธงชัยชนะบนยอดหอคอย
