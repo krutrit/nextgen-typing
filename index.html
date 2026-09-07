@@ -1325,6 +1325,7 @@
         if (csvPendingData.length === 0) { alert('ไม่มีข้อมูลนำเข้า'); return; }
         const fallbackRoom = document.getElementById('csv-student-room').value;
         let addedCount = 0, skippedCount = 0;
+        let newUsers = [];
         csvPendingData.forEach(d => {
             let roomLabel = d.room || fallbackRoom;
             let prefix = '';
@@ -1332,11 +1333,16 @@
             const finalName = prefix + d.name;
             if (!mockData.users.includes(finalName)) {
                 mockData.users.push(finalName);
+                newUsers.push(finalName);
                 addedCount++;
-                if (typeof google !== 'undefined' && google.script) { google.script.run.saveUser(finalName); }
-                else { apiCall('saveUser', { username: finalName }); }
             } else { skippedCount++; }
         });
+        
+        if (newUsers.length > 0) {
+            if (typeof google !== 'undefined' && google.script) { google.script.run.saveUsersBatch(newUsers); }
+            else { apiCall('saveUsersBatch', { usernames: newUsers }); }
+        }
+
         csvPendingData = [];
         document.getElementById('csv-preview').classList.add('hidden');
         updateAdminView(mockData);
@@ -1384,16 +1390,21 @@
             else { apiCall('deleteUser', { username: removed }); }
         }
 
+        let newUsers = [];
         namesList.forEach(name => {
             const finalName = prefix + name;
             if(!mockData.users.includes(finalName)) {
                 mockData.users.push(finalName);
+                newUsers.push(finalName);
                 addedCount++;
-                if (typeof google !== 'undefined' && google.script) {
-                    google.script.run.saveUser(finalName);
-                } else { apiCall('saveUser', { username: finalName }); }
             }
         });
+        
+        if (newUsers.length > 0) {
+            if (typeof google !== 'undefined' && google.script) {
+                google.script.run.saveUsersBatch(newUsers);
+            } else { apiCall('saveUsersBatch', { usernames: newUsers }); }
+        }
 
         if (addedCount > 0) {
             updateAdminView(mockData);

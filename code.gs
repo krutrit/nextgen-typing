@@ -1,6 +1,7 @@
 /**
  * Google Apps Script Backend for NextGen Typing
  * รองรับระบบแยกระดับ TH/EN (Progress Tracking) และการจัดการ User แบบเบา
+ * อัปเดต: แยกฐานข้อมูลตามห้องเรียน (Room_*) และรองรับการบันทึกแบบ Batch (สำหรับ CSV)
  */
 
 const SHEET_USERS = "Data_Users";
@@ -19,28 +20,96 @@ function getData() {
   };
 }
 
+function getOrCreateRoomSheet(name) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    // ชีต Room จะเก็บทั้ง Username, TH_Level, EN_Level ในตัว
+    sheet.appendRow(["Username", "TH_Level", "EN_Level"]);
+  }
+  return sheet;
+}
+
 function saveUser(username) {
-  const sheet = getOrCreateSheet(SHEET_USERS);
+  let sheetName = SHEET_USERS;
+  const match = username.match(/^\[(.*?)\]/);
+  if (match) {
+    sheetName = "Room_" + match[1];
+  }
+  
+  const sheet = sheetName === SHEET_USERS ? getOrCreateSheet(SHEET_USERS) : getOrCreateRoomSheet(sheetName);
   const data = sheet.getDataRange().getValues();
+  
   // เช็คชื่อซ้ำ
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == username) return "Exists";
   }
-  sheet.appendRow([username]);
+  
+  if (sheetName === SHEET_USERS) {
+    sheet.appendRow([username]);
+  } else {
+    sheet.appendRow([username, 0, 0]); // สำหรับ Room_ ให้ใส่ progress ไปด้วย
+  }
+  return "Success";
+}
+
+function saveUsersBatch(usernames) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let roomGroups = {};
+  
+  // จัดกลุ่มตามห้อง
+  usernames.forEach(username => {
+    let sheetName = SHEET_USERS;
+    const match = username.match(/^\[(.*?)\]/);
+    if (match) {
+      sheetName = "Room_" + match[1];
+    }
+    if (!roomGroups[sheetName]) roomGroups[sheetName] = [];
+    roomGroups[sheetName].push(username);
+  });
+  
+  for (let sheetName in roomGroups) {
+    const sheet = sheetName === SHEET_USERS ? getOrCreateSheet(SHEET_USERS) : getOrCreateRoomSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    const existingUsers = new Set(data.slice(1).map(r => r[0]));
+    
+    let newRows = [];
+    for (let u of roomGroups[sheetName]) {
+      if (!existingUsers.has(u)) {
+        if (sheetName === SHEET_USERS) {
+          newRows.push([u]);
+        } else {
+          newRows.push([u, 0, 0]);
+        }
+        existingUsers.add(u);
+      }
+    }
+    
+    if (newRows.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+    }
+  }
   return "Success";
 }
 
 function deleteUser(username) {
-  const sheet = getOrCreateSheet(SHEET_USERS);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == username) {
-      sheet.deleteRow(i + 1);
-      break;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  
+  // ลบผู้ใช้จากทุกชีตที่เกี่ยวข้อง (รวมถึง Progress)
+  for (let s of sheets) {
+    const name = s.getName();
+    if (name === SHEET_USERS || name === SHEET_PROGRESS || name.startsWith("Room_")) {
+      const data = s.getDataRange().getValues();
+      // ลบจากล่างขึ้นบนป้องกัน index คลาดเคลื่อน
+      for (let i = data.length - 1; i >= 1; i--) {
+        if (data[i][0] == username) {
+          s.deleteRow(i + 1);
+        }
+      }
     }
   }
-  // ลบ Progress ด้วย
-  deleteProgress(username);
   return "Success";
 }
 
@@ -54,41 +123,43 @@ function saveSettings(settings) {
 
 // รับ Parameter (Username, Level, Lang) เพื่อแยกลงคอลัมน์ภาษา
 function saveProgress(username, level, lang) {
-  const sheet = getOrCreateSheet(SHEET_PROGRESS);
-  const data = sheet.getDataRange().getValues();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
   let found = false;
 
-  // ค้นหาแถวของผู้ใช้คนนี้
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == username) {
-      if (lang === 'TH') {
-        sheet.getRange(i + 1, 2).setValue(level);
-      } else if (lang === 'EN') {
-        sheet.getRange(i + 1, 3).setValue(level);
+  // ค้นหาแถวของผู้ใช้คนนี้จากชีตทั้งหมด
+  for (let s of sheets) {
+    const name = s.getName();
+    if (name === SHEET_PROGRESS || name.startsWith("Room_")) {
+      const data = s.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][0] == username) {
+          if (lang === 'TH') {
+            s.getRange(i + 1, 2).setValue(level);
+          } else if (lang === 'EN') {
+            s.getRange(i + 1, 3).setValue(level);
+          }
+          found = true;
+          break;
+        }
       }
-      found = true;
-      break;
+      if (found) break;
     }
   }
 
-  // ถ้ายังไม่มีให้เพิ่มใหม่ (Col1 = User, Col2 = TH Level, Col3 = EN Level)
+  // ถ้ายังไม่มีให้เพิ่มใหม่
   if (!found) {
+    let sheetName = SHEET_PROGRESS;
+    const match = username.match(/^\[(.*?)\]/);
+    if (match) {
+      sheetName = "Room_" + match[1];
+    }
+    const sheet = sheetName === SHEET_PROGRESS ? getOrCreateSheet(SHEET_PROGRESS) : getOrCreateRoomSheet(sheetName);
     const thLevel = lang === 'TH' ? level : 0;
     const enLevel = lang === 'EN' ? level : 0;
     sheet.appendRow([username, thLevel, enLevel]);
   }
   return "Success";
-}
-
-function deleteProgress(username) {
-  const sheet = getOrCreateSheet(SHEET_PROGRESS);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == username) {
-      sheet.deleteRow(i + 1);
-      break; 
-    }
-  }
 }
 
 // ==========================================
@@ -107,7 +178,6 @@ function doGet(e) {
 }
 
 // รับคำสั่งเขียนข้อมูล (save/delete) จากหน้าเว็บที่โฮสต์ภายนอก เช่น GitHub Pages
-// ส่ง body มาเป็น JSON string (Content-Type: text/plain) เพื่อเลี่ยง CORS preflight
 function doPost(e) {
   let result = { status: 'error', message: 'Unknown action' };
   try {
@@ -115,6 +185,9 @@ function doPost(e) {
     switch (params.action) {
       case 'saveUser':
         result = { status: 'ok', result: saveUser(params.username) };
+        break;
+      case 'saveUsersBatch':
+        result = { status: 'ok', result: saveUsersBatch(params.usernames) };
         break;
       case 'deleteUser':
         deleteUser(params.username);
@@ -144,20 +217,30 @@ function getOrCreateSheet(name) {
   let sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
-    // สร้าง Header ถ้าเพิ่งสร้าง Sheet ใหม่
     if (name === SHEET_USERS) sheet.appendRow(["Username"]);
     if (name === SHEET_SETTINGS) sheet.appendRow(["Key", "Value"]);
-    // ชีตเก็บ Progress มี 3 คอลัมน์
     if (name === SHEET_PROGRESS) sheet.appendRow(["Username", "TH_Level", "EN_Level"]);
   }
   return sheet;
 }
 
 function getUsers() {
-  const sheet = getOrCreateSheet(SHEET_USERS);
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return ["Guest"]; 
-  return data.slice(1).map(r => r[0]).filter(u => u !== "");
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  let users = [];
+  
+  for (let s of sheets) {
+    const name = s.getName();
+    if (name === SHEET_USERS || name.startsWith("Room_")) {
+      const data = s.getDataRange().getValues();
+      if (data.length > 1) {
+        users = users.concat(data.slice(1).map(r => r[0]).filter(u => u !== ""));
+      }
+    }
+  }
+  
+  if (users.length === 0) return ["Guest"];
+  return [...new Set(users)]; // ลบตัวซ้ำ
 }
 
 function getSettings() {
@@ -173,18 +256,23 @@ function getSettings() {
 }
 
 function getProgress() {
-  const sheet = getOrCreateSheet(SHEET_PROGRESS);
-  const data = sheet.getDataRange().getValues();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
   let progressMap = {};
   
-  // แปลงให้เป็น Object: { 'UserA': { 'TH': 5, 'EN': 2 }, ... } 
-  for (let i = 1; i < data.length; i++) {
-    const user = data[i][0];
-    if (user) {
-      progressMap[user] = {
-        'TH': parseInt(data[i][1]) || 0,
-        'EN': parseInt(data[i][2]) || 0
-      };
+  for (let s of sheets) {
+    const name = s.getName();
+    if (name === SHEET_PROGRESS || name.startsWith("Room_")) {
+      const data = s.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const user = data[i][0];
+        if (user) {
+          progressMap[user] = {
+            'TH': parseInt(data[i][1]) || 0,
+            'EN': parseInt(data[i][2]) || 0
+          };
+        }
+      }
     }
   }
   return progressMap;
