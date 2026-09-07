@@ -21,7 +21,7 @@ function getData() {
 }
 
 function getOrCreateRoomSheet(name) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   let sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
@@ -55,7 +55,7 @@ function saveUser(username) {
 }
 
 function saveUsersBatch(usernames) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   let roomGroups = {};
   
   // จัดกลุ่มตามห้อง
@@ -94,7 +94,7 @@ function saveUsersBatch(usernames) {
 }
 
 function deleteUser(username) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   const sheets = ss.getSheets();
   
   // ลบผู้ใช้จากทุกชีตที่เกี่ยวข้อง (รวมถึง Progress)
@@ -123,7 +123,7 @@ function saveSettings(settings) {
 
 // รับ Parameter (Username, Level, Lang) เพื่อแยกลงคอลัมน์ภาษา
 function saveProgress(username, level, lang) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   const sheets = ss.getSheets();
   let found = false;
 
@@ -213,7 +213,7 @@ function doPost(e) {
 // ==========================================
 
 function getOrCreateSheet(name) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   let sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
@@ -225,7 +225,7 @@ function getOrCreateSheet(name) {
 }
 
 function getUsers() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   const sheets = ss.getSheets();
   let users = [];
   
@@ -256,7 +256,7 @@ function getSettings() {
 }
 
 function getProgress() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById("1iPaLZL5F2nXGPURv2qD3nz_pLTyhhHSjKR8gCsnaWgs");
   const sheets = ss.getSheets();
   let progressMap = {};
   
