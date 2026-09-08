@@ -643,126 +643,78 @@
         <!-- Game Header HUD -->
         <div class="h-14 flex items-center justify-between px-3 sm:px-6 border-b border-white/10 bg-slate-900/90 backdrop-blur-md z-30 shrink-0">
             <div class="flex items-center gap-2 sm:gap-3">
-                <span class="text-2xl" id="climb-theme-emoji">🌳</span>
+                <span class="text-2xl" id="minigame-theme-emoji">🚀</span>
                 <div>
-                    <h2 id="climb-title-text" class="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
-                        หอคอยฟิสิกส์ 2.5D
+                    <h2 id="minigame-title-text" class="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                        Space Defender
                     </h2>
-                    <span class="text-[10px] text-amber-400 font-medium hidden sm:inline" id="climb-lesson-tag">บทเรียนที่ 1</span>
+                    <span class="text-[10px] text-indigo-400 font-medium hidden sm:inline" id="minigame-lesson-tag">Lesson 1</span>
                 </div>
             </div>
 
-            <!-- Middle Status HUD: Wind, Balance, Combo -->
-            <div class="flex items-center gap-2 sm:gap-3">
-                <!-- Wind Indicator -->
-                <div class="flex items-center gap-1.5 bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700 text-xs text-sky-300 backdrop-blur-sm" title="แรงลมและสภาพอากาศ">
-                    <span id="climb-wind-icon">💨</span>
-                    <span id="climb-wind-val" class="font-mono text-[11px] sm:text-xs">0 km/h</span>
-                </div>
-
-                <!-- Seesaw Balance Indicator -->
-                <div id="climb-balance-badge" class="hidden md:flex items-center gap-1.5 bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700 text-xs text-amber-300 backdrop-blur-sm" title="สมดุลแท่นไม้กระดก">
-                    <span>⚖️</span>
-                    <span id="climb-balance-text" class="text-[11px] sm:text-xs">สมดุล</span>
-                    <div class="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden relative">
-                        <div id="climb-balance-meter" class="h-full bg-emerald-400 transition-all duration-75" style="width: 25%; margin-left: 37%;"></div>
-                    </div>
-                </div>
-
-                <!-- Word / Combo Streak -->
-                <div id="climb-combo-badge" class="flex items-center gap-1.5 bg-purple-950/70 px-2.5 py-1 rounded-lg border border-purple-500/40 text-xs font-bold text-purple-300 backdrop-blur-sm">
-                    <span>⚡</span>
-                    <span id="climb-combo-text" class="text-[11px] sm:text-xs font-mono">COMBO 0</span>
-                </div>
+            <!-- Theme Selector -->
+            <div class="flex items-center gap-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
+                <select id="minigame-theme-select" onchange="minigameChangeTheme(this.value)" class="bg-transparent text-xs text-white outline-none cursor-pointer px-2 py-1">
+                    <option value="space">🚀 Space Defender</option>
+                    <option value="cyber">🏎️ Cyber Runner</option>
+                    <option value="samurai">⚔️ Samurai Slash</option>
+                    <option value="minimal">🎵 Minimal Rhythm</option>
+                </select>
             </div>
 
-            <!-- Right HUD: Height, Timer, Exit -->
-            <div class="flex items-center gap-2 sm:gap-3">
-                <div class="flex items-center gap-1.5 bg-white/10 px-2.5 sm:px-3 py-1 rounded-lg border border-white/10 text-xs">
-                    <span class="text-slate-400 hidden sm:inline">ความสูง</span>
-                    <span id="climb-height" class="text-amber-300 font-black text-sm sm:text-base">0</span>
-                    <span class="text-slate-500">/<span id="climb-total">10</span></span>
-                </div>
-                <div class="text-slate-200 font-mono text-xs sm:text-sm bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
-                    ⏱️ <span id="climb-time" class="text-emerald-300 font-bold">0.0s</span>
-                </div>
-                <button onclick="exitGameAndNext()" class="px-2.5 py-1.5 bg-white/10 hover:bg-rose-600/80 rounded-lg text-white font-bold transition flex items-center gap-1 text-xs border border-white/10 cursor-pointer" title="ออกจากเกม">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    <span class="hidden sm:inline">ออก</span>
-                </button>
-            </div>
+            <button onclick="minigameExit()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-rose-500 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer" title="ออกจากการเล่นเกม">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
 
-        <!-- Canvas Area -->
-        <div class="flex-1 relative overflow-hidden bg-slate-950" id="climb-area">
-            <canvas id="climb-canvas" class="absolute inset-0 w-full h-full block z-10"></canvas>
+        <div class="flex-1 relative overflow-hidden bg-slate-950" id="minigame-area">
+            <!-- Canvas Container -->
+            <canvas id="minigame-canvas" class="absolute inset-0 w-full h-full"></canvas>
 
-            <!-- Floating In-game Event Banner (Combo / Springboard / Seesaw warning) -->
-            <div id="climb-float-banner" class="pointer-events-none absolute top-6 left-1/2 -translate-x-1/2 z-25 transition-all duration-300 opacity-0 transform -translate-y-4 scale-95 flex items-center gap-2 px-5 py-2 rounded-full shadow-2xl backdrop-blur font-black text-xs sm:text-sm border border-amber-300/40 bg-slate-900/90 text-amber-300">
-                <span id="climb-banner-icon">🚀</span>
-                <span id="climb-banner-text">SPRINGBOARD BOOST!</span>
+            <!-- Score / Word HUD Overlay -->
+            <div class="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none z-20">
+                <div class="bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-2xl">
+                    <div id="minigame-target-word" class="text-3xl font-mono text-white tracking-[0.2em] font-bold"></div>
+                    <div class="flex gap-4 mt-2">
+                        <span class="text-xs text-slate-400">พิมพ์ถูก: <span id="minigame-hits" class="text-emerald-400 font-bold">0</span></span>
+                        <span class="text-xs text-slate-400">Combo: <span id="minigame-combo" class="text-amber-400 font-bold">0</span></span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Start Overlay -->
-            <div id="climb-start-overlay" class="absolute inset-0 flex flex-col items-center justify-center z-30 p-4 text-center" style="background: radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.92) 100%); backdrop-filter: blur(6px);">
-                <div class="relative mb-3">
-                    <div class="text-6xl sm:text-7xl mb-1 animate-bounce">🐰</div>
-                    <div class="w-16 h-2.5 bg-black/40 rounded-full blur-sm mx-auto"></div>
+            <!-- Start Modal -->
+            <div id="minigame-start-modal" class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
+                <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 text-center max-w-sm shadow-2xl">
+                    <div id="minigame-start-icon" class="text-6xl mb-4">🚀</div>
+                    <h3 class="text-xl font-bold text-white mb-2">พร้อมหรือยัง?</h3>
+                    <p class="text-sm text-slate-400 mb-6" id="minigame-start-desc">พิมพ์ตัวอักษรให้ถูกต้องเพื่อทำลายเป้าหมาย</p>
+                    <button onclick="minigameStart()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer">เริ่มเกม!</button>
                 </div>
-                <h1 class="text-3xl sm:text-4xl font-black text-white mb-1.5 tracking-tight" style="text-shadow: 0 0 25px rgba(245,158,11,0.4);">
-                    หอคอยฟิสิกส์ 2.5D
-                </h1>
-                <p class="text-amber-400 font-bold text-xs sm:text-sm mb-4">Physics-Based Movement • Dynamic Letters • Environmental Hazards</p>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-w-2xl text-left mb-6 text-xs text-slate-300">
-                    <div class="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
-                        <div class="font-bold text-amber-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm"><span>⚖️</span> ฟิสิกส์ & Seesaw</div>
-                        <p class="leading-relaxed">ระบบ IK ขา-แขนแนบระนาบ ตัวอักษรมีมวลต่างกัน ระวังแท่นคานกระดกเอียงคว่ำ หากตกจะกลิ้ง Ragdoll!</p>
-                    </div>
-                    <div class="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
-                        <div class="font-bold text-sky-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm"><span>✨</span> Type-to-Spawn</div>
-                        <p class="leading-relaxed">พิมพ์ตัวอักษรเรืองแสงที่ลอยอยู่เพื่อเสกแท่นเหยียบ สะกดเป็นคำศัพท์เพื่อเปิด Springboard ซูเปอร์จัมป์!</p>
-                    </div>
-                    <div class="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
-                        <div class="font-bold text-rose-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm"><span>🌪️</span> ลม & หอคอยถล่ม</div>
-                        <p class="leading-relaxed">แรงลมผลักตัวละครและตัวอักษรเบา และแท่นด้านล่างจะค่อยๆ ร้าวถล่มลงมา ต้องรีบปีนขึ้นไปเรื่อยๆ!</p>
-                    </div>
-                </div>
-
-                <button onclick="startGame()" class="px-9 py-3 rounded-2xl text-base sm:text-lg font-black tracking-wide cursor-pointer transition-all transform hover:scale-105 active:scale-95 text-slate-950 shadow-xl" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 0 25px rgba(245,158,11,0.5);">
-                    เริ่มปีนหอคอย! 🧗
-                </button>
             </div>
 
             <!-- Win Modal -->
-            <div id="climb-win-modal" class="hidden absolute inset-0 z-[60] flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, rgba(15,23,42,0.85) 0%, rgba(2,6,23,0.95) 100%); backdrop-filter: blur(8px);">
-                <div class="p-6 sm:p-8 rounded-3xl shadow-2xl max-w-md w-full text-center relative overflow-hidden bg-slate-900/95 border border-amber-500/30">
-                    <div class="text-5xl sm:text-6xl mb-2 animate-bounce">🏆</div>
-                    <h2 class="text-2xl sm:text-3xl font-black mb-1 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">พิชิตยอดหอคอย!</h2>
-                    <p class="text-slate-400 mb-5 text-xs sm:text-sm">ยอดเยี่ยมมาก! คุณผ่านบททดสอบฟิสิกส์และความเร็วในการพิมพ์ 🎉</p>
-                    
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-                        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 font-bold">เวลา</p>
-                            <p class="text-base sm:text-lg font-black text-emerald-400"><span id="win-time">0.0</span>s</p>
+            <div id="minigame-win-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
+                <div class="bg-slate-900 p-8 rounded-3xl border border-emerald-500/30 text-center max-w-md w-full shadow-2xl">
+                    <div class="text-6xl mb-4 animate-bounce">🏆</div>
+                    <h2 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">ยอดเยี่ยมมาก!</h2>
+                    <p class="text-slate-400 text-sm mb-6">คุณเคลียร์บทเรียนนี้สำเร็จแล้ว</p>
+                    <div class="grid grid-cols-3 gap-4 mb-8">
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5">
+                            <p class="text-[10px] text-slate-400 mb-1">ความแม่นยำ</p>
+                            <p class="text-lg font-bold text-emerald-400" id="minigame-win-acc">100%</p>
                         </div>
-                        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 font-bold">พิมพ์ถูก</p>
-                            <p class="text-base sm:text-lg font-black text-white" id="win-hits">0</p>
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5">
+                            <p class="text-[10px] text-slate-400 mb-1">เวลา (วิ)</p>
+                            <p class="text-lg font-bold text-sky-400" id="minigame-win-time">0.0</p>
                         </div>
-                        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 font-bold">คำคอมโบ</p>
-                            <p class="text-base sm:text-lg font-black text-purple-400" id="win-combos">0</p>
-                        </div>
-                        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 font-bold">Ragdoll ล้ม</p>
-                            <p class="text-base sm:text-lg font-black text-rose-400" id="win-ragdolls">0</p>
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5">
+                            <p class="text-[10px] text-slate-400 mb-1">Max Combo</p>
+                            <p class="text-lg font-bold text-amber-400" id="minigame-win-combo">0</p>
                         </div>
                     </div>
-
-                    <div class="flex flex-col gap-2.5">
-                        <button onclick="finishGameAndGoNext()" class="w-full py-3 rounded-xl font-bold text-sm tracking-wider text-white shadow-lg transition transform hover:-translate-y-0.5 cursor-pointer bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500">ไปบทเรียนถัดไป →</button>
-                        <button onclick="resetGame(); startGame();" class="w-full py-2.5 rounded-xl font-bold text-xs text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 transition cursor-pointer border border-white/10">เล่นอีกครั้ง 🔁</button>
+                    <div class="flex flex-col gap-3">
+                        <button onclick="minigameNextLesson()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-bold shadow-lg transition cursor-pointer">ไปบทเรียนถัดไป →</button>
+                        <button onclick="minigameExit()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition cursor-pointer">ปิดหน้าต่างเกม</button>
                     </div>
                 </div>
             </div>
@@ -1844,1126 +1796,523 @@
     const CLIMB_ROLLING_CHARS = new Set(['O','o','0','Q','ถ','ด']);
     const CLIMB_SLIDING_CHARS = new Set(['Q','q','J','j','S','s','Z','z','ร','ล']);
 
-    const CLIMB_COMBO_WORDS = [
-        'JUMP', 'FLY', 'RUN', 'WIN', 'TOP', 'SKY', 'FAST', 'STAR', 'HERO', 'COOL', 'HIGH', 'GO', 'UP', 'SUPER', 'BOOST',
-        'มา', 'ไป', 'ดี', 'บิน', 'วิ่ง', 'พุ่ง', 'เร็ว', 'สุด', 'ดาว', 'ชนะ', 'ก้าว', 'สูง'
-    ];
+// ==========================================
+// MULTI-THEME MINIGAME ENGINE
+// ==========================================
+const Minigame = {
+    canvas: null,
+    ctx: null,
+    state: 'idle', // idle, playing, won
+    theme: 'space',
+    words: [],
+    targets: [], // Active targets on screen
+    currentWordIdx: 0,
+    currentCharIdx: 0,
+    hits: 0,
+    errors: 0,
+    combo: 0,
+    maxCombo: 0,
+    startTime: 0,
+    lastTime: 0,
+    particles: [],
+    backgroundOffset: 0,
+    animationId: null
+};
 
-    // ธีมหมุนเวียนตามบทเรียน (lessonIndex)
-    const CLIMB_THEMES = [
-        { name: 'ป่าไม้ลอยฟ้า',    emoji: '🌳', skyTop: '#14532d', skyBot: '#15803d', ambient: '#4ade80', weather: 'leaves',  windBase: 8  },
-        { name: 'ถ้ำผลึกคริสตัล', emoji: '🕯️', skyTop: '#0c0a09', skyBot: '#292524', ambient: '#a8a29e', weather: 'dust',    windBase: 2  },
-        { name: 'เวหาพายุเมฆ',     emoji: '☁️', skyTop: '#0369a1', skyBot: '#38bdf8', ambient: '#bae6fd', weather: 'windlines', windBase: 24 },
-        { name: 'อัสดงสุริยัน',    emoji: '🌇', skyTop: '#7c2d12', skyBot: '#ea580c', ambient: '#fdba74', weather: 'embers',  windBase: 12 },
-        { name: 'อวกาศไร้ขอบเขต', emoji: '🌌', skyTop: '#020617', skyBot: '#1e1b4b', ambient: '#c084fc', weather: 'stars',   windBase: 4  },
-        { name: 'มรสุมใต้สมุทร',   emoji: '🐠', skyTop: '#082f49', skyBot: '#0e7490', ambient: '#67e8f9', weather: 'rain',    windBase: 18 }
-    ];
-
-    // ดึงชุดตัวอักษรของบทเรียนปัจจุบัน
-    function climbCharPool() {
-        const lesson = curriculum[state.lang][state.lessonIndex];
-        let src = '';
-        if (lesson.source && lesson.source.length) src = lesson.source.join('');
-        else src = lesson.chars || '';
-        if (src === 'all' || src === 'common') {
-            src = state.lang === 'TH' ? 'ฟหกดเ้่าสวงยรนบลปแอิืทมใฝ' : 'abcdefghijklmnopqrstuvwxyz';
-        }
-        src = src.replace(/\s/g, '');
-        let uniq = [...new Set(src.split(''))];
-        if (uniq.length < 2) {
-            uniq = (state.lang === 'TH' ? 'ฟหกดเ้าสวง' : 'asdfghjkl').split('');
-        }
-        return uniq;
+function minigameInit() {
+    Minigame.canvas = document.getElementById('minigame-canvas');
+    if(!Minigame.canvas) return;
+    Minigame.ctx = Minigame.canvas.getContext('2d');
+    
+    // Resize
+    window.removeEventListener('resize', minigameResize);
+    window.addEventListener('resize', minigameResize);
+    minigameResize();
+    
+    // Load preference
+    const savedTheme = localStorage.getItem('ngt_minigame_theme');
+    if (savedTheme) {
+        document.getElementById('minigame-theme-select').value = savedTheme;
+        minigameChangeTheme(savedTheme);
+    } else {
+        minigameChangeTheme('space');
     }
+}
 
-    function climbPickOne(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
+function minigameResize() {
+    if(!Minigame.canvas) return;
+    const rect = Minigame.canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    Minigame.canvas.width = rect.width * dpr;
+    Minigame.canvas.height = rect.height * dpr;
+    Minigame.ctx.scale(dpr, dpr);
+}
 
-    function climbPickTwo(pool) {
-        const a = climbPickOne(pool);
-        if (pool.length === 1) return [a, a];
-        let b, guard = 0;
-        do { b = climbPickOne(pool); guard++; } while (b === a && guard < 25);
-        return [a, b];
+function minigameChangeTheme(theme) {
+    Minigame.theme = theme;
+    localStorage.setItem('ngt_minigame_theme', theme);
+    
+    // Update UI headers
+    const headers = {
+        'space': { emoji: '🚀', text: 'Space Defender' },
+        'cyber': { emoji: '🏎️', text: 'Cyber Runner' },
+        'samurai': { emoji: '⚔️', text: 'Samurai Slash' },
+        'minimal': { emoji: '🎵', text: 'Minimal Rhythm' }
+    };
+    if (headers[theme]) {
+        document.getElementById('minigame-theme-emoji').innerText = headers[theme].emoji;
+        document.getElementById('minigame-title-text').innerText = headers[theme].text;
+        document.getElementById('minigame-start-icon').innerText = headers[theme].emoji;
+        document.getElementById('minigame-start-desc').innerText = 
+            theme === 'minimal' ? 'พิมพ์ตัวอักษรให้ทันจังหวะก่อนที่จะเลยเส้น' : 
+            theme === 'samurai' ? 'สวมวิญญาณซามูไร พิมพ์ฟันเป้าหมายให้ขาด!' : 
+            theme === 'cyber' ? 'พิมพ์ให้ไวเพื่อพุ่งทะลวงกำแพงแสง' : 
+            'พิมพ์ตัวอักษรให้ถูกต้องเพื่อทำลายเป้าหมาย';
     }
+}
 
-    // 2-Bone Analytical Inverse Kinematics (IK) Solver
-    function climbSolveIK(x0, y0, xt, yt, L1, L2, bendDir = 1) {
-        const dx = xt - x0;
-        const dy = yt - y0;
-        let dist = Math.hypot(dx, dy);
-        const maxDist = (L1 + L2) * 0.999;
-        const minDist = Math.abs(L1 - L2) + 0.001;
-        dist = Math.max(minDist, Math.min(maxDist, dist));
+function startMiniGame() {
+    closeModal();
+    state.isGameMode = true; // Flag for global input handler
+    const ui = document.getElementById('game-ui');
+    ui.classList.remove('hidden');
+    ui.style.display = 'flex';
+    document.getElementById('minigame-start-modal').classList.remove('hidden');
+    document.getElementById('minigame-win-modal').classList.add('hidden');
+    
+    const lesson = curriculum[state.lang][state.lessonIndex];
+    document.getElementById('minigame-lesson-tag').innerText = lesson.name || ('บทเรียนที่ ' + (state.lessonIndex+1));
+    
+    minigameInit();
+    
+    // Generate words from current lesson
+    const fullText = generateContent(lesson);
+    Minigame.words = fullText.split(/\s+/).filter(w => w.length > 0);
+    if(Minigame.words.length === 0) Minigame.words = ['TEST'];
+    
+    Minigame.state = 'idle';
+    minigameRenderFrame(0); // Draw background
+}
 
-        const baseAngle = Math.atan2(dy, dx);
-        const cosVal = (L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist);
-        const alpha = Math.acos(Math.max(-1, Math.min(1, cosVal)));
-        const kneeAngle = baseAngle + bendDir * alpha;
+function minigameStart() {
+    document.getElementById('minigame-start-modal').classList.add('hidden');
+    Minigame.state = 'playing';
+    Minigame.targets = [];
+    Minigame.currentWordIdx = 0;
+    Minigame.currentCharIdx = 0;
+    Minigame.hits = 0;
+    Minigame.errors = 0;
+    Minigame.combo = 0;
+    Minigame.maxCombo = 0;
+    Minigame.startTime = performance.now();
+    Minigame.lastTime = performance.now();
+    Minigame.particles = [];
+    Minigame.backgroundOffset = 0;
+    
+    minigameSpawnTarget();
+    minigameUpdateHUD();
+    cancelAnimationFrame(Minigame.animationId);
+    Minigame.animationId = requestAnimationFrame(minigameLoop);
+    focusInput();
+}
 
-        return {
-            kneeX: x0 + L1 * Math.cos(kneeAngle),
-            kneeY: y0 + L1 * Math.sin(kneeAngle),
-            footX: xt,
-            footY: yt
-        };
+function minigameExit() {
+    state.isGameMode = false;
+    Minigame.state = 'idle';
+    cancelAnimationFrame(Minigame.animationId);
+    document.getElementById('game-ui').classList.add('hidden');
+    document.getElementById('game-ui').style.display = 'none';
+}
+
+function minigameNextLesson() {
+    minigameExit();
+    if (state.lessonIndex < curriculum[state.lang].length - 1) {
+        state.lessonIndex++;
+        loadLesson(state.lessonIndex);
     }
+}
 
-    // --- Letter Physics Properties Generator ---
-    function climbGetPlankProps(ch) {
-        const isHeavy = CLIMB_HEAVY_CHARS.has(ch);
-        const isLight = CLIMB_LIGHT_CHARS.has(ch);
-        const isSeesaw = CLIMB_SEESAW_CHARS.has(ch);
-        const isRolling = CLIMB_ROLLING_CHARS.has(ch);
-        const isSliding = CLIMB_SLIDING_CHARS.has(ch);
-
-        let mass = 4.5;
-        let width = 110;
-        let springK = 8000;
-        let friction = 0.85;
-
-        if (isHeavy) {
-            mass = 9.0;
-            width = 125;
-            springK = 18000;
-        } else if (isLight) {
-            mass = 2.0;
-            width = 85;
-            springK = 5000;
-        }
-
-        if (isSeesaw) {
-            springK = 3800; // จุดหมุนแคบ ไวต่อน้ำหนักแบบ Seesaw
-        }
-
-        if (isSliding) {
-            friction = 0.3; // หางสไลเดอร์ ลื่นไถล
-        }
-
-        return { isHeavy, isLight, isSeesaw, isRolling, isSliding, mass, width, springK, friction };
+function minigameSpawnTarget() {
+    if (Minigame.currentWordIdx >= Minigame.words.length) {
+        minigameWin();
+        return;
     }
+    
+    const word = Minigame.words[Minigame.currentWordIdx];
+    const canvasW = Minigame.canvas.width / (window.devicePixelRatio || 1);
+    
+    Minigame.targets.push({
+        word: word,
+        x: canvasW * 0.2 + Math.random() * (canvasW * 0.6),
+        y: -50,
+        speed: 1.5 + Math.random() * 1.5,
+        hitIdx: 0,
+        active: true
+    });
+}
 
-    // --- Initialize Tower World ---
-    function climbBuildTower() {
-        const c = state.climb;
-        c.rows = [];
-        c.particles = [];
-        c.shockwaves = [];
-        c.debris = [];
-        c.weatherParticles = [];
-
-        // แถวล่างสุด (Ground)
-        c.rows[0] = {
-            surface: c.GROUND_H,
-            isGround: true,
-            planks: [{
-                id: 'ground',
-                row: 0,
-                x: 0.5,
-                y: c.GROUND_H,
-                w: 1000,
-                h: 40,
-                ch: 'GROUND',
-                angle: 0,
-                angVel: 0,
-                isGround: true,
-                isSpawned: true,
-                stepped: true,
-                mass: 1000,
-                springK: 100000,
-                friction: 0.9
-            }]
-        };
-
-        // สร้างแถวตัวอักษร
-        for (let r = 1; r < c.TOTAL_ROWS; r++) {
-            const xs = (r % 2 === 1) ? [0.32, 0.68] : [0.25, 0.75];
-            const [chA, chB] = climbPickTwo(c.charPool);
-            const surface = c.GROUND_H + r * c.ROW_HEIGHT;
-            const rowPlanks = [];
-
-            [{ x: xs[0], ch: chA }, { x: xs[1], ch: chB }].forEach((p, idx) => {
-                const props = climbGetPlankProps(p.ch);
-                rowPlanks.push({
-                    id: `p_${r}_${idx}`,
-                    row: r,
-                    x: p.x, // normalized 0..1
-                    y: surface,
-                    w: props.width,
-                    h: 28,
-                    ch: p.ch,
-                    angle: 0,
-                    angVel: 0,
-                    angAcc: 0,
-                    isSpawned: r === 1, // แถวแรกเกิดทันที แถวถัดไปเป็น Ghost (Type-to-Spawn)
-                    ghostPulse: Math.random() * Math.PI,
-                    stepped: false,
-                    isHeavy: props.isHeavy,
-                    isLight: props.isLight,
-                    isSeesaw: props.isSeesaw,
-                    isRolling: props.isRolling,
-                    isSliding: props.isSliding,
-                    mass: props.mass,
-                    springK: props.springK,
-                    friction: props.friction,
-                    crumbling: false,
-                    crumbleTimer: 2.8,
-                    isCrumbled: false,
-                    cracks: []
-                });
-            });
-
-            c.rows[r] = { surface, planks: rowPlanks };
+function handleGameInput(e) {
+    if (Minigame.state !== 'playing' || Minigame.targets.length === 0) return;
+    
+    const target = Minigame.targets[0];
+    const expectedChar = target.word[Minigame.currentCharIdx];
+    const typedChar = getVirtualChar(e.key);
+    
+    if (typedChar === expectedChar || e.key === expectedChar) {
+        // Hit
+        Minigame.currentCharIdx++;
+        Minigame.hits++;
+        Minigame.combo++;
+        if (Minigame.combo > Minigame.maxCombo) Minigame.maxCombo = Minigame.combo;
+        
+        if (state.isSoundOn) playSound(true);
+        minigameCreateParticles(target.x, target.y + 50, '#10b981', 8);
+        
+        if (Minigame.currentCharIdx >= target.word.length) {
+            // Word complete
+            minigameCreateParticles(target.x, target.y + 50, '#3b82f6', 25);
+            Minigame.targets.shift();
+            Minigame.currentWordIdx++;
+            Minigame.currentCharIdx = 0;
+            setTimeout(minigameSpawnTarget, Minigame.theme === 'cyber' ? 200 : 400);
         }
-
-        // ยอดหอคอย (Goal Platform)
-        const goalSurface = c.GROUND_H + c.TOTAL_ROWS * c.ROW_HEIGHT;
-        const goalChar = climbPickOne(c.charPool);
-        c.rows[c.TOTAL_ROWS] = {
-            surface: goalSurface,
-            isGoal: true,
-            planks: [{
-                id: 'goal_plank',
-                row: c.TOTAL_ROWS,
-                x: 0.5,
-                y: goalSurface,
-                w: 150,
-                h: 32,
-                ch: goalChar,
-                angle: 0,
-                angVel: 0,
-                angAcc: 0,
-                isSpawned: false,
-                isGoal: true,
-                stepped: false,
-                mass: 20,
-                springK: 25000,
-                friction: 0.9,
-                crumbling: false
-            }]
-        };
-
-        // ตั้งค่าตัวละคร
-        c.char = {
-            x: 0.5, // normalized (0..1)
-            worldX: 0, // computed pixels
-            worldY: c.GROUND_H,
-            vx: 0,
-            vy: 0,
-            grounded: true,
-            facing: 1,
-            state: 'idle', // 'idle', 'jump', 'ragdoll', 'recovery'
-            currentPlank: c.rows[0].planks[0],
-            jumpTargetPlank: null,
-            targetX: 0.5,
-            targetY: c.GROUND_H,
-            jumpProgress: 1,
-            jumpDuration: 0.45,
-            // Skeletal IK Nodes
-            hipY: 18,
-            headY: 34,
-            leftFoot: { x: 0, y: 0 },
-            rightFoot: { x: 0, y: 0 },
-            leftKnee: { x: 0, y: 0 },
-            rightKnee: { x: 0, y: 0 },
-            leftHand: { x: 0, y: 0 },
-            rightHand: { x: 0, y: 0 },
-            blinkTimer: 2.0,
-            isBlinking: false,
-            // Ragdoll Structure
-            ragdoll: null,
-            ragdollTime: 0
-        };
-
-        // ละอองสภาพแวดล้อมเริ่มต้น
-        for (let i = 0; i < 40; i++) {
-            c.weatherParticles.push({
-                x: Math.random(),
-                y: Math.random() * (goalSurface + 300),
-                vx: (Math.random() - 0.5) * 20,
-                vy: -Math.random() * 40 - 10,
-                size: 2 + Math.random() * 4,
-                rot: Math.random() * Math.PI * 2,
-                rotSpeed: (Math.random() - 0.5) * 4,
-                opacity: 0.3 + Math.random() * 0.5
-            });
-        }
+    } else {
+        // Miss
+        if (['Shift', 'Control', 'Alt', 'CapsLock', 'Tab', 'Meta', 'Backspace', 'Enter'].includes(e.key)) return;
+        Minigame.errors++;
+        Minigame.combo = 0;
+        if (state.isSoundOn) playSound(false);
+        minigameCreateParticles(target.x, target.y + 50, '#ef4444', 10);
     }
+    minigameUpdateHUD();
+}
 
-    // --- Create Verlet Ragdoll Skeleton ---
-    function climbCreateRagdoll(charX, charY, vx, vy) {
-        const points = [
-            { id: 'head',     x: charX,       y: charY + 32, oldX: charX - vx * 0.016,       oldY: charY + 32 - vy * 0.016,       mass: 1.0, radius: 10 },
-            { id: 'chest',    x: charX,       y: charY + 22, oldX: charX - vx * 0.016,       oldY: charY + 22 - vy * 0.016,       mass: 1.5, radius: 9 },
-            { id: 'hips',     x: charX,       y: charY + 14, oldX: charX - vx * 0.016,       oldY: charY + 14 - vy * 0.016,       mass: 1.2, radius: 8 },
-            { id: 'lHand',    x: charX - 12,  y: charY + 16, oldX: charX - 12 - vx * 0.016,  oldY: charY + 16 - vy * 0.016,  mass: 0.5, radius: 5 },
-            { id: 'rHand',    x: charX + 12,  y: charY + 16, oldX: charX + 12 - vx * 0.016,  oldY: charY + 16 - vy * 0.016,  mass: 0.5, radius: 5 },
-            { id: 'lKnee',    x: charX - 6,   y: charY + 7,  oldX: charX - 6 - vx * 0.016,   oldY: charY + 7 - vy * 0.016,   mass: 0.6, radius: 5 },
-            { id: 'rKnee',    x: charX + 6,   y: charY + 7,  oldX: charX + 6 - vx * 0.016,   oldY: charY + 7 - vy * 0.016,   mass: 0.6, radius: 5 },
-            { id: 'lFoot',    x: charX - 8,   y: charY,      oldX: charX - 8 - vx * 0.016,   oldY: charY - vy * 0.016,       mass: 0.7, radius: 5 },
-            { id: 'rFoot',    x: charX + 8,   y: charY,      oldX: charX + 8 - vx * 0.016,   oldY: charY - vy * 0.016,       mass: 0.7, radius: 5 }
-        ];
-
-        const sticks = [
-            { p1: 0, p2: 1, len: 10 }, // head - chest
-            { p1: 1, p2: 2, len: 8  }, // chest - hips
-            { p1: 1, p2: 3, len: 13 }, // chest - lHand
-            { p1: 1, p2: 4, len: 13 }, // chest - rHand
-            { p1: 2, p2: 5, len: 8  }, // hips - lKnee
-            { p1: 2, p2: 6, len: 8  }, // hips - rKnee
-            { p1: 5, p2: 7, len: 8  }, // lKnee - lFoot
-            { p1: 6, p2: 8, len: 8  }  // rKnee - rFoot
-        ];
-
-        return { points, sticks };
+function minigameUpdateHUD() {
+    if (Minigame.targets.length > 0) {
+        const t = Minigame.targets[0];
+        const typed = t.word.substring(0, Minigame.currentCharIdx);
+        const rem = t.word.substring(Minigame.currentCharIdx);
+        document.getElementById('minigame-target-word').innerHTML = 
+            `<span class="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]">${typed}</span><span class="text-slate-300">${rem}</span>`;
+    } else {
+        document.getElementById('minigame-target-word').innerHTML = '';
     }
+    document.getElementById('minigame-hits').innerText = Minigame.hits;
+    document.getElementById('minigame-combo').innerText = Minigame.combo;
+}
 
-    // --- Show In-Game Floating Notice / Banner ---
-    function climbShowBanner(icon, text) {
-        const el = document.getElementById('climb-float-banner');
-        const iconEl = document.getElementById('climb-banner-icon');
-        const textEl = document.getElementById('climb-banner-text');
-        if (!el || !iconEl || !textEl) return;
-        iconEl.innerText = icon;
-        textEl.innerText = text;
-        el.classList.remove('opacity-0', '-translate-y-4', 'scale-95');
-        el.classList.add('opacity-100', 'translate-y-0', 'scale-100');
-        clearTimeout(climbShowBanner._timeout);
-        climbShowBanner._timeout = setTimeout(() => {
-            el.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
-            el.classList.add('opacity-0', '-translate-y-4', 'scale-95');
-        }, 1800);
-    }
-
-    // --- Check Word / Spelling Combo ---
-    function climbCheckSpellingCombo(ch) {
-        const c = state.climb;
-        c.recentSpelled += ch;
-        if (c.recentSpelled.length > 8) c.recentSpelled = c.recentSpelled.slice(-8);
-
-        // ตรวจสอบคำศัพท์ในพจนานุกรม
-        for (const word of CLIMB_COMBO_WORDS) {
-            if (c.recentSpelled.toUpperCase().endsWith(word.toUpperCase())) {
-                return word;
-            }
-        }
-        return null;
-    }
-
-    // --- Physics Simulation Loop (60 FPS) ---
-    function climbUpdatePhysics(dt) {
-        const c = state.climb;
-        if (!c || c.won) return;
-
-        c.gameTime += dt;
-
-        // 1. จำลองแรงลม (Wind Force Simulation)
-        const baseW = c.theme.windBase || 10;
-        const gust = (Math.sin(c.gameTime * 0.7) > 0.6) ? 14 : 0;
-        c.windSpeed = Math.sin(c.gameTime * 0.45) * baseW + Math.cos(c.gameTime * 1.2) * 5 + gust;
-        const windKmh = Math.round(c.windSpeed * 1.8);
-        const windValEl = document.getElementById('climb-wind-val');
-        if (windValEl) {
-            const dirArrow = windKmh > 0 ? '→' : (windKmh < 0 ? '←' : '•');
-            windValEl.innerText = `${Math.abs(windKmh)} km/h ${dirArrow}`;
-        }
-
-        // 2. จำลองฟิสิกส์ของแท่น (Planks Dynamics & Seesaw)
-        const areaW = c.canvas ? c.canvas.width / c.dpr : 800;
-        let activeTiltAngle = 0;
-
-        for (let r = 1; r <= c.TOTAL_ROWS; r++) {
-            const row = c.rows[r];
-            if (!row) continue;
-
-            // Destructible Tower: แท่นที่อยู่ต่ำกว่าตัวละครเกิน 2 แถวเริ่มพังถล่ม
-            const rowDiff = c.currentRow - r;
-            const shouldCrumble = rowDiff >= 2;
-
-            row.planks.forEach(p => {
-                const px = p.x * areaW;
-
-                // Destructible Countdown & Fragmenting
-                if (shouldCrumble && !p.isCrumbled && !p.isGoal) {
-                    p.crumbling = true;
-                    p.crumbleTimer -= dt;
-                    if (p.crumbleTimer <= 0) {
-                        p.isCrumbled = true;
-                        playClimbSound('crumble');
-                        // สร้างเศษหิน/ไม้แตกสลาย (Physics Debris)
-                        for (let k = 0; k < 7; k++) {
-                            c.debris.push({
-                                x: px + (Math.random() - 0.5) * p.w,
-                                y: p.y + (Math.random() - 0.5) * p.h,
-                                vx: (Math.random() - 0.5) * 120 + c.windSpeed * 2,
-                                vy: Math.random() * 80 + 30,
-                                rot: Math.random() * Math.PI,
-                                rotSpeed: (Math.random() - 0.5) * 8,
-                                size: 8 + Math.random() * 12,
-                                color: p.isHeavy ? '#78350f' : '#b45309',
-                                alpha: 1.0
-                            });
-                        }
-                    }
-                }
-
-                if (p.isCrumbled) return;
-
-                // คำนวณแรงบิด Torque สำหรับ Seesaw Balance
-                let torque = -p.springK * p.angle; // แรงคืนรูปจากแกน
-                p.angVel *= Math.pow(0.92, dt * 60); // Damping
-
-                // หากตัวละครยืนอยู่บนแท่นนี้ (Normal Mode)
-                if (c.char.currentPlank === p && c.char.state !== 'ragdoll') {
-                    const charOffset = c.char.worldX - px;
-                    torque += charOffset * (1.0 * 980); // น้ำหนักตัวละครกดลงตามระยะห่างแกน
-                    activeTiltAngle = p.angle;
-                }
-
-                // ลมพัดกระทบตัวอักษรที่มีมวลเบา
-                if (p.isLight) {
-                    torque += c.windSpeed * 12 * Math.cos(p.angle);
-                }
-
-                const inertia = (1 / 12) * p.mass * (p.w * p.w);
-                p.angAcc = torque / inertia;
-                p.angVel += p.angAcc * dt;
-                p.angle += p.angVel * dt;
-
-                // ควบคุมมุมไม่ให้หมุนเกินพิกัด
-                p.angle = Math.max(-0.75, Math.min(0.75, p.angle));
-
-                // ถ้าเอียงเกินขีดอันตราย (> ~32 องศา) ตัวละครลื่นไถลตกสู่ Ragdoll!
-                if (c.char.currentPlank === p && c.char.state !== 'ragdoll' && Math.abs(p.angle) > 0.55) {
-                    climbTriggerRagdoll('แท่นไม้กระดกคว่ำ! ลื่นตกแล้ว ⚠️');
-                }
-            });
-        }
-
-        // อัปเดต Seesaw Balance Meter ใน HUD
-        const balanceMeter = document.getElementById('climb-balance-meter');
-        const balanceText = document.getElementById('climb-balance-text');
-        if (balanceMeter && balanceText) {
-            const tiltPct = Math.min(1, Math.abs(activeTiltAngle) / 0.55);
-            const offset = (activeTiltAngle / 0.55) * 38;
-            balanceMeter.style.marginLeft = `${37 + offset}%`;
-            if (tiltPct > 0.7) {
-                balanceMeter.className = 'h-full bg-rose-500 animate-pulse transition-all duration-75';
-                balanceText.innerText = 'อันตราย!';
-                balanceText.className = 'text-[11px] sm:text-xs text-rose-400 font-bold';
-            } else if (tiltPct > 0.35) {
-                balanceMeter.className = 'h-full bg-amber-400 transition-all duration-75';
-                balanceText.innerText = 'เอียง';
-                balanceText.className = 'text-[11px] sm:text-xs text-amber-300';
-            } else {
-                balanceMeter.className = 'h-full bg-emerald-400 transition-all duration-75';
-                balanceText.innerText = 'สมดุล';
-                balanceText.className = 'text-[11px] sm:text-xs text-slate-300';
-            }
-        }
-
-        // 3. จัดการสถานะตัวละคร (Character State Machine)
-        const char = c.char;
-
-        if (char.state === 'jump') {
-            char.jumpProgress += dt / char.jumpDuration;
-            const t = Math.min(1, char.jumpProgress);
-            // Parabolic Jump Trajectory with horizontal momentum
-            const arcH = 65;
-            const currentArcY = Math.sin(t * Math.PI) * arcH;
-            char.worldX = char.startX + (char.targetX - char.startX) * t;
-            char.worldY = char.startY + (char.targetY - char.startY) * t + currentArcY;
-
-            // ลมมีผลต่อวิถีกระโดดเล็กน้อย
-            char.worldX += c.windSpeed * dt * 0.6;
-
-            if (t >= 1) {
-                char.worldX = char.targetX;
-                char.worldY = char.targetY;
-                char.state = 'idle';
-                char.currentPlank = char.jumpTargetPlank;
-                playClimbSound('land');
-                climbSpawnLandingParticles(char.worldX, char.worldY);
-            }
-        } else if (char.state === 'idle') {
-            // ยึดเหนี่ยวตำแหน่งเท้ากับระนาบแท่นปัจจุบัน
-            if (char.currentPlank) {
-                const px = char.currentPlank.x * areaW;
-                const py = char.currentPlank.y;
-                const pAngle = char.currentPlank.angle || 0;
-                // คำนวณความสูงพื้นผิว ณ ตำแหน่งที่ตัวละครยืน
-                const dx = char.worldX - px;
-                char.worldY = py + Math.sin(pAngle) * dx;
-            }
-        } else if (char.state === 'ragdoll') {
-            // จำลอง Verlet Ragdoll Simulation
-            char.ragdollTime += dt;
-            const rd = char.ragdoll;
-            if (rd) {
-                const gravity = 700;
-                // 1. Verlet Particle Integration
-                rd.points.forEach(p => {
-                    const vx = (p.x - p.oldX) * 0.98 + (c.windSpeed * 0.4) * dt;
-                    const vy = (p.y - p.oldY) * 0.98 - gravity * dt * dt;
-                    p.oldX = p.x;
-                    p.oldY = p.y;
-                    p.x += vx;
-                    p.y += vy;
-
-                    // การชนกับพื้นล่างสุด
-                    if (p.y < c.GROUND_H) {
-                        p.y = c.GROUND_H;
-                        p.oldY = p.y + Math.abs(vy) * 0.45; // Bounce
-                    }
-
-                    // การชนกับแท่นอื่นๆ ระหว่างร่วงกระแทก
-                    for (let r = 1; r <= c.TOTAL_ROWS; r++) {
-                        const row = c.rows[r];
-                        if (!row) continue;
-                        row.planks.forEach(pl => {
-                            if (pl.isCrumbled) return;
-                            const plX = pl.x * areaW;
-                            if (Math.abs(p.x - plX) < pl.w * 0.55 && Math.abs(p.y - pl.y) < 16) {
-                                p.y = pl.y + 16;
-                                p.oldY = p.y + 3;
-                                playClimbSound('ragdoll');
-                            }
-                        });
-                    }
-                });
-
-                // 2. Constraints Satisfaction (รักษาความยาวโครงกระดูก)
-                for (let iter = 0; iter < 4; iter++) {
-                    rd.sticks.forEach(s => {
-                        const p1 = rd.points[s.p1];
-                        const p2 = rd.points[s.p2];
-                        const dx = p2.x - p1.x;
-                        const dy = p2.y - p1.y;
-                        const dist = Math.hypot(dx, dy) || 1;
-                        const diff = (dist - s.len) / dist;
-                        p1.x += dx * 0.5 * diff;
-                        p1.y += dy * 0.5 * diff;
-                        p2.x -= dx * 0.5 * diff;
-                        p2.y -= dy * 0.5 * diff;
-                    });
-                }
-
-                // กึ่งกลางของ Ragdoll
-                char.worldX = rd.points[1].x;
-                char.worldY = rd.points[1].y;
-
-                // ระบบช่วยเหลือฟื้นตัว (Rescue Recovery Balloon)
-                if (char.ragdollTime > 1.8) {
-                    climbRecoverFromRagdoll();
-                }
-            }
-        }
-
-        // 4. อัปเดตกล้องให้ติดตามตัวละครนุ่มนวล (Smooth Camera Lerp)
-        const targetCamY = Math.max(0, char.worldY - 140);
-        c.cameraY += (targetCamY - c.cameraY) * Math.min(1, dt * 7);
-
-        // 5. อัปเดตเศษชิ้นส่วน Debris & Particles
-        for (let i = c.debris.length - 1; i >= 0; i--) {
-            const d = c.debris[i];
-            d.x += d.vx * dt;
-            d.y -= d.vy * dt;
-            d.vy += 450 * dt;
-            d.rot += d.rotSpeed * dt;
-            d.alpha -= dt * 0.5;
-            if (d.alpha <= 0 || d.y < 0) c.debris.splice(i, 1);
-        }
-
-        for (let i = c.particles.length - 1; i >= 0; i--) {
-            const p = c.particles[i];
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            p.alpha -= dt * p.decay;
-            if (p.alpha <= 0) c.particles.splice(i, 1);
-        }
-
-        for (let i = c.shockwaves.length - 1; i >= 0; i--) {
-            const sw = c.shockwaves[i];
-            sw.r += dt * 260;
-            sw.alpha -= dt * 2.2;
-            if (sw.alpha <= 0) c.shockwaves.splice(i, 1);
-        }
-
-        // Weather particles drift
-        c.weatherParticles.forEach(wp => {
-            wp.x += (c.windSpeed * 0.0008 + (wp.vx * 0.001)) * dt * 60;
-            wp.y += wp.vy * dt;
-            wp.rot += wp.rotSpeed * dt;
-            if (wp.x < -0.1) wp.x = 1.1;
-            if (wp.x > 1.1) wp.x = -0.1;
-            if (wp.y < c.cameraY - 50) wp.y = c.cameraY + 700;
+function minigameCreateParticles(x, y, color, count) {
+    for(let i=0; i<count; i++) {
+        Minigame.particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.5) * 12,
+            life: 1.0,
+            color: color
         });
-
-        // กระพริบตาตัวละคร
-        char.blinkTimer -= dt;
-        if (char.blinkTimer <= 0) {
-            char.isBlinking = !char.isBlinking;
-            char.blinkTimer = char.isBlinking ? 0.12 : (2.0 + Math.random() * 2.5);
-        }
     }
+}
 
-    // --- Trigger Ragdoll Fall ---
-    function climbTriggerRagdoll(reason) {
-        const c = state.climb;
-        if (!c || c.char.state === 'ragdoll') return;
-        c.char.state = 'ragdoll';
-        c.char.ragdollTime = 0;
-        c.ragdollCount++;
-        playClimbSound('ragdoll');
-        climbShowBanner('💫', reason || 'ร่วงแล้ว! RAGDOLL TUMBLE');
-
-        const vx = (Math.random() - 0.5) * 160 + c.windSpeed * 1.5;
-        const vy = -120;
-        c.char.ragdoll = climbCreateRagdoll(c.char.worldX, c.char.worldY, vx, vy);
+function minigameWin() {
+    Minigame.state = 'won';
+    const timeSecs = ((performance.now() - Minigame.startTime) / 1000).toFixed(1);
+    const acc = Math.round((Minigame.hits / ((Minigame.hits + Minigame.errors) || 1)) * 100);
+    
+    document.getElementById('minigame-win-acc').innerText = acc + '%';
+    document.getElementById('minigame-win-time').innerText = timeSecs;
+    document.getElementById('minigame-win-combo').innerText = Minigame.maxCombo;
+    document.getElementById('minigame-win-modal').classList.remove('hidden');
+    
+    if (state.currentUser && state.currentUser !== 'Guest') {
+        const dbIdx = state.lessonIndex + 1;
+        apiCall('saveProgress', { username: state.currentUser, level: dbIdx, lang: state.lang });
+        mockData.progress[state.currentUser][state.lang] = Math.max(mockData.progress[state.currentUser][state.lang], dbIdx);
     }
+}
 
-    // --- Recover from Ragdoll to Checkpoint ---
-    function climbRecoverFromRagdoll() {
-        const c = state.climb;
-        if (!c) return;
-        const areaW = c.canvas ? c.canvas.width / c.dpr : 800;
-
-        // หาแถวที่ปลอดภัยล่าสุด
-        let targetRow = Math.max(0, c.currentRow);
-        let safePlank = null;
-        while (targetRow >= 0) {
-            const row = c.rows[targetRow];
-            if (row && row.planks) {
-                const alive = row.planks.find(p => !p.isCrumbled);
-                if (alive) { safePlank = alive; break; }
+// --- GAME LOOP & RENDERERS ---
+function minigameLoop(timestamp) {
+    if (Minigame.state !== 'playing') return;
+    
+    const dt = Math.min(0.05, (timestamp - Minigame.lastTime) / 1000);
+    Minigame.lastTime = timestamp;
+    
+    // Update logic
+    Minigame.backgroundOffset += 50 * dt;
+    
+    const canvasW = Minigame.canvas.width / (window.devicePixelRatio || 1);
+    const canvasH = Minigame.canvas.height / (window.devicePixelRatio || 1);
+    
+    // Move targets
+    Minigame.targets.forEach((t, i) => {
+        if (Minigame.theme === 'minimal') {
+            if (t.y === -50) t.y = canvasW + 100; // Initialize offscreen right
+            t.y -= 250 * dt * t.speed; // moving left
+            t.x = t.y; 
+            
+            // Miss boundary
+            if (i === 0 && t.y < canvasW * 0.1) {
+                Minigame.combo = 0;
+                minigameUpdateHUD();
+                Minigame.targets.shift();
+                setTimeout(minigameSpawnTarget, 10);
             }
-            targetRow--;
-        }
-
-        if (!safePlank) safePlank = c.rows[0].planks[0];
-
-        c.currentRow = safePlank.row;
-        c.char.state = 'idle';
-        c.char.ragdoll = null;
-        c.char.currentPlank = safePlank;
-        c.char.worldX = safePlank.x * areaW;
-        c.char.worldY = safePlank.y;
-        safePlank.angle = 0;
-        safePlank.angVel = 0;
-
-        playClimbSound('spawn');
-        climbShowBanner('🎈', 'ฮึบ! ฟื้นตัวสู่แท่นปลอดภัยแล้ว');
-        climbUpdateHUD();
-    }
-
-    // --- Spawn Landing & Particle Effects ---
-    function climbSpawnLandingParticles(x, y) {
-        const c = state.climb;
-        if (!c) return;
-        for (let i = 0; i < 12; i++) {
-            c.particles.push({
-                x: x,
-                y: y + 2,
-                vx: (Math.random() - 0.5) * 140,
-                vy: Math.random() * 80 + 20,
-                size: 3 + Math.random() * 4,
-                color: '#f59e0b',
-                alpha: 1.0,
-                decay: 2.2
-            });
-        }
-    }
-
-    function climbSpawnMaterializeShockwave(x, y, color = '#38bdf8') {
-        const c = state.climb;
-        if (!c) return;
-        c.shockwaves.push({ x, y, r: 10, maxR: 70, color, alpha: 1.0 });
-        for (let i = 0; i < 16; i++) {
-            const angle = (i / 16) * Math.PI * 2;
-            const spd = 70 + Math.random() * 60;
-            c.particles.push({
-                x: x,
-                y: y,
-                vx: Math.cos(angle) * spd,
-                vy: Math.sin(angle) * spd,
-                size: 3 + Math.random() * 3,
-                color: color,
-                alpha: 1.0,
-                decay: 2.0
-            });
-        }
-    }
-
-    // --- 2.5D Canvas Render Engine ---
-    function climbRenderCanvas() {
-        const c = state.climb;
-        if (!c || !c.ctx || !c.canvas) return;
-        const ctx = c.ctx;
-        const w = c.canvas.width / c.dpr;
-        const h = c.canvas.height / c.dpr;
-
-        ctx.clearRect(0, 0, w, h);
-
-        // แปลงพิกัด World -> Screen
-        function toScreen(wx, wy) {
-            return {
-                x: wx,
-                y: h - (wy - c.cameraY + 80)
-            };
-        }
-
-        // 1. วาดฉากหลัง Gradient
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, c.theme.skyTop);
-        grad.addColorStop(1, c.theme.skyBot);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        // 2. วาดละอองสภาพแวดล้อม (Weather Effects)
-        c.weatherParticles.forEach(wp => {
-            const scr = toScreen(wp.x * w, wp.y);
-            if (scr.y >= -20 && scr.y <= h + 20) {
-                ctx.save();
-                ctx.globalAlpha = wp.opacity;
-                ctx.translate(scr.x, scr.y);
-                ctx.rotate(wp.rot);
-                if (c.theme.weather === 'leaves') {
-                    ctx.fillStyle = '#86efac';
-                    ctx.beginPath(); ctx.ellipse(0, 0, wp.size, wp.size * 0.45, 0, 0, Math.PI * 2); ctx.fill();
-                } else if (c.theme.weather === 'rain') {
-                    ctx.strokeStyle = '#7dd3fc';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(c.windSpeed * 0.6, 12); ctx.stroke();
-                } else {
-                    ctx.fillStyle = '#fde047';
-                    ctx.beginPath(); ctx.arc(0, 0, wp.size * 0.6, 0, Math.PI * 2); ctx.fill();
-                }
-                ctx.restore();
+        } else {
+            t.y += 150 * t.speed * dt; // fall down
+            // Miss boundary
+            if (i === 0 && t.y > canvasH) {
+                Minigame.combo = 0;
+                minigameUpdateHUD();
+                Minigame.targets.shift();
+                setTimeout(minigameSpawnTarget, 10);
             }
-        });
-
-        // 3. วาดเสาค้ำหอคอยด้านข้าง (Isometric Tower Pillars)
-        const pillarL = toScreen(w * 0.12, 0);
-        const pillarR = toScreen(w * 0.88, 0);
-        ctx.fillStyle = 'rgba(30, 41, 59, 0.45)';
-        ctx.fillRect(w * 0.12 - 6, 0, 12, h);
-        ctx.fillRect(w * 0.88 - 6, 0, 12, h);
-
-        // 4. วาดพื้นล่างสุด (Ground)
-        const groundPos = toScreen(0, c.GROUND_H);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(0, groundPos.y, w, h - groundPos.y + 100);
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(0, groundPos.y, w, 6);
-
-        // 5. วาดแท่นตัวอักษร 2.5D (Planks with 3D Depth)
-        for (let r = 1; r <= c.TOTAL_ROWS; r++) {
-            const row = c.rows[r];
-            if (!row) continue;
-
-            row.planks.forEach(p => {
-                if (p.isCrumbled) return;
-                const px = p.x * w;
-                const scr = toScreen(px, p.y);
-
-                // หากอยู่นอกจอแนวตั้ง ไม่ต้องวาด
-                if (scr.y < -120 || scr.y > h + 120) return;
-
-                ctx.save();
-                ctx.translate(scr.x, scr.y);
-                ctx.rotate(-p.angle); // หมุนตาม Seesaw angle
-
-                const hw = p.w * 0.5;
-                const hh = p.h * 0.5;
-
-                if (!p.isSpawned) {
-                    // Type-to-Spawn: Ethereal Ghost Letter Crystal
-                    p.ghostPulse += 0.05;
-                    const glowAlpha = 0.45 + Math.sin(p.ghostPulse) * 0.25;
-                    ctx.save();
-                    ctx.strokeStyle = `rgba(56, 189, 248, ${glowAlpha})`;
-                    ctx.lineWidth = 2.5;
-                    ctx.setLineDash([6, 4]);
-                    ctx.strokeRect(-hw, -hh, p.w, p.h);
-
-                    // ออร่าเรืองแสง
-                    ctx.fillStyle = `rgba(14, 165, 233, ${glowAlpha * 0.25})`;
-                    ctx.fillRect(-hw, -hh, p.w, p.h);
-
-                    // ตัวอักษรเรืองแสงที่ต้องพิมพ์
-                    ctx.font = '900 24px "JetBrains Mono", Sarabun, sans-serif';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.shadowColor = '#38bdf8';
-                    ctx.shadowBlur = 12;
-                    ctx.fillText(p.ch, 0, 0);
-                    ctx.restore();
-                } else {
-                    // แท่นฟิสิกส์ 2.5D Solid Extruded Wood/Stone Block
-                    // ด้านข้าง 3D Depth (Extrusion Face)
-                    const depthH = 10;
-                    ctx.fillStyle = p.isHeavy ? '#451a03' : (p.isLight ? '#713f12' : '#5a3a0a');
-                    ctx.beginPath();
-                    ctx.roundRect(-hw, hh, p.w, depthH, [0, 0, 6, 6]);
-                    ctx.fill();
-
-                    // ด้านบน (Top Surface Face)
-                    const topGrad = ctx.createLinearGradient(0, -hh, 0, hh);
-                    if (p.isHeavy) {
-                        topGrad.addColorStop(0, '#9a3412');
-                        topGrad.addColorStop(1, '#7c2d12');
-                    } else if (p.isLight) {
-                        topGrad.addColorStop(0, '#fef08a');
-                        topGrad.addColorStop(1, '#ca8a04');
-                    } else {
-                        topGrad.addColorStop(0, '#fcd34d');
-                        topGrad.addColorStop(1, '#b45309');
-                    }
-
-                    ctx.fillStyle = topGrad;
-                    ctx.beginPath();
-                    ctx.roundRect(-hw, -hh, p.w, p.h, 6);
-                    ctx.fill();
-
-                    // ขอบแสง Bevel
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.roundRect(-hw, -hh, p.w, p.h, 6);
-                    ctx.stroke();
-
-                    // รอยแตกหากกำลังจะถล่ม (Destructible Tower)
-                    if (p.crumbling) {
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(-hw + 15, -hh + 3);
-                        ctx.lineTo(-hw + 35, hh - 5);
-                        ctx.lineTo(-hw + 55, -hh + 8);
-                        ctx.stroke();
-                    }
-
-                    // จุดหมุน Seesaw Pivot Pin
-                    if (p.isSeesaw) {
-                        ctx.fillStyle = '#dc2626';
-                        ctx.beginPath(); ctx.arc(0, hh + 2, 4, 0, Math.PI * 2); ctx.fill();
-                        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();
-                    }
-
-                    // ตัวอักษรบนแท่น
-                    ctx.font = '900 22px "JetBrains Mono", Sarabun, sans-serif';
-                    ctx.fillStyle = p.isLight ? '#451a03' : '#ffffff';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                    ctx.shadowBlur = 4;
-                    ctx.fillText(p.ch, 0, 1);
-                }
-
-                // ธงชัยชนะบนยอดหอคอย
-                if (p.isGoal) {
-                    ctx.font = '36px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('🚩', 0, -42);
-                }
-
-                ctx.restore();
-            });
         }
+    });
+    
+    // Update particles
+    for(let i = Minigame.particles.length - 1; i >= 0; i--) {
+        let p = Minigame.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt * 2;
+        if(p.life <= 0) Minigame.particles.splice(i, 1);
+    }
+    
+    minigameRenderFrame(dt, canvasW, canvasH);
+    Minigame.animationId = requestAnimationFrame(minigameLoop);
+}
 
-        // 6. วาดเศษชิ้นส่วน Debris (Falling Fragments)
-        c.debris.forEach(d => {
-            const scr = toScreen(d.x, d.y);
-            ctx.save();
-            ctx.translate(scr.x, scr.y);
-            ctx.rotate(d.rot);
-            ctx.globalAlpha = Math.max(0, d.alpha);
-            ctx.fillStyle = d.color;
-            ctx.fillRect(-d.size * 0.5, -d.size * 0.5, d.size, d.size);
-            ctx.restore();
-        });
+function minigameRenderFrame(dt, cw = 800, ch = 600) {
+    const ctx = Minigame.ctx;
+    if(!ctx) return;
+    ctx.clearRect(0, 0, Minigame.canvas.width, Minigame.canvas.height);
+    
+    if (Minigame.theme === 'space') renderSpaceTheme(ctx, cw, ch);
+    else if (Minigame.theme === 'cyber') renderCyberTheme(ctx, cw, ch);
+    else if (Minigame.theme === 'samurai') renderSamuraiTheme(ctx, cw, ch);
+    else renderMinimalTheme(ctx, cw, ch);
+    
+    // Render Particles
+    ctx.globalCompositeOperation = 'lighter';
+    Minigame.particles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3 + p.life*4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+    });
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+    ctx.globalCompositeOperation = 'source-over';
+}
 
-        // 7. วาด Shockwaves & Particles
-        c.shockwaves.forEach(sw => {
-            const scr = toScreen(sw.x, sw.y);
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, sw.alpha);
-            ctx.strokeStyle = sw.color;
+function renderSpaceTheme(ctx, cw, ch) {
+    // Background Stars
+    ctx.fillStyle = '#020617'; 
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.fillStyle = '#ffffff';
+    for(let i=0; i<60; i++) {
+        const sy = (i * 47 + Minigame.backgroundOffset * 1.5) % ch;
+        const sx = (i * 97) % cw;
+        ctx.globalAlpha = (i%3===0)?0.8:0.3;
+        ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.globalAlpha = 1.0;
+    
+    // Base at bottom
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(cw/2 - 50, ch);
+    ctx.lineTo(cw/2 - 30, ch - 60);
+    ctx.lineTo(cw/2 + 30, ch - 60);
+    ctx.lineTo(cw/2 + 50, ch);
+    ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(cw/2, ch - 60, 15, 0, Math.PI, true);
+    ctx.fill();
+    
+    // Meteors
+    Minigame.targets.forEach((t, index) => {
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        ctx.rotate(t.y * 0.02);
+        
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(-30, -20); ctx.lineTo(10, -35); ctx.lineTo(35, 0); ctx.lineTo(20, 30); ctx.lineTo(-20, 25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.restore();
+        
+        if (index === 0) {
+            ctx.strokeStyle = '#ef4444';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, 45, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw Laser from base if hit
+            if (Minigame.hits > 0 && Minigame.combo > 0 && Math.random() > 0.4) {
+                ctx.beginPath();
+                ctx.moveTo(cw/2, ch-75);
+                ctx.lineTo(t.x + (Math.random()-0.5)*10, t.y + (Math.random()-0.5)*10);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#38bdf8';
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        }
+    });
+}
+
+function renderCyberTheme(ctx, cw, ch) {
+    // Synthwave Grid
+    ctx.fillStyle = '#090014';
+    ctx.fillRect(0, 0, cw, ch);
+    
+    ctx.strokeStyle = '#ec4899'; // Pink grid
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4;
+    
+    const horizonY = ch * 0.4;
+    
+    // Horizontal lines moving down
+    for(let i=0; i<25; i++) {
+        let y = horizonY + Math.pow(i + (Minigame.backgroundOffset%10)/10, 1.8) * 2;
+        if(y < ch) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
+        }
+    }
+    // Perspective vertical lines
+    for(let i=-20; i<=20; i++) {
+        const bx = cw/2 + i * 80;
+        ctx.beginPath(); ctx.moveTo(cw/2, horizonY); ctx.lineTo(bx, ch); ctx.stroke();
+    }
+    
+    // Sun
+    ctx.globalAlpha = 1.0;
+    const sunGrad = ctx.createLinearGradient(0, horizonY - 60, 0, horizonY + 20);
+    sunGrad.addColorStop(0, '#fde047');
+    sunGrad.addColorStop(1, '#ec4899');
+    ctx.fillStyle = sunGrad;
+    ctx.beginPath();
+    ctx.arc(cw/2, horizonY, 60, Math.PI, Math.PI*2);
+    ctx.fill();
+    
+    // Targets as Neon Barriers
+    Minigame.targets.forEach((t, index) => {
+        // scale based on y position to give 3D effect
+        const scale = Math.max(0.2, (t.y - horizonY) / (ch - horizonY));
+        if (t.y < horizonY) return;
+        
+        ctx.save();
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = index === 0 ? '#06b6d4' : '#ec4899';
+        ctx.fillStyle = index === 0 ? 'rgba(6, 182, 212, 0.4)' : 'rgba(236, 72, 153, 0.4)';
+        ctx.strokeStyle = index === 0 ? '#06b6d4' : '#ec4899';
+        ctx.lineWidth = 3 * scale;
+        
+        const w = 150 * scale;
+        const h = 80 * scale;
+        
+        ctx.beginPath();
+        ctx.roundRect(t.x - w/2, t.y - h, w, h, 5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    });
+}
+
+function renderSamuraiTheme(ctx, cw, ch) {
+    // Bamboo Forest Background
+    ctx.fillStyle = '#fef3c7'; // Paper color
+    ctx.fillRect(0, 0, cw, ch);
+    
+    ctx.fillStyle = '#d97706'; // Sun
+    ctx.beginPath(); ctx.arc(cw/2, ch*0.6, 150, 0, Math.PI*2); ctx.fill();
+    
+    // Bamboo silhouettes
+    ctx.fillStyle = '#451a03';
+    ctx.globalAlpha = 0.1;
+    for(let i=0; i<10; i++) {
+        ctx.fillRect(cw*0.1*i, 0, 30, ch);
+    }
+    ctx.globalAlpha = 1.0;
+    
+    ctx.fillStyle = '#1c1917'; // Black silhouette ground
+    ctx.fillRect(0, ch - 80, cw, 80);
+    
+    // Targets as Bamboo Targets
+    Minigame.targets.forEach((t, index) => {
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(t.x - 6, t.y, 12, ch - t.y);
+        
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 35, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#fef3c7';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        // Slash effect if active
+        if (index === 0 && Minigame.currentCharIdx > 0) {
+            ctx.strokeStyle = '#ef4444';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(scr.x, scr.y, sw.r, 0, Math.PI * 2);
+            ctx.moveTo(t.x - 50, t.y - 50);
+            ctx.lineTo(t.x + 50, t.y + 50);
             ctx.stroke();
-            ctx.restore();
-        });
-
-        c.particles.forEach(p => {
-            const scr = toScreen(p.x, p.y);
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, p.alpha);
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(scr.x, scr.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        });
-
-        // 8. วาดตัวละคร (IK Skeletal Rigging / Verlet Ragdoll)
-        const char = c.char;
-
-        if (char.state === 'ragdoll' && char.ragdoll) {
-            // โหมด Ragdoll Tumble: วาดโครงกระดูก Ragdoll และหัวกระต่ายหมุนตามฟิสิกส์
-            const pts = char.ragdoll.points;
-            const scrHead = toScreen(pts[0].x, pts[0].y);
-            const scrChest = toScreen(pts[1].x, pts[1].y);
-            const scrHips = toScreen(pts[2].x, pts[2].y);
-            const scrLHand = toScreen(pts[3].x, pts[3].y);
-            const scrRHand = toScreen(pts[4].x, pts[4].y);
-            const scrLFoot = toScreen(pts[7].x, pts[7].y);
-            const scrRFoot = toScreen(pts[8].x, pts[8].y);
-
-            // กระดูกแขนขา
-            ctx.strokeStyle = '#f8fafc';
-            ctx.lineWidth = 4;
-            ctx.lineCap = 'round';
-            [[scrChest, scrLHand], [scrChest, scrRHand], [scrHips, scrLFoot], [scrHips, scrRFoot], [scrChest, scrHips]].forEach(bone => {
-                ctx.beginPath(); ctx.moveTo(bone[0].x, bone[0].y); ctx.lineTo(bone[1].x, bone[1].y); ctx.stroke();
-            });
-
-            // หัวการ์ตูนตาหมุนติ้ว (@_@)
-            ctx.font = '28px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('💫', scrHead.x, scrHead.y - 10);
-            ctx.fillText('🐰', scrHead.x, scrHead.y);
-        } else {
-            // โหมดปกติ: 2-Bone Analytical IK ขาและแขน
-            const scrRoot = toScreen(char.worldX, char.worldY);
-            const hipX = scrRoot.x;
-            const hipY = scrRoot.y - 18;
-
-            // เป้าหมายเท้าซ้ายและขวาบนพื้นผิวแท่น
-            const plankAngle = char.currentPlank ? (char.currentPlank.angle || 0) : 0;
-            const footLX = hipX - 10;
-            const footLY = scrRoot.y - Math.sin(plankAngle) * 10;
-            const footRX = hipX + 10;
-            const footRY = scrRoot.y + Math.sin(plankAngle) * 10;
-
-            const ikLeft = climbSolveIK(hipX - 4, hipY, footLX, footLY, 12, 12, -1);
-            const ikRight = climbSolveIK(hipX + 4, hipY, footRX, footRY, 12, 12, 1);
-
-            ctx.lineWidth = 3.5;
-            ctx.strokeStyle = '#f8fafc';
-            ctx.lineCap = 'round';
-
-            // ขาซ้าย IK
-            ctx.beginPath();
-            ctx.moveTo(hipX - 4, hipY);
-            ctx.lineTo(ikLeft.kneeX, ikLeft.kneeY);
-            ctx.lineTo(ikLeft.footX, ikLeft.footY);
-            ctx.stroke();
-
-            // ขวาขวา IK
-            ctx.beginPath();
-            ctx.moveTo(hipX + 4, hipY);
-            ctx.lineTo(ikRight.kneeX, ikRight.kneeY);
-            ctx.lineTo(ikRight.footX, ikRight.footY);
-            ctx.stroke();
-
-            // แขน (แกว่งทรงตัวตาม Seesaw Tilt หรือเอื้อมจับขอบแท่น)
-            const armTilt = Math.max(-0.6, Math.min(0.6, plankAngle * 2.5));
-            ctx.beginPath();
-            ctx.moveTo(hipX - 5, hipY - 6);
-            ctx.lineTo(hipX - 16, hipY - 4 - armTilt * 15);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(hipX + 5, hipY - 6);
-            ctx.lineTo(hipX + 16, hipY - 4 + armTilt * 15);
-            ctx.stroke();
-
-            // ลำตัวและหัวกระต่าย
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.ellipse(hipX, hipY - 4, 9, 11, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // อีโมจิหัวกระต่าย
-            ctx.font = '34px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🐰', hipX, hipY - 14);
-
-            // เหงื่อตกหากแท่นเอียงมาก (Panic Sweat Drop)
-            if (Math.abs(plankAngle) > 0.35) {
-                ctx.font = '16px sans-serif';
-                ctx.fillText('💦', hipX + 14, hipY - 24);
-            }
         }
-    }
+    });
+}
 
-    // --- Main Game Animation Frame Loop ---
-    function climbGameLoop(timestamp) {
-        if (!state.isGameMode || !state.climb) return;
-        const c = state.climb;
-        if (!c.lastTimestamp) c.lastTimestamp = timestamp;
-        const dt = Math.min(0.064, (timestamp - c.lastTimestamp) / 1000);
-        c.lastTimestamp = timestamp;
-
-        climbUpdatePhysics(dt);
-        climbRenderCanvas();
-
-        c.animationId = requestAnimationFrame(climbGameLoop);
-    }
-
-    // --- Window Resize Handler for Canvas ---
-    function climbOnResize() {
-        const c = state.climb;
-        if (!c || !c.canvas) return;
-        const area = document.getElementById('climb-area');
-        if (!area) return;
-        const rect = area.getBoundingClientRect();
-        c.dpr = window.devicePixelRatio || 1;
-        c.canvas.width = rect.width * c.dpr;
-        c.canvas.height = rect.height * c.dpr;
-        if (c.ctx) c.ctx.scale(c.dpr, c.dpr);
-    }
-
-    // --- Update HUD Elements ---
-    function climbUpdateHUD() {
-        const c = state.climb;
-        if (!c) return;
-        const elH = document.getElementById('climb-height');
-        if (elH) elH.innerText = c.currentRow;
-        const elCombo = document.getElementById('climb-combo-text');
-        if (elCombo) elCombo.innerText = `COMBO ${c.combos}`;
-    }
-
-    // --- Game Victory Handler ---
-    function climbWin() {
-        const c = state.climb;
-        if (!c || c.won) return;
-        c.won = true;
-        cancelAnimationFrame(c.animationId);
-        clearInterval(c.timerInterval);
-
-        const secs = ((Date.now() - (c.startTime || Date.now())) / 1000).toFixed(1);
-        document.getElementById('win-time').innerText = secs;
-        document.getElementById('win-hits').innerText = c.hits;
-        document.getElementById('win-combos').innerText = c.combos;
-        document.getElementById('win-ragdolls').innerText = c.ragdollCount;
-
-        playClimbSound('win');
-        climbShowBanner('🏆', 'พิชิตยอดหอคอยสำเร็จ!');
-
-        setTimeout(() => {
-            const m = document.getElementById('climb-win-modal');
-            if (m) m.classList.remove('hidden');
-        }, 850);
-    }
-
-    // --- Start Mini Game Entry Point ---
-    function startMiniGame() {
-        closeModal();
-        state.isGameMode = true;
-        const ui = document.getElementById('game-ui');
-        ui.classList.remove('hidden');
-        ui.style.display = 'flex';
-        document.getElementById('typing-ui').style.display = 'none';
-        resetGame();
-    }
-
-    // --- Reset Game State ---
-    function resetGame() {
-        if (state.climb && state.climb.animationId) cancelAnimationFrame(state.climb.animationId);
-        if (state.climb && state.climb.timerInterval) clearInterval(state.climb.timerInterval);
-
-        const canvas = document.getElementById('climb-canvas');
-        const ctx = canvas ? canvas.getContext('2d') : null;
-
-        const t = CLIMB_THEMES[state.lessonIndex % CLIMB_THEMES.length];
-        const lesson = curriculum[state.lang][state.lessonIndex];
-
-        state.climb = {
-            TOTAL_ROWS: 10,
-            ROW_HEIGHT: 88,
-            GROUND_H: 50,
-            currentRow: 0,
-            hits: 0,
-            combos: 0,
-            ragdollCount: 0,
-            startTime: null,
-            timerInterval: null,
-            won: false,
-            gameTime: 0,
-            windSpeed: 0,
-            cameraY: 0,
-            charPool: climbCharPool(),
-            theme: t,
-            recentSpelled: '',
-            streak: 0,
-            lastTypeTime: 0,
-            canvas,
-            ctx,
-            dpr: window.devicePixelRatio || 1,
-            animationId: null
-        };
-
-        // Theme and HUD labels
-        document.getElementById('climb-theme-emoji').innerText = t.emoji;
-        document.getElementById('climb-title-text').innerText = `หอคอยฟิสิกส์ 2.5D • ${t.name}`;
-        const lessonTag = document.getElementById('climb-lesson-tag');
-        if (lessonTag) lessonTag.innerText = lesson ? lesson.title : '';
-
-        document.getElementById('climb-total').innerText = state.climb.TOTAL_ROWS;
-        document.getElementById('climb-height').innerText = 0;
-        document.getElementById('climb-time').innerText = '0.0s';
-        document.getElementById('climb-win-modal').classList.add('hidden');
-        document.getElementById('climb-start-overlay').style.display = 'flex';
-
-        climbOnResize();
-        climbBuildTower();
-        climbRenderCanvas();
-    }
-
-    // --- Start Active Play ---
-    function startGame() {
-        if (!state.climb) resetGame();
-        document.getElementById('climb-start-overlay').style.display = 'none';
-        state.climb.startTime = Date.now();
-
-        clearInterval(state.climb.timerInterval);
-        state.climb.timerInterval = setInterval(() => {
-            const c = state.climb;
-            if (!state.isGameMode || !c || c.won) { clearInterval(c.timerInterval); return; }
-            const secs = ((Date.now() - c.startTime) / 1000).toFixed(1);
-            const el = document.getElementById('climb-time');
-            if (el) el.innerText = secs + 's';
-        }, 100);
-
-        state.climb.lastTimestamp = performance.now();
-        state.climb.animationId = requestAnimationFrame(climbGameLoop);
-        focusInput();
-    }
-
-    // --- Exit and Cleanup ---
-    function climbCleanup() {
-        state.isGameMode = false;
-        if (state.climb) {
-            if (state.climb.animationId) cancelAnimationFrame(state.climb.animationId);
-            if (state.climb.timerInterval) clearInterval(state.climb.timerInterval);
+function renderMinimalTheme(ctx, cw, ch) {
+    ctx.fillStyle = '#f8fafc'; // light slate
+    ctx.fillRect(0, 0, cw, ch);
+    
+    // Timeline track
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, ch/2);
+    ctx.lineTo(cw, ch/2);
+    ctx.stroke();
+    
+    // Hit zone
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cw * 0.2, ch/2, 45, 0, Math.PI*2);
+    ctx.stroke();
+    
+    Minigame.targets.forEach((t, index) => {
+        const targetX = t.x; 
+        
+        ctx.fillStyle = index === 0 ? '#3b82f6' : '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(targetX, ch/2, 25, 0, Math.PI*2);
+        ctx.fill();
+        
+        if (index === 0 && Minigame.currentCharIdx > 0) {
+            ctx.strokeStyle = '#60a5fa';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(targetX, ch/2, 25 + Math.random()*10, 0, Math.PI*2);
+            ctx.stroke();
         }
-    }
+    });
+}
 
-    function finishGameAndGoNext() {
-        climbCleanup();
-        const ui = document.getElementById('game-ui');
-        ui.classList.add('hidden');
-        ui.style.display = 'none';
-        document.getElementById('typing-ui').style.display = 'flex';
-        nextLesson();
-    }
-
-    function exitGameAndNext() {
         climbCleanup();
         const ui = document.getElementById('game-ui');
         ui.classList.add('hidden');
