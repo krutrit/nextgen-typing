@@ -1,2 +1,7 @@
 # Google Apps Script
 .clasp.json
+
+# Local browser verification artifacts
+.artifacts/
+.freebuff/
+.vscode/

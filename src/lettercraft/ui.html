@@ -1,0 +1,47 @@
+    <!-- LETTERCRAFT_UI_START -->
+    <section id="game-ui" class="lc-shell" style="display:none" aria-label="เกมนักสำรวจโลกอักษร">
+        <canvas id="lc-canvas" tabindex="0" aria-label="โลกบล็อก ใช้ WASD หรือลูกศรเดิน เลื่อนเมาส์เพื่อหัน คลิกซ้ายเพื่อฟันหรือขุด"></canvas>
+        <canvas id="lc-labels" aria-hidden="true"></canvas>
+        <button type="button" id="lc-capture" class="lc-capture" hidden>คลิกเพื่อสำรวจ • ล็อกเมาส์</button>
+        <header class="lc-top">
+            <div class="lc-brand"><span class="lc-brand-icon">◈</span><div><b>LETTERCRAFT</b><small id="lc-lesson">นักสำรวจโลกอักษร</small></div></div>
+            <div class="lc-vitals"><span id="lc-hearts" class="lc-hearts" aria-label="หัวใจ 5 ดวง">♥ ♥ ♥ ♥ ♥</span><span class="lc-divider"></span><span id="lc-time" class="lc-time">05:00</span></div>
+            <div class="lc-top-actions"><button type="button" id="lc-help-button">? <span>วิธีเล่น</span></button><button type="button" id="lc-exit-button" aria-label="ออกจากเกม">✕</button></div>
+        </header>
+        <div class="lc-mission"><span class="lc-eyebrow">ภารกิจนักสำรวจ</span><strong>เก็บตัวอักษร <span id="lc-count">0 / 20</span></strong><div class="lc-meter"><i id="lc-mission-fill"></i></div><small>ตัวอักษรจากบทเรียนของคุณ</small></div>
+        <div id="lc-toast" class="lc-toast" role="status" aria-live="polite" hidden></div>
+        <footer class="lc-bottom">
+            <div id="lc-context" class="lc-context">เดินเข้าใกล้หิน แล้วคลิกเพื่อเริ่มขุด</div>
+            <div class="lc-inventory-row">
+                <div class="lc-tools" aria-label="อุปกรณ์"><div class="lc-tool"><span>⛏</span><b>พลั่ว</b><small id="lc-pickaxe">ไม้</small></div><div class="lc-tool"><span>🪓</span><b>ขวาน</b><small id="lc-axe">ไม้</small></div><div class="lc-tool"><span>⚔</span><b>ดาบ</b><small id="lc-sword">ไม้</small></div></div>
+                <div class="lc-bag"><div class="lc-bag-title">กระเป๋าตัวอักษร <small>เก็บให้ครบทุกช่อง</small></div><div id="lc-quest" class="lc-quest"></div></div>
+            </div>
+            <div class="lc-shortcuts"><span><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> เดิน</span><span>เมาส์: มอง / คลิกตี</span><span>กดอักษรค้าง <b>3 วิ</b></span><span><kbd>Esc</kbd> ปล่อยเมาส์</span></div>
+        </footer>
+        <div id="lc-overlay" class="lc-overlay">
+            <div class="lc-dialog" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="lc-dialog-title">
+                <div class="lc-dialog-badge">◈ LETTERCRAFT ADVENTURE</div>
+                <h2 id="lc-dialog-title">นักสำรวจโลกอักษร</h2>
+                <div id="lc-intro">
+                    <p class="lc-lead">ออกเดินทาง ขุดสมบัติ และเก็บตัวอักษร<br>พิชิตภารกิจ <b>20 ชิ้น</b> ใน <b>5 นาที</b></p>
+                    <div class="lc-tutorial">
+                        <div><span>01</span><p><b>มองผ่านสายตานักสำรวจ</b><strong>WASD / ลูกศร</strong> เดินตามทิศที่มอง<br>เมาส์หันซ้าย–ขวา และมองขึ้น–ลง</p></div>
+                        <div><span>02</span><p><b>เล็ง แล้วคลิกขุดหรือฟัน</b>เข้าใกล้ต้นไม้ หิน สัตว์ หรือมอนสเตอร์<br>ใช้ <strong>เป้าเล็งกลางจอ</strong> แล้วคลิกซ้ายจนแตก</p></div>
+                        <div><span>03</span><p><b>กดค้างเพื่อเก็บ</b>เข้าใกล้ตัวอักษรที่ตก หยุดเดิน<br>กดปุ่มตรงตัวค้าง <strong>3 วินาที</strong></p></div>
+                        <div><span>04</span><p><b>อัปเกรด & เอาตัวรอด</b>เดินเก็บอุปกรณ์เพื่อฟันหรือขุดเร็วขึ้น<br>มี <strong>5 หัวใจ</strong> ระวังมอนสเตอร์!</p></div>
+                    </div>
+                    <p class="lc-note">คลิกเริ่มเพื่อล็อกเมาส์ • กด Esc เพื่อปล่อยเมาส์ แล้วคลิกในโลกเพื่อเล่นต่อ<br>ปล่อยปุ่ม เดิน หรือโดนตี ต้องเริ่มเก็บใหม่ แต่หันเมาส์ระหว่างเก็บได้<br>ถ้าอักษรตรงกับ WASD ให้หยุดแล้วกดใหม่เพื่อเก็บ ใช้ลูกศรเดินออกได้</p>
+                    <div class="lc-dialog-actions"><button id="lc-start-button" type="button" class="lc-primary">เริ่มสำรวจ <span>→</span></button><button id="lc-back-button" type="button" class="lc-secondary">กลับบทเรียน</button></div>
+                    <small class="lc-device-note">สำหรับคอมพิวเตอร์ที่มีคีย์บอร์ดและเมาส์ • เปิด/ปิดเสียงได้จากหน้าบทเรียน</small>
+                </div>
+                <div id="lc-help" hidden>
+                    <div class="lc-help-copy"><p><b>W / ↑</b> เดินหน้า • <b>S / ↓</b> ถอยหลัง • <b>A D / ← →</b> เดินด้านข้างตามทิศที่มอง</p><p><b>เมาส์</b> หันซ้าย–ขวา มองขึ้น–ลง • <b>Esc</b> ปล่อยเมาส์เพื่อกดเมนู คลิกในโลกเพื่อล็อกเมาส์อีกครั้ง</p><p><b>คลิกซ้าย</b> ฟันหรือขุดเฉพาะวัตถุที่เป้ากลางจอเล็งและอยู่ใกล้ จนตัวอักษรดรอป ไม่สามารถตีทะลุสิ่งกีดขวาง</p><p><b>กดตัวอักษรค้าง 3 วินาที</b> ขณะหยุดใกล้ของ เพื่อรับเข้ากระเป๋า อุปกรณ์ไม่ลดเวลาเก็บ</p><p>หากปุ่มเก็บเป็น WASD ให้ปล่อยปุ่มเดินก่อนแล้วกดใหม่ค้าง ใช้ลูกศรเดินออกได้ ขยับเมาส์มองรอบตัวระหว่างเก็บได้</p><p>อุปกรณ์ที่เดินเก็บจะอัปเกรดอัตโนมัติ: พลั่วขุดหิน ขวานตัดต้นไม้ ดาบฟันสัตว์และมอนสเตอร์ เกมเลือกใช้ให้ตรงเป้าหมาย</p><p>มีหัวใจ 5 ดวง โดนตีครั้งละ 1 ดวง หลังโดนตีอมตะ 2 วินาที เก็บอักษรจากบทเรียนให้ครบ 20 ชิ้นก่อน 5 นาทีจึงชนะ</p></div>
+                    <p class="lc-note">เวลายังเดินต่อขณะปล่อยเมาส์ ดูวิธีเล่น หรือสลับแท็บ<br>หากเบราว์เซอร์ไม่อนุญาต Pointer Lock ให้ใช้การลากเมาส์ขวาเพื่อมองแทน</p><button id="lc-resume-button" type="button" class="lc-primary">กลับไปสำรวจ →</button>
+                </div>
+                <div id="lc-result" hidden><div id="lc-result-icon" class="lc-result-icon">🏆</div><p id="lc-result-message" class="lc-lead"></p><div class="lc-results"><div><small>เก็บได้</small><b id="lc-result-count"></b></div><div><small>เวลาที่ใช้</small><b id="lc-result-time"></b></div><div><small>หัวใจเหลือ</small><b id="lc-result-hearts"></b></div></div><div class="lc-dialog-actions"><button id="lc-retry-button" type="button" class="lc-primary">สำรวจอีกครั้ง ↻</button><button id="lc-next-button" type="button" class="lc-secondary">บทเรียนถัดไป →</button><button id="lc-result-back" type="button" class="lc-secondary">กลับบทเรียน</button></div></div>
+                <div id="lc-leave" hidden><p class="lc-lead">ต้องการจบรอบนี้และกลับบทเรียนหรือไม่?</p><p class="lc-note">ความคืบหน้าบทเรียนยังอยู่ แต่การเก็บของในรอบนี้จะสิ้นสุด<br>เวลายังเดินต่อระหว่างหน้าต่างนี้</p><div class="lc-dialog-actions"><button id="lc-stay-button" type="button" class="lc-primary">เล่นต่อ</button><button id="lc-confirm-exit" type="button" class="lc-secondary">ออกจากเกม</button></div></div>
+                <div id="lc-error" hidden><p id="lc-error-message" class="lc-lead"></p><button id="lc-error-back" type="button" class="lc-primary">กลับบทเรียน</button></div>
+            </div>
+        </div>
+    </section>
+    <!-- LETTERCRAFT_UI_END -->

@@ -1,0 +1,9 @@
+# FPS final review
+
+Review only; do not edit any source, git state or spawn agents. This work replaces an already implemented local isometric Lettercraft with native WebGL FPS, camera-relative movement, capture lifecycle and original textures. Sources are newly untracked relative to HEAD, no commits or publication authorized. Parent has preserved unrelated pending changes.
+
+Read requirements: docs/superpowers/specs/2026-09-09-lettercraft-first-person.md. Review package: .artifacts/lettercraft-review-package.md (full new sources/tests, generated index duplicates omitted). Renderer report: docs/superpowers/lettercraft-first-person-renderer-report.md. Ledger: docs/superpowers/lettercraft-progress.md. You may inspect index.html for original lesson integration but do not conflate historical 2.5D validation with FPS validation.
+
+Fresh evidence: 38/38 core+renderer tests pass; Chrome real pointer lock/Esc/mouse/key interaction suite passed the main gameplay path, then added fallback-denied/WebGL-unavailable cases. Fallback right-drag bug was traced to pointerdown.preventDefault suppressing compatibility mousemove; fixed to pointermove for that mode and the complete expanded suite is running. Parent handles final browser evidence and screenshots, do not rerun identical tests unless a specific uncovered issue demands a read-only diagnostic.
+
+Check spec compliance AND code quality. Real FPS depth, readable occluded labels, attack/collection arbitration, input lifecycle/retry/capture cancellation, bounded rendering resources, collision/routing, HUD and preserved lesson/progress matter. Report Critical/Important/Minor with exact file/line, impact and concrete reproduction. Do not invent issues; verify data flow. Use strongest available review judgment, no generic suggestions or stylistic churn. Return concise findings and verdict in message (no report file required).

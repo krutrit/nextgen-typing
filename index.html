@@ -88,153 +88,83 @@
             transition: color 0.1s;
         }
 
-        /* ===== Letter Tower Climb 2.5D ===== */
-        #climb-world { transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.5, 1); transform-style: preserve-3d; }
-
-        /* --- 2.5D Plank (3D block) --- */
-        .climb-plank {
-            position: absolute; transform: translateX(-50%);
-            width: 100px; height: 28px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 20px; letter-spacing: 1px;
-            color: #2d1a08;
-            background: linear-gradient(180deg, #e8c87a 0%, #c99a3c 30%, #a07020 70%, #7a5215 100%);
-            border-radius: 6px;
-            border-top: 2px solid #f0dfa0;
-            border-bottom: 3px solid #5a3a0a;
-            box-shadow:
-                0 2px 0 #5a3a0a,
-                0 4px 0 #3d2808,
-                0 6px 12px rgba(0,0,0,0.5),
-                inset 0 2px 3px rgba(255,255,255,0.3),
-                inset 0 -3px 5px rgba(0,0,0,0.3);
-            text-shadow: 0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.2);
-            transition: all 0.2s ease;
-            transform-style: preserve-3d;
-        }
-        /* Wood grain lines */
-        .climb-plank::before {
-            content: '';
-            position: absolute; inset: 3px 8px;
-            background: repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(90,58,10,0.12) 8px, rgba(90,58,10,0.12) 9px);
-            border-radius: 3px; pointer-events: none;
-        }
-        /* 3D side face */
-        .climb-plank::after {
-            content: '';
-            position: absolute; bottom: -8px; left: 4px; right: 4px; height: 8px;
-            background: linear-gradient(180deg, #7a5215, #4a3008);
-            border-radius: 0 0 4px 4px;
-            transform: rotateX(0deg);
-        }
-        .climb-plank.reachable {
-            background: linear-gradient(180deg, #ffe082 0%, #ffc107 30%, #ff9800 70%, #e65100 100%);
-            border-top-color: #fff3b0;
-            box-shadow:
-                0 0 20px rgba(255,193,7,0.6),
-                0 0 40px rgba(255,152,0,0.3),
-                0 2px 0 #c46a00,
-                0 4px 0 #8a4800,
-                0 6px 14px rgba(0,0,0,0.5),
-                inset 0 2px 3px rgba(255,255,255,0.4),
-                inset 0 -3px 5px rgba(0,0,0,0.2);
-            animation: plank-glow 1.2s ease-in-out infinite;
-        }
-        @keyframes plank-glow {
-            0%,100% { transform: translateX(-50%) translateY(0); filter: brightness(1); }
-            50%     { transform: translateX(-50%) translateY(-5px); filter: brightness(1.15); }
-        }
-        .climb-plank.stepped {
-            filter: brightness(0.7) saturate(0.6);
-            opacity: 0.85;
-        }
-        .climb-plank.stepped::after { opacity: 0.6; }
-
-        /* --- Ground --- */
-        .climb-ground {
-            position: absolute; left: 0; right: 0; bottom: 0; height: 50px;
-            background: linear-gradient(180deg, #8B6914 0%, #6B4F10 40%, #4a3508 100%);
-            border-top: 4px solid #c99a3c;
-            box-shadow: inset 0 4px 8px rgba(0,0,0,0.4);
-        }
-        .climb-ground::before {
-            content: '';
-            position: absolute; top: 8px; left: 0; right: 0; height: 2px;
-            background: repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(201,154,60,0.3) 20px, rgba(201,154,60,0.3) 22px);
-        }
-
-        /* --- Character --- */
-        #climb-char-outer {
-            position: absolute; transform: translateX(-50%);
-            transition: left 0.5s cubic-bezier(0.34, 1.2, 0.5, 1), bottom 0.5s cubic-bezier(0.34, 1.2, 0.5, 1);
-            z-index: 10; pointer-events: none;
-        }
-        #climb-char-inner {
-            font-size: 42px; line-height: 1;
-            filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 12px rgba(255,200,50,0.3));
-            transform-origin: bottom center;
-            transition: transform 0.15s ease;
-        }
-        .climb-hop { animation: climb-hop 0.5s cubic-bezier(0.34, 1.4, 0.5, 1); }
-        @keyframes climb-hop {
-            0%   { transform: translateY(0) scaleY(0.8) scaleX(1.1); }
-            30%  { transform: translateY(-35px) scaleY(1.15) scaleX(0.9); }
-            60%  { transform: translateY(-15px) scaleY(1.05); }
-            100% { transform: translateY(0) scaleY(1) scaleX(1); }
-        }
-        .climb-idle { animation: climb-idle 2s ease-in-out infinite; }
-        @keyframes climb-idle {
-            0%,100% { transform: translateY(0); }
-            50%     { transform: translateY(-3px); }
-        }
-
-        /* --- Decorations --- */
-        .climb-decor {
-            position: absolute; opacity: 0.85;
-            animation: climb-float 6s ease-in-out infinite;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        }
-        @keyframes climb-float {
-            0%,100% { transform: translateY(0) rotate(0deg); }
-            50%     { transform: translateY(-14px) rotate(3deg); }
-        }
-
-        /* --- Parallax BG layers --- */
-        .climb-bg-layer {
-            position: absolute; inset: 0; pointer-events: none;
-            transition: transform 0.3s ease-out;
-        }
-
-        /* --- Particles --- */
-        .climb-particle {
-            position: absolute; pointer-events: none; border-radius: 50%;
-            animation: particle-rise linear forwards;
-        }
-        @keyframes particle-rise {
-            0%   { opacity: 0; transform: translateY(0) scale(0.5); }
-            15%  { opacity: 1; }
-            85%  { opacity: 0.8; }
-            100% { opacity: 0; transform: translateY(-120px) scale(0.2); }
-        }
-
-        /* --- Sparkle on correct type --- */
-        .climb-sparkle {
-            position: absolute; pointer-events: none;
-            animation: sparkle-burst 0.6s ease-out forwards;
-        }
-        @keyframes sparkle-burst {
-            0%   { opacity: 1; transform: translate(0,0) scale(1); }
-            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
-        }
-
-        /* --- Tower support pillars --- */
-        .climb-pillar {
-            position: absolute; width: 8px;
-            background: linear-gradient(90deg, rgba(90,58,10,0.5), rgba(122,82,21,0.7), rgba(90,58,10,0.5));
-            border-radius: 3px;
-            pointer-events: none;
-        }
-    </style>
+/* LETTERCRAFT_STYLE_START */
+.lc-shell { position:fixed; inset:0; z-index:120; color:#f6f4e8; background:#99d6ce; font-family:'Sarabun',Tahoma,sans-serif; user-select:none; overflow:hidden; }
+.lc-shell *, .lc-shell *::before, .lc-shell *::after { box-sizing:border-box; }
+.lc-shell [hidden] { display:none!important; }
+#lc-canvas { position:absolute; inset:0; width:100%; height:100%; outline:none; cursor:crosshair; touch-action:none; }
+#lc-labels { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.lc-capture { position:absolute; left:50%; top:55%; transform:translate(-50%,-50%); z-index:5; color:#fff8da; background:#183028ee; padding:16px 24px; border-radius:6px; box-shadow:0 4px 0 #0e1d18; }
+.lc-capture:active { transform:translate(-50%,-50%)!important; }
+.lc-top { position:absolute; top:18px; left:22px; right:22px; display:flex; align-items:center; justify-content:space-between; gap:16px; pointer-events:none; }
+.lc-brand { display:flex; gap:10px; align-items:center; color:#fffce6; text-shadow:0 2px 3px #17352a; }
+.lc-brand-icon { font-size:36px; line-height:1; color:#f6d77a; }
+.lc-brand b { display:block; font:900 19px/1.1 system-ui,sans-serif; letter-spacing:2px; }
+.lc-brand small { display:block; font-size:12px; max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:4px; }
+.lc-vitals { display:flex; align-items:center; gap:18px; padding:13px 23px; background:#162d28ee; border:1px solid #ffffff35; border-radius:16px; box-shadow:0 6px 20px #16362b22; }
+.lc-hearts { color:#ff7880; font-size:24px; letter-spacing:3px; white-space:nowrap; }
+.lc-divider { height:26px; width:1px; background:#ffffff26; }
+.lc-time { font:800 25px/1 system-ui,sans-serif; font-variant-numeric:tabular-nums; letter-spacing:1px; }
+.lc-time.lc-urgent { color:#ff8983; }
+.lc-top-actions { display:flex; gap:7px; pointer-events:auto; }
+.lc-shell button { font:700 14px/1.4 'Sarabun',Tahoma,sans-serif; cursor:pointer; border:1px solid #ffffff35; transition:background .15s,transform .15s; }
+.lc-shell button:focus-visible { outline:3px solid #ffdc77; outline-offset:3px; }
+.lc-top-actions button { color:#fff; background:#163b2ee8; border-radius:11px; padding:11px 15px; }
+.lc-shell button:hover { filter:brightness(1.12); }
+.lc-shell button:active { transform:translateY(1px); }
+.lc-mission { position:absolute; top:91px; left:25px; width:200px; padding:10px 14px; background:#17392dcc; border-radius:5px; border:1px solid #ffffff28; pointer-events:none; }
+.lc-eyebrow { display:block; color:#a9cfac; font-size:10px; letter-spacing:1px; margin-bottom:6px; }
+.lc-mission strong { display:flex; justify-content:space-between; gap:8px; font-size:14px; }
+.lc-mission small, .lc-mission .lc-eyebrow { display:none; }
+.lc-meter { height:5px; background:#ffffff1f; border-radius:10px; margin:10px 0 5px; overflow:hidden; }
+.lc-meter i { display:block; width:0; height:100%; background:#fbd56d; transition:width .2s; }
+.lc-toast { position:absolute; top:95px; left:50%; transform:translateX(-50%); max-width:min(460px,65vw); background:#fff6dcef; color:#334b32; font-size:14px; font-weight:700; border:1px solid #ffe4a1; padding:12px 20px; border-radius:12px; box-shadow:0 4px 12px #122f2426; text-align:center; pointer-events:none; }
+.lc-bottom { position:absolute; bottom:13px; left:50%; transform:translateX(-50%); width:min(710px,calc(100% - 36px)); pointer-events:none; }
+.lc-context { display:table; max-width:100%; margin:0 auto 12px; padding:9px 18px; border-radius:10px; color:#fff9e4; background:#152d27ed; border:1px solid #fbdb783d; text-align:center; font-size:13px; box-shadow:0 4px 12px #13372b22; }
+.lc-inventory-row { display:flex; align-items:stretch; gap:10px; }
+.lc-tools { display:flex; padding:6px; gap:5px; background:#18392eea; border:1px solid #ffffff3b; border-radius:14px; flex-shrink:0; }
+.lc-tool { width:52px; display:flex; align-items:center; flex-direction:column; background:#ffffff0a; border:1px solid #ffffff22; border-radius:3px; padding:3px 4px; }
+.lc-tool>span { font-size:23px; line-height:1.3; }
+.lc-tool b { font-size:10px; font-weight:500; }
+.lc-tool small { font-size:9px; color:#f6d786; }
+.lc-tool.lc-equipped { border-color:#f9d478; background:#efd67414; }
+.lc-bag { flex:1; min-width:0; padding:10px 13px; border-radius:14px; background:#18392eee; border:1px solid #ffffff3b; }
+.lc-bag-title { display:flex; justify-content:space-between; font-size:12px; margin-bottom:7px; }
+.lc-bag-title small { color:#9fbdab; font-size:10px; }
+.lc-quest { display:flex; gap:5px; overflow-x:auto; pointer-events:auto; padding-bottom:2px; scrollbar-width:thin; }
+.lc-quest span { min-width:32px; height:43px; padding:3px 4px; display:flex; align-items:center; justify-content:center; flex-direction:column; border:1px solid #ffffff28; border-radius:6px; font-size:18px; line-height:1.2; background:#ffffff0b; }
+.lc-quest small { font:9px/1.3 system-ui,sans-serif; color:#aac0af; margin-top:2px; }
+.lc-quest .lc-collected { background:#74b96530; border-color:#81cc71; color:#b8f3a5; }
+.lc-shortcuts { display:flex; justify-content:center; flex-wrap:wrap; gap:16px; margin-top:8px; font-size:10px; color:#fffde5; text-shadow:0 1px 3px #142c20,0 1px 3px #142c20; }
+.lc-shortcuts kbd { font-family:inherit; font-size:9px; color:#e4ecd9; background:#294638; text-shadow:none; padding:2px 4px; border-radius:3px; }
+.lc-overlay { position:absolute; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; padding:22px; background:#102b2859; backdrop-filter:blur(5px); }
+.lc-dialog { width:640px; max-width:100%; max-height:100%; overflow:auto; outline:none; padding:28px 34px 22px; color:#233e32; background:linear-gradient(150deg,#fffdf0,#edf4de); border:2px solid #ffffffd9; border-radius:23px; box-shadow:0 22px 90px #072d3859,0 0 0 6px #ffffff12; }
+.lc-dialog-badge { color:#68866a; font:800 10px/1.5 system-ui,sans-serif; letter-spacing:2.8px; text-align:center; }
+.lc-dialog h2 { margin:9px 0 10px; text-align:center; font-size:30px; font-weight:900; line-height:1.4; color:#254a34; }
+.lc-lead { text-align:center; color:#58705a; font-size:15px; line-height:1.8; margin:8px 0 19px; }
+.lc-lead b { color:#295338; }
+.lc-tutorial { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.lc-tutorial>div { display:flex; align-items:flex-start; gap:10px; padding:14px 12px; border:1px solid #67895625; border-radius:12px; background:#ffffff94; }
+.lc-tutorial>div>span { background:#e4ecd5; color:#6a865c; padding:4px 6px; font:800 10px/1.4 system-ui; border-radius:5px; margin-top:2px; }
+.lc-tutorial p { margin:0; font-size:11px; line-height:1.8; color:#627157; }
+.lc-tutorial b { display:block; color:#284c34; font-size:14px; margin-bottom:4px; }
+.lc-tutorial strong { color:#3d653e; }
+.lc-note { font-size:11px; line-height:1.8; padding:10px 13px; margin:14px 0; background:#ede6c761; border:1px solid #d4bc7730; border-radius:8px; color:#817449; text-align:center; }
+.lc-dialog-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; }
+.lc-primary { flex:1; min-width:145px; background:#356b43; color:#fffce7; padding:13px 20px; border-radius:10px; box-shadow:0 3px 0 #254c30; }
+.lc-primary span { margin-left:12px; }
+.lc-secondary { background:#ffffff80; color:#48664b; padding:12px 18px; border:1px solid #67895640!important; border-radius:10px; }
+.lc-device-note { display:block; margin-top:14px; text-align:center; color:#8c997e; font-size:9px; }
+.lc-help-copy p { font-size:13px; line-height:1.8; margin:12px 0; }
+.lc-result-icon { font-size:60px; text-align:center; margin:18px 0; }
+.lc-results { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.lc-results>div { background:#dde9d4; padding:15px; border-radius:10px; text-align:center; }
+.lc-results small { display:block; font-size:10px; color:#75876b; }
+.lc-results b { display:block; font:800 24px/1.5 system-ui,sans-serif; }
+@media(max-width:760px) { .lc-top { left:12px;right:12px;top:12px;gap:8px; } .lc-brand b { font-size:13px; } .lc-brand-icon { font-size:28px; } .lc-brand small { max-width:150px;font-size:9px; } .lc-vitals { padding:10px 12px;gap:8px; } .lc-hearts { font-size:16px;letter-spacing:0; } .lc-time { font-size:19px; } .lc-top-actions button { padding:8px 10px; } .lc-top-actions span { display:none; } .lc-mission { top:79px;left:12px;width:168px;padding:10px 12px; } .lc-mission strong { font-size:12px; } .lc-tool { width:44px; } .lc-bag-title small { display:none; } .lc-toast { top:150px; } .lc-dialog { padding:20px; } .lc-dialog h2 { font-size:24px; } .lc-context { font-size:11px; } }
+@media(max-height:650px) { .lc-dialog { padding:17px 24px; } .lc-dialog h2 { font-size:23px;margin:5px 0; } .lc-lead { font-size:12px;line-height:1.5;margin:6px 0 12px; } .lc-tutorial>div { padding:9px; } .lc-tutorial b { font-size:12px;margin:0; } .lc-note { margin:9px 0;padding:6px 10px;font-size:10px; } .lc-device-note { margin-top:8px; } .lc-bottom { bottom:8px; } .lc-shortcuts { display:none; } }
+@media(max-width:460px) { .lc-brand small { display:none; } .lc-brand b { font-size:10px;letter-spacing:.5px; } .lc-brand-icon { display:none; } .lc-tutorial { grid-template-columns:1fr; } .lc-dialog { padding:18px; } .lc-tools { gap:2px;padding:3px; } .lc-tool { width:35px; } .lc-mission { width:147px; } }
+/* LETTERCRAFT_STYLE_END */    </style>
 </head>
 <body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex flex-col selection:bg-indigo-500 selection:text-white">
 
@@ -631,97 +561,60 @@
             </div>
 
             <div class="flex flex-col gap-3 relative z-10">
-                <button onclick="startMiniGame()" id="btn-mini-game" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-sm font-bold transition-all transform hover:scale-[1.02] cursor-pointer hidden">🌳 เล่นเกมปีนหอคอยตัวอักษร</button>
+                <button onclick="startMiniGame()" id="btn-mini-game" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-sm font-bold transition-all transform hover:scale-[1.02] cursor-pointer hidden">🌳 เล่นเกมนักสำรวจโลกอักษร</button>
                 <button onclick="nextLesson()" id="btn-next-lesson" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-bold transition-colors cursor-pointer hidden">บทเรียนถัดไป →</button>
                 <button onclick="resetLessonAndClose()" class="text-xs text-slate-500 hover:text-slate-300 mt-2 cursor-pointer relative z-20">พิมพ์ซ้ำอีกครั้ง</button>
             </div>
         </div>
     </div>
 
-    <!-- Letter Tower Climb Game UI (2.5D Physics Engine) -->
-    <div id="game-ui" class="hidden flex-col absolute inset-0 bg-slate-950 z-[120] select-none">
-        <!-- Game Header HUD -->
-        <div class="h-14 flex items-center justify-between px-3 sm:px-6 border-b border-white/10 bg-slate-900/90 backdrop-blur-md z-30 shrink-0">
-            <div class="flex items-center gap-2 sm:gap-3">
-                <span class="text-2xl" id="minigame-theme-emoji">🚀</span>
-                <div>
-                    <h2 id="minigame-title-text" class="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
-                        Space Defender
-                    </h2>
-                    <span class="text-[10px] text-indigo-400 font-medium hidden sm:inline" id="minigame-lesson-tag">Lesson 1</span>
-                </div>
+    <!-- LETTERCRAFT_UI_START -->
+    <section id="game-ui" class="lc-shell" style="display:none" aria-label="เกมนักสำรวจโลกอักษร">
+        <canvas id="lc-canvas" tabindex="0" aria-label="โลกบล็อก ใช้ WASD หรือลูกศรเดิน เลื่อนเมาส์เพื่อหัน คลิกซ้ายเพื่อฟันหรือขุด"></canvas>
+        <canvas id="lc-labels" aria-hidden="true"></canvas>
+        <button type="button" id="lc-capture" class="lc-capture" hidden>คลิกเพื่อสำรวจ • ล็อกเมาส์</button>
+        <header class="lc-top">
+            <div class="lc-brand"><span class="lc-brand-icon">◈</span><div><b>LETTERCRAFT</b><small id="lc-lesson">นักสำรวจโลกอักษร</small></div></div>
+            <div class="lc-vitals"><span id="lc-hearts" class="lc-hearts" aria-label="หัวใจ 5 ดวง">♥ ♥ ♥ ♥ ♥</span><span class="lc-divider"></span><span id="lc-time" class="lc-time">05:00</span></div>
+            <div class="lc-top-actions"><button type="button" id="lc-help-button">? <span>วิธีเล่น</span></button><button type="button" id="lc-exit-button" aria-label="ออกจากเกม">✕</button></div>
+        </header>
+        <div class="lc-mission"><span class="lc-eyebrow">ภารกิจนักสำรวจ</span><strong>เก็บตัวอักษร <span id="lc-count">0 / 20</span></strong><div class="lc-meter"><i id="lc-mission-fill"></i></div><small>ตัวอักษรจากบทเรียนของคุณ</small></div>
+        <div id="lc-toast" class="lc-toast" role="status" aria-live="polite" hidden></div>
+        <footer class="lc-bottom">
+            <div id="lc-context" class="lc-context">เดินเข้าใกล้หิน แล้วคลิกเพื่อเริ่มขุด</div>
+            <div class="lc-inventory-row">
+                <div class="lc-tools" aria-label="อุปกรณ์"><div class="lc-tool"><span>⛏</span><b>พลั่ว</b><small id="lc-pickaxe">ไม้</small></div><div class="lc-tool"><span>🪓</span><b>ขวาน</b><small id="lc-axe">ไม้</small></div><div class="lc-tool"><span>⚔</span><b>ดาบ</b><small id="lc-sword">ไม้</small></div></div>
+                <div class="lc-bag"><div class="lc-bag-title">กระเป๋าตัวอักษร <small>เก็บให้ครบทุกช่อง</small></div><div id="lc-quest" class="lc-quest"></div></div>
             </div>
-
-            <!-- Theme Selector -->
-            <div class="flex items-center gap-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
-                <select id="minigame-theme-select" onchange="minigameChangeTheme(this.value)" class="bg-transparent text-xs text-white outline-none cursor-pointer px-2 py-1">
-                    <option value="space">🚀 Space Defender</option>
-                    <option value="cyber">🏎️ Cyber Runner</option>
-                    <option value="samurai">⚔️ Samurai Slash</option>
-                    <option value="minimal">🎵 Minimal Rhythm</option>
-                </select>
-            </div>
-
-            <button onclick="minigameExit()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-rose-500 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer" title="ออกจากการเล่นเกม">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-
-        <div class="flex-1 relative overflow-hidden bg-slate-950" id="minigame-area">
-            <!-- Canvas Container -->
-            <canvas id="minigame-canvas" class="absolute inset-0 w-full h-full"></canvas>
-
-            <!-- Score / Word HUD Overlay -->
-            <div class="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none z-20">
-                <div class="bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-2xl">
-                    <div id="minigame-target-word" class="text-3xl font-mono text-white tracking-[0.2em] font-bold"></div>
-                    <div class="flex gap-4 mt-2">
-                        <span class="text-xs text-slate-400">พิมพ์ถูก: <span id="minigame-hits" class="text-emerald-400 font-bold">0</span></span>
-                        <span class="text-xs text-slate-400">Combo: <span id="minigame-combo" class="text-amber-400 font-bold">0</span></span>
+            <div class="lc-shortcuts"><span><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> เดิน</span><span>เมาส์: มอง / คลิกตี</span><span>กดอักษรค้าง <b>3 วิ</b></span><span><kbd>Esc</kbd> ปล่อยเมาส์</span></div>
+        </footer>
+        <div id="lc-overlay" class="lc-overlay">
+            <div class="lc-dialog" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="lc-dialog-title">
+                <div class="lc-dialog-badge">◈ LETTERCRAFT ADVENTURE</div>
+                <h2 id="lc-dialog-title">นักสำรวจโลกอักษร</h2>
+                <div id="lc-intro">
+                    <p class="lc-lead">ออกเดินทาง ขุดสมบัติ และเก็บตัวอักษร<br>พิชิตภารกิจ <b>20 ชิ้น</b> ใน <b>5 นาที</b></p>
+                    <div class="lc-tutorial">
+                        <div><span>01</span><p><b>มองผ่านสายตานักสำรวจ</b><strong>WASD / ลูกศร</strong> เดินตามทิศที่มอง<br>เมาส์หันซ้าย–ขวา และมองขึ้น–ลง</p></div>
+                        <div><span>02</span><p><b>เล็ง แล้วคลิกขุดหรือฟัน</b>เข้าใกล้ต้นไม้ หิน สัตว์ หรือมอนสเตอร์<br>ใช้ <strong>เป้าเล็งกลางจอ</strong> แล้วคลิกซ้ายจนแตก</p></div>
+                        <div><span>03</span><p><b>กดค้างเพื่อเก็บ</b>เข้าใกล้ตัวอักษรที่ตก หยุดเดิน<br>กดปุ่มตรงตัวค้าง <strong>3 วินาที</strong></p></div>
+                        <div><span>04</span><p><b>อัปเกรด & เอาตัวรอด</b>เดินเก็บอุปกรณ์เพื่อฟันหรือขุดเร็วขึ้น<br>มี <strong>5 หัวใจ</strong> ระวังมอนสเตอร์!</p></div>
                     </div>
+                    <p class="lc-note">คลิกเริ่มเพื่อล็อกเมาส์ • กด Esc เพื่อปล่อยเมาส์ แล้วคลิกในโลกเพื่อเล่นต่อ<br>ปล่อยปุ่ม เดิน หรือโดนตี ต้องเริ่มเก็บใหม่ แต่หันเมาส์ระหว่างเก็บได้<br>ถ้าอักษรตรงกับ WASD ให้หยุดแล้วกดใหม่เพื่อเก็บ ใช้ลูกศรเดินออกได้</p>
+                    <div class="lc-dialog-actions"><button id="lc-start-button" type="button" class="lc-primary">เริ่มสำรวจ <span>→</span></button><button id="lc-back-button" type="button" class="lc-secondary">กลับบทเรียน</button></div>
+                    <small class="lc-device-note">สำหรับคอมพิวเตอร์ที่มีคีย์บอร์ดและเมาส์ • เปิด/ปิดเสียงได้จากหน้าบทเรียน</small>
                 </div>
-            </div>
-
-            <!-- Start Modal -->
-            <div id="minigame-start-modal" class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-                <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 text-center max-w-sm shadow-2xl">
-                    <div id="minigame-start-icon" class="text-6xl mb-4">🚀</div>
-                    <h3 class="text-xl font-bold text-white mb-2">พร้อมหรือยัง?</h3>
-                    <p class="text-sm text-slate-400 mb-6" id="minigame-start-desc">พิมพ์ตัวอักษรให้ถูกต้องเพื่อทำลายเป้าหมาย</p>
-                    <button onclick="minigameStart()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer">เริ่มเกม!</button>
+                <div id="lc-help" hidden>
+                    <div class="lc-help-copy"><p><b>W / ↑</b> เดินหน้า • <b>S / ↓</b> ถอยหลัง • <b>A D / ← →</b> เดินด้านข้างตามทิศที่มอง</p><p><b>เมาส์</b> หันซ้าย–ขวา มองขึ้น–ลง • <b>Esc</b> ปล่อยเมาส์เพื่อกดเมนู คลิกในโลกเพื่อล็อกเมาส์อีกครั้ง</p><p><b>คลิกซ้าย</b> ฟันหรือขุดเฉพาะวัตถุที่เป้ากลางจอเล็งและอยู่ใกล้ จนตัวอักษรดรอป ไม่สามารถตีทะลุสิ่งกีดขวาง</p><p><b>กดตัวอักษรค้าง 3 วินาที</b> ขณะหยุดใกล้ของ เพื่อรับเข้ากระเป๋า อุปกรณ์ไม่ลดเวลาเก็บ</p><p>หากปุ่มเก็บเป็น WASD ให้ปล่อยปุ่มเดินก่อนแล้วกดใหม่ค้าง ใช้ลูกศรเดินออกได้ ขยับเมาส์มองรอบตัวระหว่างเก็บได้</p><p>อุปกรณ์ที่เดินเก็บจะอัปเกรดอัตโนมัติ: พลั่วขุดหิน ขวานตัดต้นไม้ ดาบฟันสัตว์และมอนสเตอร์ เกมเลือกใช้ให้ตรงเป้าหมาย</p><p>มีหัวใจ 5 ดวง โดนตีครั้งละ 1 ดวง หลังโดนตีอมตะ 2 วินาที เก็บอักษรจากบทเรียนให้ครบ 20 ชิ้นก่อน 5 นาทีจึงชนะ</p></div>
+                    <p class="lc-note">เวลายังเดินต่อขณะปล่อยเมาส์ ดูวิธีเล่น หรือสลับแท็บ<br>หากเบราว์เซอร์ไม่อนุญาต Pointer Lock ให้ใช้การลากเมาส์ขวาเพื่อมองแทน</p><button id="lc-resume-button" type="button" class="lc-primary">กลับไปสำรวจ →</button>
                 </div>
-            </div>
-
-            <!-- Win Modal -->
-            <div id="minigame-win-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-                <div class="bg-slate-900 p-8 rounded-3xl border border-emerald-500/30 text-center max-w-md w-full shadow-2xl">
-                    <div class="text-6xl mb-4 animate-bounce">🏆</div>
-                    <h2 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">ยอดเยี่ยมมาก!</h2>
-                    <p class="text-slate-400 text-sm mb-6">คุณเคลียร์บทเรียนนี้สำเร็จแล้ว</p>
-                    <div class="grid grid-cols-3 gap-4 mb-8">
-                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 mb-1">ความแม่นยำ</p>
-                            <p class="text-lg font-bold text-emerald-400" id="minigame-win-acc">100%</p>
-                        </div>
-                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 mb-1">เวลา (วิ)</p>
-                            <p class="text-lg font-bold text-sky-400" id="minigame-win-time">0.0</p>
-                        </div>
-                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-slate-400 mb-1">Max Combo</p>
-                            <p class="text-lg font-bold text-amber-400" id="minigame-win-combo">0</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-3">
-                        <button onclick="minigameNextLesson()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-bold shadow-lg transition cursor-pointer">ไปบทเรียนถัดไป →</button>
-                        <button onclick="minigameExit()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition cursor-pointer">ปิดหน้าต่างเกม</button>
-                    </div>
-                </div>
+                <div id="lc-result" hidden><div id="lc-result-icon" class="lc-result-icon">🏆</div><p id="lc-result-message" class="lc-lead"></p><div class="lc-results"><div><small>เก็บได้</small><b id="lc-result-count"></b></div><div><small>เวลาที่ใช้</small><b id="lc-result-time"></b></div><div><small>หัวใจเหลือ</small><b id="lc-result-hearts"></b></div></div><div class="lc-dialog-actions"><button id="lc-retry-button" type="button" class="lc-primary">สำรวจอีกครั้ง ↻</button><button id="lc-next-button" type="button" class="lc-secondary">บทเรียนถัดไป →</button><button id="lc-result-back" type="button" class="lc-secondary">กลับบทเรียน</button></div></div>
+                <div id="lc-leave" hidden><p class="lc-lead">ต้องการจบรอบนี้และกลับบทเรียนหรือไม่?</p><p class="lc-note">ความคืบหน้าบทเรียนยังอยู่ แต่การเก็บของในรอบนี้จะสิ้นสุด<br>เวลายังเดินต่อระหว่างหน้าต่างนี้</p><div class="lc-dialog-actions"><button id="lc-stay-button" type="button" class="lc-primary">เล่นต่อ</button><button id="lc-confirm-exit" type="button" class="lc-secondary">ออกจากเกม</button></div></div>
+                <div id="lc-error" hidden><p id="lc-error-message" class="lc-lead"></p><button id="lc-error-back" type="button" class="lc-primary">กลับบทเรียน</button></div>
             </div>
         </div>
-    </div>
-
-<script>
+    </section>
+    <!-- LETTERCRAFT_UI_END --><script>
     // --- SETUP: URL สำหรับเชื่อมต่อฐานข้อมูล (กรณีเปิด Local) ---
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxUF8v6MLsnuRip4TlA34zMKprgj3cJaU76_TyiivwtWJo8lai3kqb_1jT0y14sKLDpcw/exec";
 
@@ -868,9 +761,8 @@
         currentUser: null,
         userSettings: { targetLength: 1000 },
         isDataLoaded: false,
-        // Game State (Letter Tower Climb)
+        // Game State (Lettercraft Adventure)
         isGameMode: false,
-        climb: null,
         displayIndex: 0
     };
 
@@ -916,9 +808,7 @@
         document.addEventListener('keydown', handleGlobalKeydown);
         document.addEventListener('click', (e) => focusInput(e));
         
-        window.addEventListener('resize', () => {
-            if(state.isGameMode && typeof climbOnResize === 'function') climbOnResize();
-        });
+
     }
 
     function onDataLoaded(data, isRemote) {
@@ -1409,8 +1299,9 @@
     }
 
     function handleGlobalKeydown(e) {
+        if (state.isGameMode) { handleGameInput(e); return; }
         if ((e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') && e.target.id !== 'hidden-input') return;
-        if(state.isGameMode) handleGameInput(e); else handleTyping(e);
+        handleTyping(e);
     }
 
     function setLanguage(lang) {
@@ -1518,6 +1409,7 @@
     }
 
     function focusInput(e) {
+        if (state.isGameMode) return;
         if (e && e.target && (['input', 'select', 'textarea', 'button', 'a'].includes(e.target.tagName.toLowerCase()) || e.target.closest('button') || e.target.closest('select'))) return;
         if ((document.getElementById('login-modal') && !document.getElementById('login-modal').classList.contains('hidden')) || (document.getElementById('admin-panel') && !document.getElementById('admin-panel').classList.contains('hidden'))) return;
         const input = document.getElementById('hidden-input'); if(input) input.focus();
@@ -1685,635 +1577,932 @@
     }
 
 
-    // =========================================================================
-    // --- 2.5D PHYSICS-BASED LETTER TOWER CLIMB ENGINE ---
-    // =========================================================================
-    // 1. Physics-Based Movement: 2-Bone Analytical IK, Mass & Momentum, Seesaw Balance, Verlet Ragdoll
-    // 2. Dynamic Gameplay: Type-to-Spawn, Spelling Combos (Springboard Blast), Interactive Shapes
-    // 3. Environmental Hazards: Destructible Tower (Jenga Effect), Wind & Weather Simulation
-
-    // --- Audio Synthesizer for Game Sound Effects ---
-    function playClimbSound(type) {
-        if (!state.isSoundOn) return;
-        try {
-            if (!audioCtx || audioCtx.state === 'suspended') audioCtx.resume();
-            const now = audioCtx.currentTime;
-            if (type === 'jump') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(260, now);
-                osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-                osc.start(now); osc.stop(now + 0.12);
-            } else if (type === 'spawn') {
-                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, now + i * 0.03);
-                    gain.gain.setValueAtTime(0.08, now + i * 0.03);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.22);
-                    osc.start(now + i * 0.03); osc.stop(now + i * 0.03 + 0.22);
-                });
-            } else if (type === 'land') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(140, now);
-                osc.frequency.exponentialRampToValueAtTime(45, now + 0.08);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-                osc.start(now); osc.stop(now + 0.08);
-            } else if (type === 'seesaw') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(170, now);
-                osc.frequency.linearRampToValueAtTime(220, now + 0.1);
-                gain.gain.setValueAtTime(0.04, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'springboard') {
-                [261.63, 329.63, 392.00, 523.25, 659.25, 783.99].forEach((f, i) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(f, now + i * 0.04);
-                    gain.gain.setValueAtTime(0.12, now + i * 0.04);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.35);
-                    osc.start(now + i * 0.04); osc.stop(now + i * 0.04 + 0.35);
-                });
-            } else if (type === 'ragdoll') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(190, now);
-                osc.frequency.exponentialRampToValueAtTime(70, now + 0.16);
-                gain.gain.setValueAtTime(0.09, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                osc.start(now); osc.stop(now + 0.16);
-            } else if (type === 'crumble') {
-                const bufferSize = audioCtx.sampleRate * 0.25;
-                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                const noise = audioCtx.createBufferSource();
-                noise.buffer = buffer;
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass'; filter.frequency.setValueAtTime(320, now);
-                const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.16, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-                noise.start(now);
-            } else if (type === 'win') {
-                [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(f, now + i * 0.08);
-                    gain.gain.setValueAtTime(0.12, now + i * 0.08);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.4);
-                    osc.start(now + i * 0.08); osc.stop(now + i * 0.08 + 0.4);
-                });
-            }
-        } catch(e) { /* silent on audio context restrictions */ }
-    }
-
-    // --- Letter Dynamics Sets & Properties ---
-    const CLIMB_HEAVY_CHARS = new Set(['W','M','D','B','H','O','ญ','ฒ','ณ','ฐ','ฆ','ต','ถ','ภ','ม']);
-    const CLIMB_LIGHT_CHARS = new Set(['I','i','l','j','t','f','r','เ','แ','โ','ใ','ไ','ิ','ี','ึ','ื','ุ','ู','่','้','๊','๋','์']);
-    const CLIMB_SEESAW_CHARS = new Set(['T','t','Y','y','V','v','P','p','F','f','โ','ใ','ไ','?','!','ง','จ','ฉ']);
-    const CLIMB_ROLLING_CHARS = new Set(['O','o','0','Q','ถ','ด']);
-    const CLIMB_SLIDING_CHARS = new Set(['Q','q','J','j','S','s','Z','z','ร','ล']);
-
-// ==========================================
-// MULTI-THEME MINIGAME ENGINE
-// ==========================================
-const Minigame = {
-    canvas: null,
-    ctx: null,
-    state: 'idle', // idle, playing, won
-    theme: 'space',
-    words: [],
-    targets: [], // Active targets on screen
-    currentWordIdx: 0,
-    currentCharIdx: 0,
-    hits: 0,
-    errors: 0,
-    combo: 0,
-    maxCombo: 0,
-    startTime: 0,
-    lastTime: 0,
-    particles: [],
-    backgroundOffset: 0,
-    animationId: null
-};
-
-function minigameInit() {
-    Minigame.canvas = document.getElementById('minigame-canvas');
-    if(!Minigame.canvas) return;
-    Minigame.ctx = Minigame.canvas.getContext('2d');
-    
-    // Resize
-    window.removeEventListener('resize', minigameResize);
-    window.addEventListener('resize', minigameResize);
-    minigameResize();
-    
-    // Load preference
-    const savedTheme = localStorage.getItem('ngt_minigame_theme');
-    if (savedTheme) {
-        document.getElementById('minigame-theme-select').value = savedTheme;
-        minigameChangeTheme(savedTheme);
-    } else {
-        minigameChangeTheme('space');
-    }
-}
-
-function minigameResize() {
-    if(!Minigame.canvas) return;
-    const rect = Minigame.canvas.parentElement.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    Minigame.canvas.width = rect.width * dpr;
-    Minigame.canvas.height = rect.height * dpr;
-    Minigame.ctx.scale(dpr, dpr);
-}
-
-function minigameChangeTheme(theme) {
-    Minigame.theme = theme;
-    localStorage.setItem('ngt_minigame_theme', theme);
-    
-    // Update UI headers
-    const headers = {
-        'space': { emoji: '🚀', text: 'Space Defender' },
-        'cyber': { emoji: '🏎️', text: 'Cyber Runner' },
-        'samurai': { emoji: '⚔️', text: 'Samurai Slash' },
-        'minimal': { emoji: '🎵', text: 'Minimal Rhythm' }
-    };
-    if (headers[theme]) {
-        document.getElementById('minigame-theme-emoji').innerText = headers[theme].emoji;
-        document.getElementById('minigame-title-text').innerText = headers[theme].text;
-        document.getElementById('minigame-start-icon').innerText = headers[theme].emoji;
-        document.getElementById('minigame-start-desc').innerText = 
-            theme === 'minimal' ? 'พิมพ์ตัวอักษรให้ทันจังหวะก่อนที่จะเลยเส้น' : 
-            theme === 'samurai' ? 'สวมวิญญาณซามูไร พิมพ์ฟันเป้าหมายให้ขาด!' : 
-            theme === 'cyber' ? 'พิมพ์ให้ไวเพื่อพุ่งทะลวงกำแพงแสง' : 
-            'พิมพ์ตัวอักษรให้ถูกต้องเพื่อทำลายเป้าหมาย';
-    }
-}
-
-function startMiniGame() {
-    closeModal();
-    state.isGameMode = true; // Flag for global input handler
-    const ui = document.getElementById('game-ui');
-    ui.classList.remove('hidden');
-    ui.style.display = 'flex';
-    document.getElementById('minigame-start-modal').classList.remove('hidden');
-    document.getElementById('minigame-win-modal').classList.add('hidden');
-    
-    const lesson = curriculum[state.lang][state.lessonIndex];
-    document.getElementById('minigame-lesson-tag').innerText = lesson.name || ('บทเรียนที่ ' + (state.lessonIndex+1));
-    
-    minigameInit();
-    
-    // Generate words from current lesson
-    const fullText = generateContent(lesson);
-    Minigame.words = fullText.split(/\s+/).filter(w => w.length > 0);
-    if(Minigame.words.length === 0) Minigame.words = ['TEST'];
-    
-    Minigame.state = 'idle';
-    minigameRenderFrame(0); // Draw background
-}
-
-function minigameStart() {
-    document.getElementById('minigame-start-modal').classList.add('hidden');
-    Minigame.state = 'playing';
-    Minigame.targets = [];
-    Minigame.currentWordIdx = 0;
-    Minigame.currentCharIdx = 0;
-    Minigame.hits = 0;
-    Minigame.errors = 0;
-    Minigame.combo = 0;
-    Minigame.maxCombo = 0;
-    Minigame.startTime = performance.now();
-    Minigame.lastTime = performance.now();
-    Minigame.particles = [];
-    Minigame.backgroundOffset = 0;
-    
-    minigameSpawnTarget();
-    minigameUpdateHUD();
-    cancelAnimationFrame(Minigame.animationId);
-    Minigame.animationId = requestAnimationFrame(minigameLoop);
-    focusInput();
-}
-
-function minigameExit() {
-    state.isGameMode = false;
-    Minigame.state = 'idle';
-    cancelAnimationFrame(Minigame.animationId);
-    document.getElementById('game-ui').classList.add('hidden');
-    document.getElementById('game-ui').style.display = 'none';
-}
-
-function minigameNextLesson() {
-    minigameExit();
-    if (state.lessonIndex < curriculum[state.lang].length - 1) {
-        state.lessonIndex++;
-        loadLesson(state.lessonIndex);
-    }
-}
-
-function minigameSpawnTarget() {
-    if (Minigame.currentWordIdx >= Minigame.words.length) {
-        minigameWin();
-        return;
-    }
-    
-    const word = Minigame.words[Minigame.currentWordIdx];
-    const canvasW = Minigame.canvas.width / (window.devicePixelRatio || 1);
-    
-    Minigame.targets.push({
-        word: word,
-        x: canvasW * 0.2 + Math.random() * (canvasW * 0.6),
-        y: -50,
-        speed: 1.5 + Math.random() * 1.5,
-        hitIdx: 0,
-        active: true
-    });
-}
-
-function handleGameInput(e) {
-    if (Minigame.state !== 'playing' || Minigame.targets.length === 0) return;
-    
-    const target = Minigame.targets[0];
-    const expectedChar = target.word[Minigame.currentCharIdx];
-    const typedChar = getVirtualChar(e.key);
-    
-    if (typedChar === expectedChar || e.key === expectedChar) {
-        // Hit
-        Minigame.currentCharIdx++;
-        Minigame.hits++;
-        Minigame.combo++;
-        if (Minigame.combo > Minigame.maxCombo) Minigame.maxCombo = Minigame.combo;
-        
-        if (state.isSoundOn) playSound(true);
-        minigameCreateParticles(target.x, target.y + 50, '#10b981', 8);
-        
-        if (Minigame.currentCharIdx >= target.word.length) {
-            // Word complete
-            minigameCreateParticles(target.x, target.y + 50, '#3b82f6', 25);
-            Minigame.targets.shift();
-            Minigame.currentWordIdx++;
-            Minigame.currentCharIdx = 0;
-            setTimeout(minigameSpawnTarget, Minigame.theme === 'cyber' ? 200 : 400);
+// LETTERCRAFT_SCRIPT_START
+/* Lettercraft simulation: no browser dependencies. Time is seconds; positions are map tiles. */
+class LettercraftGame {
+    constructor(text, rng = Math.random) {
+        this.rng = rng; this.size = 32; this.id = 1;
+        this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.22, swing: 0 };
+        this.hearts = 5; this.invulnerable = 0; this.elapsed = 0;
+        this.status = 'ready'; this.reason = ''; this.goal = 0; this.collected = 0;
+        this.goals = Object.create(null); this.inventory = Object.create(null);
+        this.entities = []; this.enemies = []; this.drops = []; this.events = [];
+        this.tools = { pickaxe: 0, axe: 0, sword: 0 }; this.firstPickaxe = false;
+        this.keys = new Map(); this.blocked = new Set(); this.collecting = null;
+        this.cooldown = 0; this.nextSpawn = 20; this.flow = null; this.flowTime = 0;
+        this.message = ''; this.messageTime = 0; this.warned = false;
+        const chars = [...new Set(Array.from(String(text)).filter(c => c.length === 1 && /[\p{L}\p{N}\p{M}\p{P}\p{S}]/u.test(c)))];
+        for (let i = chars.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+        if (!chars.length) { this.status = 'invalid'; return; }
+        this.goal = 20;
+        const quest = Array.from({ length: this.goal }, (_, i) => chars[i % chars.length]);
+        quest.forEach(c => { this.goals[c] = (this.goals[c] || 0) + 1; this.inventory[c] = 0; });
+        const sites = [];
+        for (let x = 3; x < 31; x += 4) for (let y = 3; y < 31; y += 4) {
+            if (Math.hypot(x + 0.5 - 16.5, y + 0.5 - 16.5) > 3) sites.push({ x: x + 0.5, y: y + 0.5 });
         }
-    } else {
-        // Miss
-        if (['Shift', 'Control', 'Alt', 'CapsLock', 'Tab', 'Meta', 'Backspace', 'Enter'].includes(e.key)) return;
-        Minigame.errors++;
-        Minigame.combo = 0;
-        if (state.isSoundOn) playSound(false);
-        minigameCreateParticles(target.x, target.y + 50, '#ef4444', 10);
-    }
-    minigameUpdateHUD();
-}
-
-function minigameUpdateHUD() {
-    if (Minigame.targets.length > 0) {
-        const t = Minigame.targets[0];
-        const typed = t.word.substring(0, Minigame.currentCharIdx);
-        const rem = t.word.substring(Minigame.currentCharIdx);
-        document.getElementById('minigame-target-word').innerHTML = 
-            `<span class="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]">${typed}</span><span class="text-slate-300">${rem}</span>`;
-    } else {
-        document.getElementById('minigame-target-word').innerHTML = '';
-    }
-    document.getElementById('minigame-hits').innerText = Minigame.hits;
-    document.getElementById('minigame-combo').innerText = Minigame.combo;
-}
-
-function minigameCreateParticles(x, y, color, count) {
-    for(let i=0; i<count; i++) {
-        Minigame.particles.push({
-            x: x, y: y,
-            vx: (Math.random() - 0.5) * 12,
-            vy: (Math.random() - 0.5) * 12,
-            life: 1.0,
-            color: color
+        for (let i = sites.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [sites[i], sites[j]] = [sites[j], sites[i]]; }
+        sites.unshift({ x: 17.5, y: 16.5 });
+        sites.forEach((p, i) => {
+            const kind = ['rock', 'tree', 'animal'][i % 3], hp = kind === 'animal' ? 3 : 4;
+            this.entities.push({ id: this.id++, kind, char: quest[i % quest.length], ...p, homeX: p.x, homeY: p.y, hp, maxHp: hp, stun: 0, wander: rng() * 6.28 });
         });
     }
-}
-
-function minigameWin() {
-    Minigame.state = 'won';
-    const timeSecs = ((performance.now() - Minigame.startTime) / 1000).toFixed(1);
-    const acc = Math.round((Minigame.hits / ((Minigame.hits + Minigame.errors) || 1)) * 100);
-    
-    document.getElementById('minigame-win-acc').innerText = acc + '%';
-    document.getElementById('minigame-win-time').innerText = timeSecs;
-    document.getElementById('minigame-win-combo').innerText = Minigame.maxCombo;
-    document.getElementById('minigame-win-modal').classList.remove('hidden');
-    
-    if (state.currentUser && state.currentUser !== 'Guest') {
-        const dbIdx = state.lessonIndex + 1;
-        apiCall('saveProgress', { username: state.currentUser, level: dbIdx, lang: state.lang });
-        mockData.progress[state.currentUser][state.lang] = Math.max(mockData.progress[state.currentUser][state.lang], dbIdx);
+    get remaining() { return Math.max(0, 300 - this.elapsed); }
+    start() { if (this.status === 'ready') this.status = 'playing'; }
+    event(kind, source, extra = {}) {
+        this.events.push({ id: this.id++, kind, x: source.x, y: source.y, ...extra });
+        if (this.events.length > 80) this.events.shift();
+    }
+    say(message) { this.message = message; this.messageTime = 2.5; }
+    needs(char) { return (this.inventory[char] || 0) < (this.goals[char] || 0); }
+    selectedDrop() {
+        if (this.collecting) return this.drops.find(d => d.id === this.collecting.dropId) || null;
+        let best = null, distance = 1.35;
+        for (const d of this.drops) {
+            const dist = Math.hypot(d.x - this.player.x, d.y - this.player.y);
+            if (d.kind === 'letter' && this.needs(d.char) && dist < distance) { best = d; distance = dist; }
+        }
+        return best;
+    }
+    direction() {
+        const down = codes => codes.some(c => this.keys.has(c) && !this.blocked.has(c));
+        const sx = Number(down(['KeyD', 'ArrowRight'])) - Number(down(['KeyA', 'ArrowLeft']));
+        const sy = Number(down(['KeyS', 'ArrowDown'])) - Number(down(['KeyW', 'ArrowUp']));
+        // Yaw-relative walking; looking up/down never changes ground speed.
+        const c = Math.cos(this.player.angle), s = Math.sin(this.player.angle);
+        let x = -sy * c - sx * s, y = -sy * s + sx * c;
+        const len = Math.hypot(x, y); if (len) { x /= len; y /= len; }
+        return { x, y, moving: Boolean(len) };
+    }
+    keyDown(code, key, rawKey = key) {
+        if (this.status !== 'playing' || this.keys.has(code)) return;
+        const wasMoving = this.direction().moving;
+        const printable = key.length === 1 || rawKey.length === 1;
+        const otherChar = [...this.keys.values()].some(k => k.printable);
+        if (this.collecting && (printable || code.startsWith('Arrow') || code.startsWith('Shift') || code === 'CapsLock')) this.cancelCollection();
+        this.keys.set(code, { key, rawKey, printable });
+        const d = this.selectedDrop();
+        if (printable && !otherChar && !wasMoving && d && (key === d.char || rawKey === d.char)) {
+            this.collecting = { dropId: d.id, elapsed: 0, code };
+            this.blocked.add(code);
+        }
+    }
+    keyUp(code) {
+        if (this.collecting && (this.collecting.code === code || (code.startsWith('Shift') && this.keys.has(code)))) this.cancelCollection();
+        this.keys.delete(code); this.blocked.delete(code);
+    }
+    cancelCollection() { this.collecting = null; }
+    clearInput() { this.cancelCollection(); this.keys.clear(); this.blocked.clear(); }
+    look(dx, dy) {
+        if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
+        this.player.angle = (this.player.angle + dx * 0.0025) % (Math.PI * 2);
+        this.player.pitch = Math.max(-1.25, Math.min(1.25, this.player.pitch - dy * 0.0025));
+    }
+    heightAt(x, y) {
+        // Quarter-block terraces auto-step underfoot, with a level spawn clearing.
+        const tx = Math.floor(x), ty = Math.floor(y);
+        const hill = (cx, cy) => Math.max(0, Math.min(3, Math.floor((12 - Math.abs(tx-cx) - Math.abs(ty-cy)) / 4)));
+        return Math.max(hill(6, 7), hill(25, 24)) * 0.25;
+    }
+    aim(x, y) {
+        const dx = x - this.player.x, dy = y - this.player.y;
+        if (Number.isFinite(dx) && Number.isFinite(dy) && Math.hypot(dx, dy) > 0.08) this.player.angle = Math.atan2(dy, dx);
+    }
+    isFree(x, y, radius = 0.27, ignoreId = null) {
+        if (x < 0.5 || y < 0.5 || x > this.size - 0.5 || y > this.size - 0.5) return false;
+        return !this.entities.some(e => e.id !== ignoreId && Math.abs(x - e.x) < radius + 0.4 && Math.abs(y - e.y) < radius + 0.4);
+    }
+    move(body, dx, dy, radius = 0.27) {
+        // Small substeps prevent tunnelling during knockback and slow frames.
+        const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.15));
+        for (let i = 0; i < steps; i++) {
+            if (this.isFree(body.x + dx / steps, body.y, radius, body.id)) body.x += dx / steps;
+            if (this.isFree(body.x, body.y + dy / steps, radius, body.id)) body.y += dy / steps;
+        }
+    }
+    lineClear(a, b, ignoreId) {
+        const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 0.15);
+        for (let i = 1; i < steps; i++) if (!this.isFree(a.x + (b.x - a.x) * i / steps, a.y + (b.y - a.y) * i / steps, 0.05, ignoreId)) return false;
+        return true;
+    }
+    attack(id) {
+        if (this.status !== 'playing') return false;
+        this.cancelCollection();
+        if (this.cooldown > 0.00001) return false;
+        const e = [...this.entities, ...this.enemies].find(o => o.id === id);
+        if (!e) { this.player.swing = 0.2; this.cooldown = 0.25; return false; }
+        if (Math.hypot(e.x - this.player.x, e.y - this.player.y) > 1.85) { this.say('เดินเข้าไปใกล้อีกนิด'); return false; }
+        if (!this.lineClear(this.player, e, e.id)) { this.say('มีสิ่งกีดขวางอยู่ข้างหน้า'); return false; }
+        const tool = e.kind === 'rock' ? 'pickaxe' : e.kind === 'tree' ? 'axe' : 'sword';
+        const level = this.tools[tool];
+        this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swing = 0.22; this.activeTool = tool;
+        e.hp -= level + 1; e.stun = e.kind === 'enemy' ? 1.25 : 0.8;
+        this.event('hit', e);
+        if (e.hp <= 0) {
+            this.entities = this.entities.filter(o => o.id !== id); this.enemies = this.enemies.filter(o => o.id !== id);
+            this.drops.push({ id: this.id++, kind: 'letter', char: e.char, x: e.x, y: e.y });
+            if ((e.kind === 'rock' && !this.firstPickaxe) || this.rng() < 0.25) {
+                this.firstPickaxe = this.firstPickaxe || e.kind === 'rock';
+                this.drops.push({ id: this.id++, kind: 'tool', tool, x: e.x + 0.18, y: e.y + 0.18 });
+            }
+            this.event('break', e, { char: e.char }); this.flowTime = 0;
+        } else if (e.kind === 'enemy') {
+            const dx = e.x - this.player.x, dy = e.y - this.player.y, len = Math.hypot(dx, dy) || 1;
+            this.move(e, dx / len * 0.65, dy / len * 0.65);
+        }
+        return true;
+    }
+    buildFlow() {
+        const n = this.size, distances = new Int16Array(n * n).fill(-1);
+        const x = Math.floor(this.player.x), y = Math.floor(this.player.y), queue = [y * n + x];
+        distances[queue[0]] = 0;
+        for (let i = 0; i < queue.length; i++) {
+            const cell = queue[i], cx = cell % n, cy = Math.floor(cell / n);
+            for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                const nx = cx + dx, ny = cy + dy, next = ny * n + nx;
+                if (nx >= 0 && ny >= 0 && nx < n && ny < n && distances[next] < 0 && this.isFree(nx + 0.5, ny + 0.5)) {
+                    distances[next] = distances[cell] + 1; queue.push(next);
+                }
+            }
+        }
+        this.flow = distances; this.flowTime = 0.5;
+    }
+    spawnEnemy() {
+        if (this.enemies.length >= 3) return;
+        if (!this.flow) this.buildFlow();
+        const candidates = [];
+        for (let y = 1; y < this.size - 1; y++) for (let x = 1; x < this.size - 1; x++) {
+            const d = Math.hypot(x + 0.5 - this.player.x, y + 0.5 - this.player.y);
+            if (d >= 6 && d <= 7.8 && this.flow[y * this.size + x] >= 0) candidates.push({ x: x + 0.5, y: y + 0.5 });
+        }
+        if (!candidates.length) return;
+        const p = candidates[Math.floor(this.rng() * candidates.length)], chars = Object.keys(this.goals);
+        this.enemies.push({ id: this.id++, kind: 'enemy', char: chars[Math.floor(this.rng() * chars.length)], ...p, hp: 4, maxHp: 4, stun: 0 });
+        this.say('มอนสเตอร์มาแล้ว! คลิกสู้ หรือเดินหลบ');
+    }
+    finish(status, reason = '') { this.status = status; this.reason = reason; this.clearInput(); }
+    update(seconds, active = true) {
+        if (this.status !== 'playing' || !Number.isFinite(seconds) || seconds < 0) return;
+        this.elapsed = Math.min(300, this.elapsed + seconds);
+        if (this.remaining <= 0.000001) { this.elapsed = 300; this.finish('lost', 'time'); return; }
+        if (!active) { this.clearInput(); return; }
+        const dt = Math.min(0.05, seconds);
+        this.invulnerable = Math.max(0, this.invulnerable - dt); this.cooldown = Math.max(0, this.cooldown - dt);
+        this.player.swing = Math.max(0, this.player.swing - dt); this.messageTime = Math.max(0, this.messageTime - dt);
+        if (this.remaining <= 60 && !this.warned) { this.warned = true; this.event('warning', this.player); this.say('เหลือเวลาอีก 1 นาที!'); }
+        const dir = this.direction();
+        if (dir.moving) { this.cancelCollection(); this.move(this.player, dir.x * 3.5 * dt, dir.y * 3.5 * dt); }
+        this.flowTime -= dt;
+        if (this.enemies.length && this.flowTime <= 0) this.buildFlow();
+        if (this.elapsed >= this.nextSpawn) { this.buildFlow(); this.spawnEnemy(); this.nextSpawn = this.elapsed + 25; }
+        for (const e of this.entities) if (e.kind === 'animal') {
+            e.stun = Math.max(0, (e.stun || 0) - dt);
+            if (!e.stun && Math.hypot(e.x - this.player.x, e.y - this.player.y) > 2) {
+                e.wander = (e.wander || 0) + dt * 0.6;
+                const x = e.homeX + Math.sin(e.wander) * 0.3, y = e.homeY + Math.cos(e.wander) * 0.3;
+                if (Number.isFinite(x) && this.isFree(x, y, 0.25, e.id)) { e.x = x; e.y = y; }
+            }
+        }
+        for (const e of this.enemies) {
+            e.stun = Math.max(0, (e.stun || 0) - dt);
+            const distance = Math.hypot(e.x - this.player.x, e.y - this.player.y);
+            if (!e.stun && distance < 8 && distance > 0.55) {
+                let target = this.player;
+                if (!this.lineClear(e, this.player, null)) {
+                    const cx = Math.floor(e.x), cy = Math.floor(e.y); let best = Infinity; target = null;
+                    for (const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]) {
+                        const nx = cx + dx, ny = cy + dy;
+                        if (nx < 0 || ny < 0 || nx >= this.size || ny >= this.size) continue;
+                        const score = this.flow ? this.flow[ny * this.size + nx] : -1;
+                        if (score >= 0 && score < best && this.isFree(nx + 0.5, ny + 0.5)) { best = score; target = { x: nx + 0.5, y: ny + 0.5 }; }
+                    }
+                }
+                if (target) { const dx = target.x - e.x, dy = target.y - e.y, len = Math.hypot(dx,dy) || 1; e.angle = Math.atan2(dy,dx); this.move(e, dx / len * 2 * dt, dy / len * 2 * dt); }
+            }
+            if (!e.stun && Math.hypot(e.x - this.player.x, e.y - this.player.y) < 0.7 && this.invulnerable === 0) {
+                this.hearts--; this.invulnerable = 2; this.cancelCollection(); this.event('hurt', this.player);
+                const dx = this.player.x - e.x || 0.3, dy = this.player.y - e.y, len = Math.hypot(dx,dy) || 1;
+                this.move(this.player, dx / len, dy / len);
+                if (this.hearts <= 0) { this.finish('lost', 'hearts'); return; }
+            }
+        }
+        for (const d of [...this.drops]) if (d.kind === 'tool' && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
+            this.tools[d.tool] = Math.min(2, this.tools[d.tool] + 1); this.drops = this.drops.filter(o => o.id !== d.id);
+            this.event('tool', d, { tool: d.tool }); this.say('ได้อุปกรณ์ใหม่! ฟันหรือขุดเร็วขึ้นแล้ว');
+        }
+        if (this.collecting) {
+            const d = this.drops.find(o => o.id === this.collecting.dropId);
+            if (!d || !this.keys.has(this.collecting.code) || Math.hypot(d.x - this.player.x, d.y - this.player.y) > 1.35) { this.cancelCollection(); return; }
+            this.collecting.elapsed += dt;
+            if (this.collecting.elapsed >= 3 - 0.000001) {
+                this.inventory[d.char] = (this.inventory[d.char] || 0) + 1; this.collected++;
+                this.drops = this.drops.filter(o => o.id !== d.id); this.event('collect', d, { char: d.char }); this.cancelCollection();
+                if (this.collected >= this.goal) this.finish('won');
+            }
+        }
     }
 }
+if (typeof module !== 'undefined' && module.exports) module.exports = { LettercraftGame };
 
-// --- GAME LOOP & RENDERERS ---
-function minigameLoop(timestamp) {
-    if (Minigame.state !== 'playing') return;
-    
-    const dt = Math.min(0.05, (timestamp - Minigame.lastTime) / 1000);
-    Minigame.lastTime = timestamp;
-    
-    // Update logic
-    Minigame.backgroundOffset += 50 * dt;
-    
-    const canvasW = Minigame.canvas.width / (window.devicePixelRatio || 1);
-    const canvasH = Minigame.canvas.height / (window.devicePixelRatio || 1);
-    
-    // Move targets
-    Minigame.targets.forEach((t, i) => {
-        if (Minigame.theme === 'minimal') {
-            if (t.y === -50) t.y = canvasW + 100; // Initialize offscreen right
-            t.y -= 250 * dt * t.speed; // moving left
-            t.x = t.y; 
-            
-            // Miss boundary
-            if (i === 0 && t.y < canvasW * 0.1) {
-                Minigame.combo = 0;
-                minigameUpdateHUD();
-                Minigame.targets.shift();
-                setTimeout(minigameSpawnTarget, 10);
+/* Original pixel-textured voxel renderer. World axes: map X, map Y, height Z. */
+class LettercraftView {
+  static NEAR = 0.055;
+  static FAR = 44;
+  static FOV = Math.PI * 70 / 180;
+
+  constructor(canvas, overlayCanvas) {
+    if (!canvas || typeof canvas.getContext !== 'function') throw new TypeError('LettercraftView requires a canvas');
+    this.canvas = canvas;
+    this.overlay = overlayCanvas || null;
+    this.ctx = this.overlay ? this.overlay.getContext('2d') : null;
+    this.gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: true });
+    if (!this.gl) throw new Error('Lettercraft needs WebGL. Please enable hardware acceleration or try another browser.');
+    this.width = this.height = this.dpr = 1;
+    this.camera = { x: 16, y: 16, z: 1.6, angle: 0, pitch: -.22 };
+    this.time = 0;
+    this.labels = [];
+    this.particles = [];
+    this.eventIds = new Set();
+    this.disposed = false;
+    try { this._initGL(); this.resize(); } catch (error) { this.dispose(); throw error; }
+  }
+
+  static cameraDirection(camera) {
+    const cp = Math.cos(camera.pitch || 0);
+    return { x: Math.cos(camera.angle || 0) * cp, y: Math.sin(camera.angle || 0) * cp, z: Math.sin(camera.pitch || 0) };
+  }
+
+  static projectPoint(point, camera, width, height) {
+    const a = camera.angle || 0, p = camera.pitch || 0;
+    const dx = point.x - camera.x, dy = point.y - camera.y, dz = point.z - camera.z;
+    const horizontal = dx * Math.cos(a) + dy * Math.sin(a);
+    const right = -dx * Math.sin(a) + dy * Math.cos(a);
+    const up = dz * Math.cos(p) - horizontal * Math.sin(p);
+    const depth = horizontal * Math.cos(p) + dz * Math.sin(p);
+    const focal = height / (2 * Math.tan(LettercraftView.FOV / 2));
+    const x = width / 2 + right * focal / (depth || 1e-9);
+    const y = height / 2 - up * focal / (depth || 1e-9);
+    return { x, y, depth, visible: depth >= LettercraftView.NEAR && depth <= LettercraftView.FAR && x >= 0 && x <= width && y >= 0 && y <= height };
+  }
+
+  static rayBox(origin, direction, min, max) {
+    let near = 0, far = Infinity;
+    for (const axis of ['x', 'y', 'z']) {
+      if (Math.abs(direction[axis]) < 1e-10) {
+        if (origin[axis] < min[axis] || origin[axis] > max[axis]) return null;
+      } else {
+        const a = (min[axis] - origin[axis]) / direction[axis], b = (max[axis] - origin[axis]) / direction[axis];
+        near = Math.max(near, Math.min(a, b));
+        far = Math.min(far, Math.max(a, b));
+        if (near > far) return null;
+      }
+    }
+    return far < 0 ? null : near;
+  }
+
+  resize() {
+    const r = this.canvas.getBoundingClientRect();
+    this.width = Math.max(1, r.width || this.canvas.clientWidth || 1);
+    this.height = Math.max(1, r.height || this.canvas.clientHeight || 1);
+    this.dpr = Math.min(2, Math.max(1, globalThis.devicePixelRatio || 1));
+    for (const canvas of [this.canvas, this.overlay]) if (canvas) {
+      const w = Math.round(this.width * this.dpr), h = Math.round(this.height * this.dpr);
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
+    }
+    return { width: this.width, height: this.height };
+  }
+
+  project(x, y, z = 0) { return LettercraftView.projectPoint({ x, y, z }, this.camera, this.width, this.height); }
+  _height(game, x, y) { return typeof game.heightAt === 'function' ? game.heightAt(x, y) : 0; }
+  _camera(game) {
+    const p = game.player;
+    return { x: p.x, y: p.y, z: this._height(game, p.x, p.y) + 1.6, angle: p.angle || 0, pitch: p.pitch || 0 };
+  }
+
+  // These descriptors are the shared source of truth for visible cubes and ray occlusion.
+  _scene(game, camera) {
+    const boxes = [], labels = [];
+    const cube = (x, y, z, w, d, h, material, id = null, tint = null) => {
+      boxes.push({ min: { x: x-w/2, y: y-d/2, z }, max: { x: x+w/2, y: y+d/2, z: z+h }, material, id, tint });
+    };
+    for (const e of [...(game.entities || []), ...(game.enemies || []).map(e => ({ ...e, kind: 'enemy' }))]) {
+      if (Math.hypot(e.x-camera.x, e.y-camera.y) > 28) continue;
+      const z = this._height(game, e.x, e.y), x = e.x, y = e.y;
+      let labelZ = z + 1.1;
+      if (e.kind === 'tree') {
+        cube(x,y,z,.8,.8,1.7,4,e.id);
+        cube(x,y,z+1.65,1.65,1.65,.8,5);
+        cube(x-.12,y+.08,z+2.45,1.24,1.25,.55,5,null,[1.08,1.09,.95]);
+        labelZ=z+1.18;
+      } else if (e.kind === 'rock') {
+        cube(x,y,z,.8,.8,.82,3,e.id);
+        cube(x-.06,y+.03,z+.82,.63,.65,.2,3,e.id);
+        cube(x-.405,y-.14,z+.36,.025,.16,.13,8,e.id);
+        cube(x+.1,y-.405,z+.58,.18,.025,.15,8,e.id);
+        labelZ=z+1.45;
+      } else if (e.kind === 'animal') {
+        for (const dx of [-.24,.24]) for (const dy of [-.24,.24]) cube(x+dx,y+dy,z,.16,.16,.4,4,e.id,[.6,.57,.6]);
+        cube(x,y,z+.35,.8,.8,.57,6,e.id);
+        cube(x+.22,y,z+.83,.44,.48,.4,9,e.id);
+        cube(x+.451,y-.13,z+1.07,.024,.12,.1,7,e.id);
+        cube(x+.465,y-.13,z+1.08,.026,.045,.065,10,e.id);
+        cube(x+.451,y+.13,z+1.07,.024,.12,.1,7,e.id);
+        cube(x+.465,y+.13,z+1.08,.026,.045,.065,10,e.id);
+        labelZ=z+1.43;
+      } else {
+        for (const dy of [-.23,.23]) cube(x,y+dy,z,.38,.24,.35,5,e.id,[.65,.85,.8]);
+        cube(x,y,z+.3,.55,.68,.76,5,e.id);
+        cube(x,y,z+1.06,.74,.74,.53,5,e.id,[1.15,1,.82]);
+        for (const dy of [-.2,.2]) cube(x-.378,y+dy,z+1.34,.02,.15,.13,10,e.id);
+        cube(x-.38,y,z+1.13,.024,.28,.08,10,e.id);
+        labelZ=z+1.83;
+      }
+      if (e.char) labels.push({ item:e, x, y, z:labelZ, drop:false });
+    }
+    for (const e of game.drops || []) {
+      if (Math.hypot(e.x-camera.x,e.y-camera.y)>20) continue;
+      const z=this._height(game,e.x,e.y)+.28+Math.sin(this.time*2.8+e.x)*.045;
+      cube(e.x,e.y,z,.27,.27,.27,e.kind==='tool'?11:8,e.id);
+      labels.push({item:e,x:e.x,y:e.y,z:z+.4,drop:true});
+    }
+    return {boxes,labels};
+  }
+
+  _terrain(game) {
+    // Height function identity changes on retry; terrain is static during a game.
+    if (this.terrainGame === game && this.terrainHeight === game.heightAt && this.terrainSize === game.size) return this.terrain;
+    const size=game.size||32, boxes=[];
+    for(let x=0;x<size;x++)for(let y=0;y<size;y++) {
+      const h=this._height(game,x+.5,y+.5);
+      boxes.push({min:{x,y,z:-1},max:{x:x+1,y:y+1,z:h},material:(Math.abs(x+.5-size/2)<1.05||Math.abs(y+.5-size/2)<1.05)?2:0,id:null,ground:true});
+    }
+    // The curb lies outside the walkable map; the existing map bound supplies its collision.
+    for(let i=0;i<size;i++) {
+      const rim=(x,y,w,d,h)=>boxes.push({min:{x,y,z:-1},max:{x:x+w,y:y+d,z:h+.14},material:3,id:null});
+      rim(i,-.12,1,.12,this._height(game,i+.5,.5));
+      rim(i,size,1,.12,this._height(game,i+.5,size-.5));
+      rim(-.12,i,.12,1,this._height(game,.5,i+.5));
+      rim(size,i,.12,1,this._height(game,size-.5,i+.5));
+    }
+    this.terrainGame=game;this.terrainHeight=game.heightAt;this.terrainSize=game.size;this.terrain=boxes;
+    this.terrainVertices=null;
+    return boxes;
+  }
+
+  _nearest(origin, direction, boxes, limit = 44) {
+    let distance=limit, box=null;
+    for(const b of boxes) {
+      const hit=LettercraftView.rayBox(origin,direction,b.min,b.max);
+      if(hit!==null && hit<distance) {distance=hit;box=b;}
+    }
+    return {distance,box};
+  }
+
+  _visibleLabels(game, camera, scene, boxes) {
+    const output=[];
+    for(const label of scene.labels) {
+      const distance=Math.hypot(label.x-camera.x,label.y-camera.y);
+      if(distance>13.5||distance<.2) continue;
+      // Plaques sit in front of their owners, never ignore unrelated occluders.
+      const radius=label.drop?.22:.46;
+      const point={x:label.x+(camera.x-label.x)/distance*radius,y:label.y+(camera.y-label.y)/distance*radius,z:label.z};
+      const p=LettercraftView.projectPoint(point,camera,this.width,this.height);
+      const size=Math.max(22,Math.min(53,140/p.depth));
+      // Close drops sit below eye level. Pin their plaque above the controls while
+      // retaining the world anchor for the occlusion ray and target distance.
+      if(label.drop&&distance<2.2&&p.depth>=LettercraftView.NEAR&&p.x>=0&&p.x<=this.width) {
+        const footerSafeY=Math.max(this.height*.5,this.height-190-size*.75);
+        p.y=Math.min(p.y,footerSafeY);
+        p.visible=p.y>=0&&p.y<=this.height;
+      }
+      if(!p.visible) continue;
+      const dx=point.x-camera.x,dy=point.y-camera.y,dz=point.z-camera.z,length=Math.hypot(dx,dy,dz);
+      const hit=this._nearest(camera,{x:dx/length,y:dy/length,z:dz/length},boxes,length-.025);
+      if(hit.box) continue;
+      output.push({...label,...p,point,distance:length,size,alpha:Math.min(1,(13.5-distance)/3.5)});
+    }
+    return output.sort((a,b)=>b.depth-a.depth);
+  }
+
+  pick(game) {
+    if(!game || !game.player) return null;
+    const camera=this._camera(game), scene=this._scene(game,camera), boxes=[...this._terrain(game),...scene.boxes];
+    const hit=this._nearest(camera,LettercraftView.cameraDirection(camera),boxes,20);
+    let id=hit.box?hit.box.id:null,nearest=hit.distance;
+    for(const label of this._visibleLabels(game,camera,scene,boxes)) {
+      if(Math.abs(label.x-this.width/2)<=label.size*.5 && Math.abs(label.y-this.height/2)<=label.size*.5 && label.distance<nearest) {
+        id=label.item.id;nearest=label.distance;
+      }
+    }
+    return id;
+  }
+
+  _initGL() {
+    const gl=this.gl;
+    const compile=(type,source)=>{
+      const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);
+      if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){const message=gl.getShaderInfoLog(shader);gl.deleteShader(shader);throw new Error('Voxel shader: '+message);}
+      return shader;
+    };
+    const vertex=compile(gl.VERTEX_SHADER,`
+      attribute vec3 aPosition; attribute vec2 aUV; attribute vec3 aColor;
+      uniform vec3 uEye; uniform vec3 uRight; uniform vec3 uUp; uniform vec3 uForward;
+      uniform vec2 uScale; varying vec2 vUV; varying vec3 vColor; varying float vDepth;
+      void main(){vec3 d=aPosition-uEye; float z=dot(d,uForward);
+        gl_Position=vec4(dot(d,uRight)*uScale.x,dot(d,uUp)*uScale.y,1.002503*z-.110138,z);
+        vUV=aUV;vColor=aColor;vDepth=z;}`);
+    let fragment;
+    try { fragment=compile(gl.FRAGMENT_SHADER,`
+      precision mediump float; uniform sampler2D uAtlas;
+      varying vec2 vUV; varying vec3 vColor; varying float vDepth;
+      void main(){vec3 c=texture2D(uAtlas,vUV).rgb*vColor;
+        float fog=smoothstep(12.0,38.0,vDepth);
+        gl_FragColor=vec4(mix(c,vec3(.66,.83,.87),fog),1.0);}`);
+    } catch(error) {gl.deleteShader(vertex);throw error;}
+    this.program=gl.createProgram();gl.attachShader(this.program,vertex);gl.attachShader(this.program,fragment);gl.linkProgram(this.program);
+    gl.deleteShader(vertex);gl.deleteShader(fragment);
+    if(!gl.getProgramParameter(this.program,gl.LINK_STATUS)) throw new Error('Voxel program: '+gl.getProgramInfoLog(this.program));
+    this.buffer=gl.createBuffer();
+    this.attributes={};
+    for(const name of ['aPosition','aUV','aColor'])this.attributes[name]=gl.getAttribLocation(this.program,name);
+    this.uniforms={};
+    for(const name of ['uEye','uRight','uUp','uForward','uScale','uAtlas'])this.uniforms[name]=gl.getUniformLocation(this.program,name);
+    this.texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.texture);
+    const pixels=this._atlas();
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,256,16,0,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  }
+
+  _atlas() {
+    const colors=[[93,153,63],[133,91,55],[193,166,105],[128,139,140],[117,78,44],[66,128,53],[230,226,201],[246,245,221],[233,185,65],[114,104,92],[31,39,32],[68,184,188],[171,127,79],[255,255,255],[110,168,77],[210,177,127]];
+    const data=new Uint8Array(256*16*4);
+    for(let tile=0;tile<16;tile++)for(let y=0;y<16;y++)for(let x=0;x<16;x++) {
+      let c=colors[tile], n=((x*37+y*53+tile*91+(x*y*13))%29)-14;
+      if(tile===1 && y>11+((x*7)%3)) c=colors[0];
+      if(tile===4)n=(x%5===0?-30:x%5===1?17:n*.45);
+      if(tile===5)n=((x*3+y*5)%7<2?-24:n);
+      if(tile===3 && ((x+2*y)%13===0))n=-28;
+      if(tile===6)n=((x%4===0||y%4===0)?-13:n*.35);
+      if(tile===8)n=((x+y)%7<2?25:n);
+      if(tile===7||tile===10||tile===13)n=0;
+      const i=(y*256+tile*16+x)*4;
+      data[i]=Math.max(0,Math.min(255,c[0]+n));data[i+1]=Math.max(0,Math.min(255,c[1]+n));data[i+2]=Math.max(0,Math.min(255,c[2]+n));data[i+3]=255;
+    }
+    return data;
+  }
+
+  _boxVertices(out,b,highlight=false,faces=null) {
+    const {min:a,max:c}=b;
+    const corners=[[a.x,a.y,a.z],[c.x,a.y,a.z],[c.x,c.y,a.z],[a.x,c.y,a.z],[a.x,a.y,c.z],[c.x,a.y,c.z],[c.x,c.y,c.z],[a.x,c.y,c.z]];
+    const quads=[[4,5,6,7],[0,3,2,1],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
+    const shades=[1,.5,.77,.9,.83,.65];
+    for(let face=0;face<6;face++) {
+      if(faces && !faces.includes(face))continue;
+      const material=b.ground&&face!==0?1:b.material;
+      const u0=(material*16+.5)/256,u1=(material*16+15.5)/256;
+      const uv=[[u0,.03125],[u1,.03125],[u1,.96875],[u0,.96875]];
+      const shade=shades[face],tint=b.tint||[1,1,1];
+      for(const k of [0,1,2,0,2,3])out.push(...corners[quads[face][k]],...uv[k],
+        shade*tint[0]*(highlight?1.2:1),shade*tint[1]*(highlight?1.12:1),shade*tint[2]*(highlight?.72:1));
+    }
+  }
+
+  _groundVertices(game,terrain) {
+    if(this.terrainVertices)return this.terrainVertices;
+    const out=[],size=game.size||32;
+    for(const b of terrain) {
+      if(!b.ground) {this._boxVertices(out,b);continue;}
+      const x=b.min.x,y=b.min.y,h=b.max.z,faces=[0];
+      if(y===0||this._height(game,x+.5,y-.5)<h)faces.push(2);
+      if(x===size-1||this._height(game,x+1.5,y+.5)<h)faces.push(3);
+      if(y===size-1||this._height(game,x+.5,y+1.5)<h)faces.push(4);
+      if(x===0||this._height(game,x-.5,y+.5)<h)faces.push(5);
+      this._boxVertices(out,b,false,faces);
+    }
+    this.terrainVertices=out;
+    return out;
+  }
+
+  _surfaceDetails(game,boxes,hoverId) {
+    const primary=new Map(),details=[];
+    const volume=b=>(b.max.x-b.min.x)*(b.max.y-b.min.y)*(b.max.z-b.min.z);
+    for(const box of boxes) if(box.id!=null&&(!primary.has(box.id)||volume(box)>volume(primary.get(box.id))))primary.set(box.id,box);
+    const items=new Map([...(game.entities||[]),...(game.enemies||[])].map(e=>[e.id,e]));
+    // Thin cuboids share the depth-tested batch; a small outward offset avoids
+    // z-fighting. Decorative details never become ray or collision bodies.
+    const segment=(from,to,width,material,detail)=>{
+      const min={},max={};
+      for(const axis of ['x','y','z']) {min[axis]=Math.min(from[axis],to[axis])-width;max[axis]=Math.max(from[axis],to[axis])+width;}
+      details.push({min,max,material,detail,id:null});
+    };
+    for(const [id,box] of primary) {
+      const a=box.min,b=box.max,item=items.get(id);
+      if(id===hoverId) {
+        const lo={x:a.x-.01,y:a.y-.01,z:a.z-.01},hi={x:b.x+.01,y:b.y+.01,z:b.z+.01};
+        for(const axis of ['x','y','z']) {
+          const others=['x','y','z'].filter(key=>key!==axis);
+          for(const first of [lo[others[0]],hi[others[0]]])for(const second of [lo[others[1]],hi[others[1]]]) {
+            const p={...lo,[others[0]]:first,[others[1]]:second},q={...p,[axis]:hi[axis]};
+            segment(p,q,.009,8,'frame');
+          }
+        }
+      }
+      if(!item||!Number.isFinite(item.hp)||!Number.isFinite(item.maxHp)||item.maxHp<=0||item.hp>=item.maxHp)continue;
+      const severity=1-Math.max(0,item.hp/item.maxHp);
+      const paths=[[[.26,.12],[.44,.12],[.44,.36],[.62,.36],[.62,.6],[.78,.6],[.78,.84]],
+        [[.44,.36],[.22,.36],[.22,.58],[.1,.58]],
+        [[.62,.6],[.4,.6],[.4,.81],[.23,.81]]];
+      if(severity>.5)paths.push([[.62,.36],[.8,.36],[.8,.19],[.9,.19]],[[.4,.81],[.4,.95]]);
+      for(const [normal,u,v,side] of [['x','y','z',-1],['x','y','z',1],['y','x','z',-1],['y','x','z',1],['z','x','y',1]]) {
+        const point=([pu,pv])=>({[normal]:(side<0?a[normal]:b[normal])+side*.006,[u]:a[u]+pu*(b[u]-a[u]),[v]:a[v]+pv*(b[v]-a[v])});
+        for(const path of paths)for(let i=1;i<path.length;i++)segment(point(path[i-1]),point(path[i]),.005+severity*.006,10,'crack');
+      }
+    }
+    return details;
+  }
+
+  render(game,dt,hoverId=null) {
+    if(this.disposed||!game||!game.player)return;
+    const gl=this.gl; if(gl.isContextLost())return;
+    dt=Math.max(0,Math.min(.08,Number(dt)||0));this.time+=dt;this.camera=this._camera(game);
+    const scene=this._scene(game,this.camera),terrain=this._terrain(game),boxes=[...terrain,...scene.boxes];
+    const vertices=this._groundVertices(game,terrain).slice();
+    for(const box of scene.boxes)this._boxVertices(vertices,box,hoverId!=null&&box.id===hoverId);
+    for(const detail of this._surfaceDetails(game,scene.boxes,hoverId))this._boxVertices(vertices,detail);
+    // Distant block clouds are geometry, so looking up remains a true perspective view.
+    for(let i=0;i<10;i++) {
+      const x=3+(i*17)%36,y=2+(i*11)%35;
+      this._boxVertices(vertices,{min:{x,y,z:8+(i%3)},max:{x:x+3.8,y:y+2.2,z:8.55+(i%3)},material:13});
+      this._boxVertices(vertices,{min:{x:x+.8,y:y-.6,z:8.1+(i%3)},max:{x:x+2.8,y:y+2.8,z:8.7+(i%3)},material:13});
+    }
+    gl.viewport(0,0,this.canvas.width,this.canvas.height);gl.clearColor(.66,.83,.87,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.useProgram(this.program);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
+    const stride=8*4;
+    for(const [name,count,offset] of [['aPosition',3,0],['aUV',2,12],['aColor',3,20]]) {
+      const location=this.attributes[name];gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,count,gl.FLOAT,false,stride,offset);
+    }
+    const c=this.camera,a=c.angle,p=c.pitch,u=this.uniforms,forward=LettercraftView.cameraDirection(c);
+    gl.uniform3f(u.uEye,c.x,c.y,c.z);gl.uniform3f(u.uRight,-Math.sin(a),Math.cos(a),0);
+    gl.uniform3f(u.uUp,-Math.cos(a)*Math.sin(p),-Math.sin(a)*Math.sin(p),Math.cos(p));
+    gl.uniform3f(u.uForward,forward.x,forward.y,forward.z);
+    const f=1/Math.tan(LettercraftView.FOV/2);gl.uniform2f(u.uScale,f*this.height/this.width,f);
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.uniform1i(u.uAtlas,0);
+    gl.drawArrays(gl.TRIANGLES,0,vertices.length/8);
+    this.labels=this._visibleLabels(game,c,scene,boxes);
+    this._overlay(game,dt,hoverId,boxes);
+  }
+
+  _displayChar(char) {const text=String(char==null?'?':char);return /^\p{Mark}/u.test(text)?'◌'+text:text;}
+
+  _overlay(game,dt,hoverId,boxes) {
+    const ctx=this.ctx;if(!ctx)return;
+    ctx.setTransform(this.dpr,0,0,this.dpr,0,0);ctx.clearRect(0,0,this.width,this.height);
+    ctx.imageSmoothingEnabled=false;ctx.textAlign='center';ctx.textBaseline='middle';
+    for(const p of this.labels) {
+      const selected=p.item.id===hoverId, s=p.size, complete=p.item.char&&typeof game.needs==='function'&&!game.needs(p.item.char);
+      ctx.globalAlpha=p.alpha*(complete?.7:1);
+      ctx.fillStyle='rgba(17,38,39,.90)';ctx.fillRect(p.x-s/2-3,p.y-s/2-3,s+6,s+6);
+      ctx.strokeStyle=selected?'#ffe282':p.drop?'#ffe282':'#e8e4bd';ctx.lineWidth=selected?3:1.5;
+      ctx.strokeRect(p.x-s/2,p.y-s/2,s,s);
+      ctx.fillStyle=complete?'#c3d4b0':'#fff9df';
+      ctx.font='700 '+Math.round(s*.65)+'px "Noto Sans Thai",Tahoma,sans-serif';
+      ctx.fillText(p.item.kind==='tool'?({axe:'🪓',pickaxe:'⛏',sword:'⚔'}[p.item.tool]||'⚒'):this._displayChar(p.item.char),p.x,p.y+1);
+      if(complete) {ctx.font='700 11px Tahoma,sans-serif';ctx.fillStyle='#163b2b';ctx.fillRect(p.x-26,p.y+s/2+5,52,17);ctx.fillStyle='#dcecc1';ctx.fillText('ครบแล้ว',p.x,p.y+s/2+14);}
+      if(Number.isFinite(p.item.hp)&&p.item.hp<p.item.maxHp) {
+        ctx.fillStyle='#203133';ctx.fillRect(p.x-s/2,p.y-s/2-11,s,5);
+        ctx.fillStyle='#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
+      }
+    }
+    ctx.globalAlpha=1;
+    this._particles(game,dt,boxes);
+    this._hand(ctx,game);
+    const x=this.width/2,y=this.height/2;
+    ctx.strokeStyle='rgba(18,36,35,.7)';ctx.lineWidth=4;
+    for(const color of ['rgba(18,36,35,.7)',hoverId!=null?'#ffe481':'#fffced']) {
+      ctx.strokeStyle=color;ctx.beginPath();ctx.moveTo(x-9,y);ctx.lineTo(x-3,y);ctx.moveTo(x+3,y);ctx.lineTo(x+9,y);
+      ctx.moveTo(x,y-9);ctx.lineTo(x,y-3);ctx.moveTo(x,y+3);ctx.lineTo(x,y+9);ctx.stroke();ctx.lineWidth=2;
+    }
+    ctx.fillStyle='#fffced';ctx.fillRect(x-1,y-1,2,2);
+    // Collection keeps progressing when a drop passes beneath the player's feet.
+    // Its HUD ring stays around the crosshair even if the world plaque leaves view.
+    if(game.collecting) {
+      ctx.lineWidth=4;ctx.strokeStyle='rgba(18,36,35,.7)';
+      ctx.beginPath();ctx.arc(x,y,24,0,Math.PI*2);ctx.stroke();
+      ctx.strokeStyle='#ffe481';ctx.beginPath();
+      ctx.arc(x,y,24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,game.collecting.elapsed/3));ctx.stroke();
+    }
+    if(game.invulnerable>0) {ctx.strokeStyle='rgba(193,65,43,'+Math.min(.5,game.invulnerable*.35)+')';ctx.lineWidth=18;ctx.strokeRect(0,0,this.width,this.height);}
+  }
+
+  _hand(ctx,game) {
+    const scale=Math.max(.6,Math.min(1.2,this.height/650)),swing=Math.sin(Math.min(1,(game.player.swing||0)/.24)*Math.PI);
+    const x=this.width*.76-swing*37*scale,y=this.height-Math.min(136,this.height*.22)+swing*24*scale;
+    ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(-.33-swing*.5);
+    ctx.fillStyle='#534831';ctx.fillRect(-31,14,73,126);ctx.fillStyle='#718565';ctx.fillRect(-26,18,62,116);
+    ctx.fillStyle='#b87d51';ctx.fillRect(-27,-19,61,58);ctx.fillStyle='#e2ae77';ctx.fillRect(-23,-23,51,46);
+    ctx.fillStyle='#f0bd88';ctx.fillRect(-23,-23,12,40);
+    const tool=game.activeTool||'pickaxe',level=Number((game.tools||{})[tool])||0;
+    const metal=level>=2?'#87e1d6':level===1?'#d5e0d6':'#b7aaa0',edge=level>=2?'#3f8f87':'#64716d';
+    ctx.fillStyle='#4f3528';ctx.fillRect(-4,-151,17,151);ctx.fillStyle='#ac7544';ctx.fillRect(0,-145,8,141);
+    ctx.fillStyle=edge;
+    if(tool==='sword') {
+      ctx.fillRect(-9,-207,28,139);ctx.fillRect(-23,-83,56,12);ctx.fillStyle=metal;ctx.fillRect(-4,-198,18,112);ctx.fillStyle='#f1f1cc';ctx.fillRect(-3,-191,5,100);
+    } else if(tool==='axe') {
+      ctx.fillRect(-48,-164,65,62);ctx.fillRect(-58,-154,15,42);ctx.fillStyle=metal;ctx.fillRect(-45,-158,52,48);ctx.fillStyle='#e5e7c9';ctx.fillRect(-52,-150,9,33);
+    } else {
+      ctx.fillRect(-54,-161,111,22);ctx.fillRect(-67,-151,24,32);ctx.fillRect(48,-151,21,39);ctx.fillStyle=metal;ctx.fillRect(-51,-157,103,13);ctx.fillRect(-62,-149,16,20);ctx.fillRect(52,-147,12,27);
+    }
+    ctx.restore();
+  }
+
+  _particles(game,dt,boxes) {
+    const ctx=this.ctx;
+    for(const event of game.events||[]) {
+      if(event.id!=null&&this.eventIds.has(event.id))continue;
+      if(event.id!=null)this.eventIds.add(event.id);
+      const x=Number.isFinite(event.x)?event.x:game.player.x,y=Number.isFinite(event.y)?event.y:game.player.y;
+      for(let i=0;i<8;i++)this.particles.push({x,y,z:this._height(game,x,y)+.7,vx:Math.sin(i*8)*1.2,vy:Math.cos(i*8)*1.2,vz:.8+(i%3)*.25,age:0,color:event.kind==='hurt'?'#e36e51':event.kind==='break'?'#9cd669':'#ffdb79'});
+    }
+    if(this.eventIds.size>400)this.eventIds=new Set([...this.eventIds].slice(-200));
+    this.particles=this.particles.filter(p=>p.age<.65).slice(-96);
+    for(const p of this.particles) {
+      p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=2.4*dt;
+      const q=this.project(p.x,p.y,p.z);if(!q.visible)continue;
+      const c=this.camera,d={x:p.x-c.x,y:p.y-c.y,z:p.z-c.z},l=Math.hypot(d.x,d.y,d.z);
+      if(this._nearest(c,{x:d.x/l,y:d.y/l,z:d.z/l},boxes,l-.05).box)continue;
+      const size=Math.min(8,18/q.depth);ctx.globalAlpha=Math.max(0,1-p.age/.65);ctx.fillStyle=p.color;ctx.fillRect(q.x-size/2,q.y-size/2,size,size);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  dispose() {
+    if(this.disposed)return;
+    const gl=this.gl;
+    if(gl) {if(this.buffer)gl.deleteBuffer(this.buffer);if(this.texture)gl.deleteTexture(this.texture);if(this.program)gl.deleteProgram(this.program);}
+    this.buffer=this.texture=this.program=null;this.terrainVertices=null;this.terrainGame=null;
+    this.labels=[];this.particles=[];this.disposed=true;
+  }
+}
+if(typeof window!=='undefined')window.LettercraftView=LettercraftView;
+if(typeof module!=='undefined'&&module.exports)module.exports=LettercraftView;
+
+/* Connect the standalone game to the existing lesson UI. */
+const Lettercraft = {
+    game: null, view: null, frame: null, listeners: null, panel: null,
+    hoverId: null, last: 0, questSignature: '', background: false,
+    fallback: false, fallbackActive: false, dragging: false, capturePending: false,
+    el(id) { return document.getElementById(id); },
+    displayChar(c) { return /^\p{M}/u.test(c) ? '◌' + c : c; },
+    mount() {
+        this.dispose();
+        const lesson = curriculum[state.lang][state.lessonIndex];
+        this.lessonText = generateContent(lesson);
+        closeModal(); state.isGameMode = true;
+        this.el('game-ui').style.display = 'block';
+        this.el('lc-lesson').textContent = (state.lang === 'TH' ? 'ภาษาไทย' : 'English') + ' · ' + (lesson.name || 'บทที่ ' + (state.lessonIndex + 1));
+        this.listeners = new AbortController(); const signal = this.listeners.signal;
+        const listen = (node, event, fn) => node.addEventListener(event, fn, { signal });
+        const canvas = this.el('lc-canvas');
+        listen(document, 'mousemove', e => {
+            if (!this.panel && document.pointerLockElement === canvas) this.game.look(e.movementX, e.movementY);
+        });
+        // Preventing pointerdown suppresses compatibility mousemove during a drag.
+        listen(document, 'pointermove', e => {
+            if (!this.panel && this.fallbackActive && this.dragging) this.game.look(e.movementX, e.movementY);
+        });
+        listen(document, 'pointerlockchange', () => {
+            this.capturePending = false; this.game.clearInput(); this.dragging = false;
+            if (document.pointerLockElement === canvas) {
+                this.fallbackActive = false;
+                if (this.panel || this.game.status !== 'playing') document.exitPointerLock();
             }
+            this.updateCaptureHint();
+        });
+        listen(document, 'pointerlockerror', () => this.captureFailed());
+        listen(canvas, 'contextmenu', e => e.preventDefault());
+        listen(canvas, 'pointerdown', e => {
+            if (this.panel || this.game.status !== 'playing') return;
+            if (e.button === 2 && this.fallbackActive) { e.preventDefault(); this.dragging = true; return; }
+            if (e.button !== 0) return;
+            e.preventDefault(); canvas.focus({ preventScroll: true });
+            if (!this.hasControl()) { this.requestCapture(); return; }
+            this.aim(); this.game.attack(this.hoverId);
+        });
+        listen(document, 'pointerup', () => { this.dragging = false; });
+        listen(document, 'keyup', e => { this.game.keyUp(e.code || e.key); });
+        listen(window, 'resize', () => { if (this.view) this.view.resize(); });
+        listen(window, 'blur', () => { this.background = true; this.releaseCapture(); });
+        listen(window, 'focus', () => { this.advanceClock(performance.now(), false); this.background = false; });
+        listen(document, 'visibilitychange', () => {
+            this.advanceClock(performance.now(), false); this.background = document.hidden;
+            this.releaseCapture();
+        });
+        listen(canvas, 'webglcontextlost', e => { e.preventDefault(); this.renderFailure('การแสดงผล 3D หยุดทำงาน กรุณากลับบทเรียนแล้วโหลดหน้าเว็บใหม่'); });
+        const click = (id, fn) => listen(this.el(id), 'click', fn);
+        click('lc-start-button', () => this.begin());
+        click('lc-back-button', () => this.exit());
+        click('lc-help-button', () => { if (this.panel === 'intro') return; this.showPanel('help', 'วิธีเล่น'); });
+        click('lc-resume-button', () => this.resume());
+        click('lc-exit-button', () => this.requestExit());
+        click('lc-stay-button', () => this.resume());
+        click('lc-confirm-exit', () => this.exit());
+        click('lc-retry-button', () => { this.reset(); this.begin(); });
+        click('lc-result-back', () => this.exit());
+        click('lc-next-button', () => { this.exit(false); nextLesson(); });
+        click('lc-capture', () => this.requestCapture());
+        click('lc-error-back', () => this.exit());
+        if (!this.reset()) return;
+        this.showPanel('intro', 'นักสำรวจโลกอักษร');
+        if (this.game.status === 'invalid') {
+            this.el('lc-start-button').disabled = true;
+            this.el('lc-start-button').textContent = 'บทเรียนนี้ไม่มีตัวอักษรที่เล่นได้';
         } else {
-            t.y += 150 * t.speed * dt; // fall down
-            // Miss boundary
-            if (i === 0 && t.y > canvasH) {
-                Minigame.combo = 0;
-                minigameUpdateHUD();
-                Minigame.targets.shift();
-                setTimeout(minigameSpawnTarget, 10);
+            this.el('lc-start-button').disabled = false; this.el('lc-start-button').textContent = 'เริ่มสำรวจ →';
+        }
+        this.last = performance.now(); this.frame = requestAnimationFrame(t => this.loop(t));
+    },
+    reset() {
+        this.releaseCapture();
+        if (this.view) this.view.dispose();
+        this.view = null;
+        this.game = new LettercraftGame(this.lessonText);
+        try { this.view = new LettercraftView(this.el('lc-canvas'), this.el('lc-labels')); }
+        catch (error) { this.renderFailure('เปิดโลก 3D ไม่ได้ กรุณาใช้เบราว์เซอร์ที่รองรับ WebGL และเปิดการเร่งกราฟิก'); return false; }
+        this.hoverId = null; this.questSignature = ''; this.last = performance.now();
+        this.background = document.hidden; this.renderHUD(); this.view.render(this.game, 0);
+        return true;
+    },
+    begin() {
+        if (!this.view || this.game.status === 'invalid') return;
+        this.game.start(); this.last = performance.now(); this.hidePanel();
+        this.requestCapture();
+        if (typeof audioCtx !== 'undefined' && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    },
+    showPanel(panel, title) {
+        this.game.clearInput(); this.panel = panel; this.releaseCapture();
+        for (const name of ['intro', 'help', 'result', 'leave', 'error']) this.el('lc-' + name).hidden = name !== panel;
+        this.el('lc-dialog-title').textContent = title; this.el('lc-overlay').hidden = false;
+        this.el('lc-overlay').querySelector('.lc-dialog').focus({ preventScroll: true });
+    },
+    hidePanel() { this.panel = null; this.el('lc-overlay').hidden = true; this.el('lc-canvas').focus({ preventScroll: true }); },
+    resume() {
+        if (this.game.status === 'won' || this.game.status === 'lost') this.showResult();
+        else if (this.game.status === 'ready') this.showPanel('intro', 'นักสำรวจโลกอักษร');
+        else { this.hidePanel(); this.requestCapture(); }
+    },
+    hasControl() { return document.pointerLockElement === this.el('lc-canvas') || this.fallbackActive; },
+    updateCaptureHint() {
+        const button = this.el('lc-capture');
+        button.hidden = !!this.panel || !this.game || this.game.status !== 'playing' || this.hasControl();
+        button.textContent = this.fallback ? 'คลิกเพื่อเล่น • ลากเมาส์ขวาเพื่อมอง (ล็อกเมาส์ไม่ได้)' : 'คลิกเพื่อสำรวจ • ล็อกเมาส์';
+    },
+    requestCapture() {
+        if (this.panel || this.game.status !== 'playing' || this.hasControl() || this.capturePending) return;
+        const canvas = this.el('lc-canvas'); canvas.focus({ preventScroll: true });
+        if (this.fallback) { this.fallbackActive = true; this.updateCaptureHint(); return; }
+        if (!canvas.requestPointerLock) { this.captureFailed(); return; }
+        this.capturePending = true;
+        try {
+            const request = canvas.requestPointerLock();
+            if (request && typeof request.catch === 'function') request.catch(() => this.captureFailed());
+        } catch (error) { this.captureFailed(); }
+    },
+    captureFailed() {
+        this.capturePending = false;
+        if (!state.isGameMode || this.hasControl()) return;
+        this.fallback = true; this.updateCaptureHint();
+        this.game.say('เบราว์เซอร์ไม่อนุญาตล็อกเมาส์ ใช้คลิกเล่น แล้วลากเมาส์ขวาเพื่อมอง');
+    },
+    releaseCapture() {
+        if (this.game) this.game.clearInput();
+        this.fallbackActive = false; this.dragging = false;
+        if (document.pointerLockElement === this.el('lc-canvas')) document.exitPointerLock();
+        this.updateCaptureHint();
+    },
+    renderFailure(message) {
+        if (this.frame !== null) cancelAnimationFrame(this.frame);
+        this.frame = null; this.showPanel('error', 'เปิดโลก 3D ไม่ได้');
+        this.el('lc-error-message').textContent = message;
+    },
+    requestExit() {
+        if (this.game.status === 'playing') this.showPanel('leave', 'กลับบทเรียน?'); else this.exit();
+    },
+    keyDown(e) {
+        if (e.key === 'Tab') {
+            if (!this.panel) this.releaseCapture();
+            if (this.panel) {
+                const buttons = [...this.el('lc-overlay').querySelectorAll('button')].filter(b => !b.disabled && b.getClientRects().length);
+                const current = buttons.indexOf(document.activeElement);
+                if (buttons.length) { e.preventDefault(); buttons[(current + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length].focus(); }
+            }
+            return;
+        }
+        if (e.key === 'Escape') {
+            this.releaseCapture();
+            if (this.panel === 'help' || this.panel === 'leave') this.hidePanel();
+            this.updateCaptureHint(); return;
+        }
+        if (this.panel || !this.hasControl()) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) { this.game.clearInput(); return; }
+        if (e.key.length === 1 || e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
+        if (e.repeat && !this.game.keys.has(e.code || e.key)) return;
+        if (e.isComposing || e.key === 'Process') { this.game.clearInput(); this.game.say('ใช้แป้นพิมพ์ไทยหรืออังกฤษแบบปกติเพื่อเก็บตัวอักษร'); return; }
+        this.game.keyDown(e.code || e.key, getVirtualChar(e.key), e.key);
+    },
+    aim() {
+        this.hoverId = this.panel || !this.view ? null : this.view.pick(this.game);
+    },
+    advanceClock(now, active) {
+        const seconds = Math.max(0, (now - this.last) / 1000); this.last = now;
+        if (!active || seconds > 0.5) this.game.update(seconds, false);
+        else {
+            // Fixed-sized simulation steps keep three-second holds independent of frame rate.
+            let left = seconds;
+            while (left > 0.000001) { const step = Math.min(0.05, left); this.game.update(step, true); left -= step; }
+        }
+    },
+    loop(now) {
+        if (!state.isGameMode || !this.view || this.panel === 'error') return;
+        const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
+        this.advanceClock(now, !this.panel && !this.background && !document.hidden && this.hasControl());
+        this.aim(); this.view.render(this.game, dt, this.hoverId);
+        // Ray and camera follow the player even while the mouse stays still.
+        this.aim(); this.renderHUD();
+        for (const event of this.game.events) {
+            if (['hit','collect','tool','hurt','warning'].includes(event.kind) && state.isSoundOn) playSound(event.kind !== 'hurt');
+        }
+        this.game.events.length = 0;
+        if ((this.game.status === 'won' || this.game.status === 'lost') && this.panel !== 'result') this.showResult();
+        this.frame = requestAnimationFrame(t => this.loop(t));
+    },
+    renderHUD() {
+        const g = this.game, seconds = Math.ceil(g.remaining);
+        this.el('lc-time').textContent = String(Math.floor(seconds / 60)).padStart(2,'0') + ':' + String(seconds % 60).padStart(2,'0');
+        this.el('lc-time').classList.toggle('lc-urgent', seconds <= 60);
+        this.el('lc-hearts').textContent = '♥ '.repeat(g.hearts) + '♡ '.repeat(5-g.hearts);
+        this.el('lc-hearts').setAttribute('aria-label', 'หัวใจเหลือ ' + g.hearts + ' ดวง');
+        this.el('lc-count').textContent = g.collected + ' / ' + g.goal;
+        this.el('lc-mission-fill').style.width = (g.goal ? g.collected / g.goal * 100 : 0) + '%';
+        const levels = ['ไม้', 'หิน ×2', 'คริสตัล ×3'];
+        for (const tool of ['pickaxe','axe','sword']) {
+            this.el('lc-'+tool).textContent = levels[g.tools[tool]];
+            this.el('lc-'+tool).parentElement.classList.toggle('lc-equipped', g.activeTool === tool);
+        }
+        const signature = JSON.stringify(g.inventory);
+        if (signature !== this.questSignature) {
+            this.questSignature = signature; const bag = this.el('lc-quest'); bag.replaceChildren();
+            for (const [c, required] of Object.entries(g.goals)) {
+                const item = document.createElement('span'); item.textContent = this.displayChar(c);
+                const count = document.createElement('small'); count.textContent = (g.inventory[c] || 0) + '/' + required; item.append(count);
+                item.classList.toggle('lc-collected', !g.needs(c)); item.title = 'ตัวอักษร ' + c; bag.append(item);
             }
         }
-    });
-    
-    // Update particles
-    for(let i = Minigame.particles.length - 1; i >= 0; i--) {
-        let p = Minigame.particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= dt * 2;
-        if(p.life <= 0) Minigame.particles.splice(i, 1);
-    }
-    
-    minigameRenderFrame(dt, canvasW, canvasH);
-    Minigame.animationId = requestAnimationFrame(minigameLoop);
-}
-
-function minigameRenderFrame(dt, cw = 800, ch = 600) {
-    const ctx = Minigame.ctx;
-    if(!ctx) return;
-    ctx.clearRect(0, 0, Minigame.canvas.width, Minigame.canvas.height);
-    
-    if (Minigame.theme === 'space') renderSpaceTheme(ctx, cw, ch);
-    else if (Minigame.theme === 'cyber') renderCyberTheme(ctx, cw, ch);
-    else if (Minigame.theme === 'samurai') renderSamuraiTheme(ctx, cw, ch);
-    else renderMinimalTheme(ctx, cw, ch);
-    
-    // Render Particles
-    ctx.globalCompositeOperation = 'lighter';
-    Minigame.particles.forEach(p => {
-        ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3 + p.life*4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = p.color;
-    });
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-    ctx.globalCompositeOperation = 'source-over';
-}
-
-function renderSpaceTheme(ctx, cw, ch) {
-    // Background Stars
-    ctx.fillStyle = '#020617'; 
-    ctx.fillRect(0, 0, cw, ch);
-    ctx.fillStyle = '#ffffff';
-    for(let i=0; i<60; i++) {
-        const sy = (i * 47 + Minigame.backgroundOffset * 1.5) % ch;
-        const sx = (i * 97) % cw;
-        ctx.globalAlpha = (i%3===0)?0.8:0.3;
-        ctx.fillRect(sx, sy, 2, 2);
-    }
-    ctx.globalAlpha = 1.0;
-    
-    // Base at bottom
-    ctx.fillStyle = '#1e293b';
-    ctx.beginPath();
-    ctx.moveTo(cw/2 - 50, ch);
-    ctx.lineTo(cw/2 - 30, ch - 60);
-    ctx.lineTo(cw/2 + 30, ch - 60);
-    ctx.lineTo(cw/2 + 50, ch);
-    ctx.fill();
-    ctx.fillStyle = '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(cw/2, ch - 60, 15, 0, Math.PI, true);
-    ctx.fill();
-    
-    // Meteors
-    Minigame.targets.forEach((t, index) => {
-        ctx.save();
-        ctx.translate(t.x, t.y);
-        ctx.rotate(t.y * 0.02);
-        
-        ctx.fillStyle = '#475569';
-        ctx.beginPath();
-        ctx.moveTo(-30, -20); ctx.lineTo(10, -35); ctx.lineTo(35, 0); ctx.lineTo(20, 30); ctx.lineTo(-20, 25);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        ctx.restore();
-        
-        if (index === 0) {
-            ctx.strokeStyle = '#ef4444';
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.arc(t.x, t.y, 45, 0, Math.PI*2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Draw Laser from base if hit
-            if (Minigame.hits > 0 && Minigame.combo > 0 && Math.random() > 0.4) {
-                ctx.beginPath();
-                ctx.moveTo(cw/2, ch-75);
-                ctx.lineTo(t.x + (Math.random()-0.5)*10, t.y + (Math.random()-0.5)*10);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 3;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#38bdf8';
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-            }
-        }
-    });
-}
-
-function renderCyberTheme(ctx, cw, ch) {
-    // Synthwave Grid
-    ctx.fillStyle = '#090014';
-    ctx.fillRect(0, 0, cw, ch);
-    
-    ctx.strokeStyle = '#ec4899'; // Pink grid
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.4;
-    
-    const horizonY = ch * 0.4;
-    
-    // Horizontal lines moving down
-    for(let i=0; i<25; i++) {
-        let y = horizonY + Math.pow(i + (Minigame.backgroundOffset%10)/10, 1.8) * 2;
-        if(y < ch) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
+        const selected = g.selectedDrop(), entity = [...g.entities,...g.enemies].find(e=>e.id===this.hoverId);
+        const hoveredDrop = g.drops.find(d => d.id === this.hoverId && d.kind === 'letter');
+        let hint = 'WASD / ลูกศร เดินสำรวจ • เลื่อนเมาส์หัน • คลิกซ้ายขุดหรือฟัน';
+        if (selected) hint = 'กด [ ' + this.displayChar(selected.char) + ' ] ค้าง 3 วินาทีเพื่อเก็บ' + (g.collecting ? ' · ' + Math.floor(g.collecting.elapsed/3*100) + '%' : ' · ใช้ลูกศรเดินออก');
+        else if (entity) hint = ({rock:'หิน',tree:'ต้นไม้',animal:'แกะบล็อก',enemy:'มอนสเตอร์'})[entity.kind] + ' [ ' + this.displayChar(entity.char) + ' ] · ' + (Math.hypot(entity.x-g.player.x,entity.y-g.player.y)>1.85?'เดินเข้าไปใกล้อีกนิด':'คลิกซ้ายเพื่อ'+(entity.kind==='rock'?'ขุด':'ฟัน')) + ' · ' + entity.hp + '/' + entity.maxHp;
+        if ((hoveredDrop && !g.needs(hoveredDrop.char)) || (entity && !g.needs(entity.char))) hint = 'ตัวอักษร [ ' + this.displayChar((hoveredDrop || entity).char) + ' ] ครบแล้ว · สำรวจหาตัวที่ยังขาดในกระเป๋า';
+        this.el('lc-context').textContent = hint;
+        this.el('lc-toast').hidden = g.messageTime <= 0; this.el('lc-toast').textContent = g.message;
+        this.updateCaptureHint();
+    },
+    showResult() {
+        const g = this.game, won = g.status === 'won';
+        this.showPanel('result', won ? 'ภารกิจสำเร็จ!' : g.reason === 'time' ? 'หมดเวลาแล้ว' : 'หัวใจหมดแล้ว');
+        this.el('lc-result-icon').textContent = won ? '🏆' : '🌱';
+        this.el('lc-result-message').textContent = won ? 'ยอดเยี่ยม! คุณเก็บตัวอักษรครบแล้ว' : 'คุณทำได้ดีแล้ว ลองสำรวจใหม่อีกครั้งนะ';
+        this.el('lc-result-count').textContent = g.collected + ' / ' + g.goal;
+        this.el('lc-result-time').textContent = Math.floor(g.elapsed/60) + ':' + String(Math.floor(g.elapsed%60)).padStart(2,'0');
+        this.el('lc-result-hearts').textContent = g.hearts + ' ♥';
+        this.el('lc-next-button').hidden = !won;
+        this.el('lc-next-button').textContent = state.lessonIndex >= curriculum[state.lang].length-1 ? 'จบหลักสูตร 🎉' : 'บทเรียนถัดไป →';
+    },
+    dispose() {
+        if (this.frame !== null) cancelAnimationFrame(this.frame);
+        this.frame = null; if (this.listeners) this.listeners.abort(); this.listeners = null;
+        this.releaseCapture();
+        if (this.view) this.view.dispose(); this.view = null;
+        this.fallback = false; this.capturePending = false;
+    },
+    exit(showComplete = true) {
+        this.dispose(); state.isGameMode = false; this.el('game-ui').style.display = 'none'; this.panel = null;
+        if (showComplete) {
+            const modal = this.el('modal-complete'); modal.classList.remove('hidden'); modal.style.display = 'flex';
+            this.el('btn-mini-game').focus();
         }
     }
-    // Perspective vertical lines
-    for(let i=-20; i<=20; i++) {
-        const bx = cw/2 + i * 80;
-        ctx.beginPath(); ctx.moveTo(cw/2, horizonY); ctx.lineTo(bx, ch); ctx.stroke();
-    }
-    
-    // Sun
-    ctx.globalAlpha = 1.0;
-    const sunGrad = ctx.createLinearGradient(0, horizonY - 60, 0, horizonY + 20);
-    sunGrad.addColorStop(0, '#fde047');
-    sunGrad.addColorStop(1, '#ec4899');
-    ctx.fillStyle = sunGrad;
-    ctx.beginPath();
-    ctx.arc(cw/2, horizonY, 60, Math.PI, Math.PI*2);
-    ctx.fill();
-    
-    // Targets as Neon Barriers
-    Minigame.targets.forEach((t, index) => {
-        // scale based on y position to give 3D effect
-        const scale = Math.max(0.2, (t.y - horizonY) / (ch - horizonY));
-        if (t.y < horizonY) return;
-        
-        ctx.save();
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = index === 0 ? '#06b6d4' : '#ec4899';
-        ctx.fillStyle = index === 0 ? 'rgba(6, 182, 212, 0.4)' : 'rgba(236, 72, 153, 0.4)';
-        ctx.strokeStyle = index === 0 ? '#06b6d4' : '#ec4899';
-        ctx.lineWidth = 3 * scale;
-        
-        const w = 150 * scale;
-        const h = 80 * scale;
-        
-        ctx.beginPath();
-        ctx.roundRect(t.x - w/2, t.y - h, w, h, 5);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-    });
-}
+};
+function startMiniGame() { Lettercraft.mount(); }
+function handleGameInput(e) { Lettercraft.keyDown(e); }
 
-function renderSamuraiTheme(ctx, cw, ch) {
-    // Bamboo Forest Background
-    ctx.fillStyle = '#fef3c7'; // Paper color
-    ctx.fillRect(0, 0, cw, ch);
-    
-    ctx.fillStyle = '#d97706'; // Sun
-    ctx.beginPath(); ctx.arc(cw/2, ch*0.6, 150, 0, Math.PI*2); ctx.fill();
-    
-    // Bamboo silhouettes
-    ctx.fillStyle = '#451a03';
-    ctx.globalAlpha = 0.1;
-    for(let i=0; i<10; i++) {
-        ctx.fillRect(cw*0.1*i, 0, 30, ch);
-    }
-    ctx.globalAlpha = 1.0;
-    
-    ctx.fillStyle = '#1c1917'; // Black silhouette ground
-    ctx.fillRect(0, ch - 80, cw, 80);
-    
-    // Targets as Bamboo Targets
-    Minigame.targets.forEach((t, index) => {
-        ctx.fillStyle = '#1c1917';
-        ctx.fillRect(t.x - 6, t.y, 12, ch - t.y);
-        
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, 35, 0, Math.PI*2);
-        ctx.fill();
-        ctx.strokeStyle = '#fef3c7';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        
-        // Slash effect if active
-        if (index === 0 && Minigame.currentCharIdx > 0) {
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(t.x - 50, t.y - 50);
-            ctx.lineTo(t.x + 50, t.y + 50);
-            ctx.stroke();
-        }
-    });
-}
-
-function renderMinimalTheme(ctx, cw, ch) {
-    ctx.fillStyle = '#f8fafc'; // light slate
-    ctx.fillRect(0, 0, cw, ch);
-    
-    // Timeline track
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, ch/2);
-    ctx.lineTo(cw, ch/2);
-    ctx.stroke();
-    
-    // Hit zone
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cw * 0.2, ch/2, 45, 0, Math.PI*2);
-    ctx.stroke();
-    
-    Minigame.targets.forEach((t, index) => {
-        const targetX = t.x; 
-        
-        ctx.fillStyle = index === 0 ? '#3b82f6' : '#94a3b8';
-        ctx.beginPath();
-        ctx.arc(targetX, ch/2, 25, 0, Math.PI*2);
-        ctx.fill();
-        
-        if (index === 0 && Minigame.currentCharIdx > 0) {
-            ctx.strokeStyle = '#60a5fa';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(targetX, ch/2, 25 + Math.random()*10, 0, Math.PI*2);
-            ctx.stroke();
-        }
-    });
-}
-
-    // --- KEYBOARD RENDERING & VISUALS ---
+// LETTERCRAFT_SCRIPT_END    // --- KEYBOARD RENDERING & VISUALS ---
     function renderKeyboard() {
         const container = document.getElementById('keyboard-container');
         if(!container) return;
