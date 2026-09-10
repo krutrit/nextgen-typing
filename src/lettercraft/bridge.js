@@ -241,9 +241,22 @@ const Lettercraft = {
         this.dispose(); state.isGameMode = false; this.el('game-ui').style.display = 'none'; this.panel = null;
         if (showComplete) {
             const modal = this.el('modal-complete'); modal.classList.remove('hidden'); modal.style.display = 'flex';
-            this.el('btn-mini-game').focus();
+            const btnMini = this.el('btn-mini-game');
+            if (state.userSettings && state.userSettings.enableMinigame === false) {
+                if (btnMini) btnMini.classList.add('hidden');
+                const btnNext = this.el('btn-next-lesson');
+                if (btnNext) btnNext.focus();
+            } else {
+                if (btnMini) btnMini.focus();
+            }
         }
     }
 };
-function startMiniGame() { Lettercraft.mount(); }
+function startMiniGame() {
+    if (state.userSettings && state.userSettings.enableMinigame === false) {
+        alert("ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้");
+        return;
+    }
+    Lettercraft.mount();
+}
 function handleGameInput(e) { Lettercraft.keyDown(e); }

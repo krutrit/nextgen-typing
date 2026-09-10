@@ -349,11 +349,32 @@
                 <!-- Settings Section -->
                 <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
                     <h3 class="text-lg font-bold text-indigo-400 mb-4 flex items-center gap-2">⚙️ ตั้งค่าระบบ</h3>
-                    <div>
-                        <label class="text-slate-300 text-sm block mb-2">จำนวนตัวอักษรเป้าหมาย:</label>
-                        <div class="flex gap-3 sm:max-w-md">
-                            <input type="number" id="admin-target-length" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white text-center focus:ring-2 focus:ring-indigo-500 outline-none" value="1000">
-                            <button onclick="saveAdminSettings()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-medium whitespace-nowrap transition-transform hover:scale-105 active:scale-95">บันทึก</button>
+                    <div class="flex flex-col gap-5 sm:max-w-xl">
+                        <div>
+                            <label class="text-slate-300 text-sm block mb-2 font-medium">จำนวนตัวอักษรเป้าหมายต่อบทเรียน:</label>
+                            <input type="number" id="admin-target-length" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-center focus:ring-2 focus:ring-indigo-500 outline-none" value="1000">
+                        </div>
+
+                        <!-- Toggle Switch: Enable/Disable Minigame -->
+                        <div class="flex items-center justify-between p-4 bg-slate-800/80 rounded-xl border border-slate-700">
+                            <div class="pr-4">
+                                <p class="text-sm font-bold text-white flex items-center gap-2">
+                                    <span>🎮</span> มินิเกมท้ายบทเรียน
+                                </p>
+                                <p class="text-xs text-emerald-400 mt-1 transition-colors" id="admin-minigame-status-desc">
+                                    เปิดให้นักเรียนเล่นเกมท้ายบทเรียนเมื่อพิมพ์ผ่านเกณฑ์ (ความแม่นยำ 80% ขึ้นไป)
+                                </p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="admin-toggle-minigame" class="sr-only peer" checked onchange="updateMinigameToggleUI()">
+                                <div class="w-12 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                            </label>
+                        </div>
+
+                        <div>
+                            <button onclick="saveAdminSettings()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-lg text-sm shadow-lg font-medium whitespace-nowrap transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer">
+                                <span>💾</span> บันทึกการตั้งค่า
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -710,7 +731,7 @@
     // --- MOCK DATA STORE ---
     let mockData = {
         users: ['Guest', 'Student 1', 'Teacher'],
-        settings: { targetLength: 100 },
+        settings: { targetLength: 100, enableMinigame: true },
         // Progress Persistence (Lesson Index)
         progress: {
             'Student 1': { 'TH': 2, 'EN': 0 },
@@ -759,7 +780,7 @@
         timerInterval: null, 
         isSoundOn: true,
         currentUser: null,
-        userSettings: { targetLength: 1000 },
+        userSettings: { targetLength: 1000, enableMinigame: true },
         isDataLoaded: false,
         // Game State (Lettercraft Adventure)
         isGameMode: false,
@@ -816,8 +837,15 @@
         
         if(data) {
             mockData.users = data.users || ['Guest'];
-            mockData.settings = data.settings || { targetLength: 1000 };
+            mockData.settings = Object.assign({ targetLength: 1000, enableMinigame: true }, data.settings || {});
             if(data.progress) mockData.progress = data.progress;
+        }
+
+        const localGameSetting = localStorage.getItem('ngt_enableMinigame');
+        if (data && data.settings && typeof data.settings.enableMinigame !== 'undefined') {
+            mockData.settings.enableMinigame = (data.settings.enableMinigame === true || String(data.settings.enableMinigame).toLowerCase() === 'true');
+        } else if (localGameSetting !== null) {
+            mockData.settings.enableMinigame = localGameSetting === 'true';
         }
 
         // เตรียม dropdown ห้องสำหรับหน้า Login
@@ -1016,7 +1044,25 @@
 
         list.innerHTML = html || `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">ยังไม่มีรายชื่อนักเรียน</td></tr>`;
         document.getElementById('admin-target-length').value = state.userSettings.targetLength;
+        const toggleMinigame = document.getElementById('admin-toggle-minigame');
+        if (toggleMinigame) {
+            toggleMinigame.checked = state.userSettings.enableMinigame !== false;
+            updateMinigameToggleUI();
+        }
         refreshRoomDropdowns();
+    }
+
+    function updateMinigameToggleUI() {
+        const toggle = document.getElementById('admin-toggle-minigame');
+        const desc = document.getElementById('admin-minigame-status-desc');
+        if (!toggle || !desc) return;
+        if (toggle.checked) {
+            desc.textContent = "เปิดใช้งาน: นักเรียนที่พิมพ์ผ่านเกณฑ์ (ความแม่นยำ 80% ขึ้นไป) จะสามารถกดเล่นเกมท้ายบทเรียนได้";
+            desc.className = "text-xs text-emerald-400 mt-1 transition-colors";
+        } else {
+            desc.textContent = "ปิดใช้งาน: ปิดปุ่มเข้าเล่นเกมท้ายบทเรียน (นักเรียนจะข้ามไปบทเรียนถัดไปทันที)";
+            desc.className = "text-xs text-rose-400 mt-1 transition-colors";
+        }
     }
     
     function updateUserLevel(user, lang, val) {
@@ -1291,11 +1337,23 @@
 
     function saveAdminSettings() {
         const len = parseInt(document.getElementById('admin-target-length').value) || 100;
-        state.userSettings.targetLength = len; mockData.settings.targetLength = len;
+        const toggleMinigame = document.getElementById('admin-toggle-minigame');
+        const enableGame = toggleMinigame ? toggleMinigame.checked : true;
+
+        state.userSettings.targetLength = len;
+        state.userSettings.enableMinigame = enableGame;
+        mockData.settings.targetLength = len;
+        mockData.settings.enableMinigame = enableGame;
+        localStorage.setItem('ngt_enableMinigame', enableGame);
+
         document.getElementById('target-display').innerText = len;
-        if (typeof google !== 'undefined' && google.script) { google.script.run.saveSettings({ targetLength: len }); }
-        else { apiCall('saveSettings', { settings: { targetLength: len } }); }
-        alert('บันทึกการตั้งค่าแล้ว'); if(state.currentUser) loadLesson(state.lessonIndex); 
+        if (typeof google !== 'undefined' && google.script) {
+            google.script.run.saveSettings({ targetLength: len, enableMinigame: enableGame });
+        } else {
+            apiCall('saveSettings', { settings: { targetLength: len, enableMinigame: enableGame } });
+        }
+        alert('บันทึกการตั้งค่าแล้ว');
+        if(state.currentUser) loadLesson(state.lessonIndex); 
     }
 
     function handleGlobalKeydown(e) {
@@ -1550,12 +1608,19 @@
                     }
                 }
             }
-            btnNext.classList.remove('hidden'); btnMini.classList.remove('hidden');
+            btnNext.classList.remove('hidden');
+            const isMinigameEnabled = state.userSettings && state.userSettings.enableMinigame !== false;
+            if (isMinigameEnabled && btnMini) {
+                btnMini.classList.remove('hidden');
+            } else if (btnMini) {
+                btnMini.classList.add('hidden');
+            }
         } else {
             modalTitle.innerText = "ยังไม่ผ่านเกณฑ์"; modalTitle.className = "text-2xl font-bold text-red-500 mb-1";
             modalMessage.innerText = `ความแม่นยำต้อง 80% ขึ้นไป (ได้ ${accVal}%)`; modalMessage.className = "text-red-300 text-sm mb-6 font-bold";
             modalIcon.innerHTML = "✕"; modalIcon.className = "w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-red-500/30 text-3xl";
-            btnNext.classList.add('hidden'); btnMini.classList.add('hidden'); 
+            btnNext.classList.add('hidden');
+            if (btnMini) btnMini.classList.add('hidden'); 
         }
 
         const modal = document.getElementById('modal-complete');
@@ -2495,11 +2560,24 @@ const Lettercraft = {
         this.dispose(); state.isGameMode = false; this.el('game-ui').style.display = 'none'; this.panel = null;
         if (showComplete) {
             const modal = this.el('modal-complete'); modal.classList.remove('hidden'); modal.style.display = 'flex';
-            this.el('btn-mini-game').focus();
+            const btnMini = this.el('btn-mini-game');
+            if (state.userSettings && state.userSettings.enableMinigame === false) {
+                if (btnMini) btnMini.classList.add('hidden');
+                const btnNext = this.el('btn-next-lesson');
+                if (btnNext) btnNext.focus();
+            } else {
+                if (btnMini) btnMini.focus();
+            }
         }
     }
 };
-function startMiniGame() { Lettercraft.mount(); }
+function startMiniGame() {
+    if (state.userSettings && state.userSettings.enableMinigame === false) {
+        alert("ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้");
+        return;
+    }
+    Lettercraft.mount();
+}
 function handleGameInput(e) { Lettercraft.keyDown(e); }
 
 // LETTERCRAFT_SCRIPT_END    // --- KEYBOARD RENDERING & VISUALS ---

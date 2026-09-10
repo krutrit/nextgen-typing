@@ -118,6 +118,7 @@ function saveSettings(settings) {
   sheet.clear(); // ล้างค่าเก่า
   sheet.appendRow(["Key", "Value"]);
   sheet.appendRow(["targetLength", settings.targetLength]);
+  sheet.appendRow(["enableMinigame", settings.enableMinigame !== false]);
   return "Success";
 }
 
@@ -246,10 +247,12 @@ function getUsers() {
 function getSettings() {
   const sheet = getOrCreateSheet(SHEET_SETTINGS);
   const data = sheet.getDataRange().getValues();
-  let settings = { targetLength: 1000 }; 
+  let settings = { targetLength: 1000, enableMinigame: true }; 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === 'targetLength') {
       settings.targetLength = parseInt(data[i][1]);
+    } else if (data[i][0] === 'enableMinigame') {
+      settings.enableMinigame = (data[i][1] === true || String(data[i][1]).toLowerCase() === 'true');
     }
   }
   return settings;
