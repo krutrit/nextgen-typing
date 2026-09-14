@@ -15,7 +15,7 @@ function fixture() {
 }
 function advance(g,t,active=true){for(let left=t;left>0.000001;left-=0.05)g.update(Math.min(left,0.05),active);}
 function drop(g,char='a',id=500){g.drops.push({id,kind:'letter',char,x:g.player.x+0.4,y:g.player.y});}
-test('first-person movement follows yaw and strafes without pitching into the ground',()=>{
+test('camera-relative movement follows yaw and strafes without pitching into the ground',()=>{
  for(const [yaw,code,wantX,wantY] of [[0,'KeyW',1,0],[0,'KeyD',0,1],[0,'ArrowLeft',0,-1],[Math.PI/2,'ArrowUp',0,1],[Math.PI/2,'KeyS',0,-1],[Math.PI/2,'KeyD',-1,0]]){
   const g=fixture();g.entities=[];g.player.angle=yaw;g.player.pitch=1;g.keyDown(code,code);
   const d=g.direction();assert.ok(Math.abs(d.x-wantX)<1e-10);assert.ok(Math.abs(d.y-wantY)<1e-10);
@@ -23,10 +23,23 @@ test('first-person movement follows yaw and strafes without pitching into the gr
 });
 test('mouse look clamps pitch and does not cancel a letter hold',()=>{
  const g=fixture();drop(g);g.keyDown('KeyA','a');advance(g,1);
- assert.equal(typeof g.look,'function');g.look(100,-100);assert.ok(g.player.angle>0);assert.ok(g.player.pitch>0);
+ const pitch=g.player.pitch;assert.equal(typeof g.look,'function');g.look(100,-100);assert.ok(g.player.angle>0);assert.ok(g.player.pitch>pitch);
  g.look(0,-100000);assert.ok(g.player.pitch<=1.25);g.look(0,100000);assert.ok(g.player.pitch>=-1.25);
  const before={...g.player};g.look(NaN,Infinity);assert.deepEqual(g.player,before);
  advance(g,2.01);assert.equal(g.collected,1);
+});
+test('third-person body faces movement without rotating the orbit camera',()=>{
+ const g=fixture();g.entities=[];const facing=g.player.facing;
+ g.look(200,0);assert.equal(g.player.facing,facing);
+ g.keyDown('KeyD','d');advance(g,.5);assert.ok(g.player.moving);
+ assert.ok(Math.abs(g.player.facing-(.5+Math.PI/2))<.02);assert.equal(g.player.angle,.5);
+ g.keyUp('KeyD');advance(g,.1);assert.equal(g.player.moving,false);
+});
+test('zoom is bounded and never cancels a matching letter hold',()=>{
+ const g=fixture();drop(g);g.keyDown('KeyA','a');assert.equal(typeof g.zoom,'function');
+ g.zoom(100000);assert.ok(g.cameraDistance<=7);g.zoom(-100000);assert.ok(g.cameraDistance>=2.2);
+ const distance=g.cameraDistance;g.zoom(NaN);assert.equal(g.cameraDistance,distance);
+ advance(g,3.01);assert.equal(g.collected,1);
 });
 test('terrain is stepped, remains walkable and keeps the spawn area level',()=>{
  const g=fixture();assert.equal(typeof g.heightAt,'function');assert.equal(g.heightAt(16.5,16.5),0);
@@ -43,8 +56,9 @@ test('animal bodies block walking while animals may still wander around their ow
  g.player.x=5;g.player.y=5;const y=g.entities[0].y;advance(g,.2);assert.notEqual(g.entities[0].y,y);
 });
 test('a successful attack does not snap camera yaw or pitch to object center',()=>{
- const g=fixture();g.player.angle=.2;g.player.pitch=-.4;g.attack(999);
+ const g=fixture();g.player.angle=.2;g.player.pitch=-.4;g.player.facing=2;g.attack(999);
  assert.equal(g.entities[0].hp,3);assert.equal(g.player.angle,.2);assert.equal(g.player.pitch,-.4);
+ assert.equal(g.player.facing,0);assert.ok(g.player.swingDuration>=g.player.swing);
 });
 test('mouse attacks respect cooldown and range, break rock and drop without collecting',()=>{
  const g=fixture();g.attack(999);assert.equal(g.entities[0].hp,3);g.attack(999);assert.equal(g.entities[0].hp,3);

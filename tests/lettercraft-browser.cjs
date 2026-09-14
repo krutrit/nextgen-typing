@@ -20,15 +20,17 @@ const root = path.resolve(__dirname, '..');
   const locked = () => page.waitForFunction(()=>document.pointerLockElement?.id==='lc-canvas');
   async function release() { await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.pointerLockElement); }
   async function pointAt(x,y,z) {
-    // Real mouse motion, not camera-state writes.
-    await page.mouse.move(720,450);
-    const delta = await page.evaluate(({x,y,z})=>{
-      const g=Lettercraft.game,p=g.player,yaw=Math.atan2(y-p.y,x-p.x);
-      const yawDelta=Math.atan2(Math.sin(yaw-p.angle),Math.cos(yaw-p.angle));
-      const pitch=Math.atan2(z-g.heightAt(p.x,p.y)-1.6,Math.hypot(x-p.x,y-p.y));
-      return {x:yawDelta/.0025,y:(p.pitch-pitch)/.0025};
-    },{x,y,z});
-    await page.mouse.move(720+delta.x,450+delta.y);await page.waitForTimeout(80);
+    // Iterative real mouse orbit: the eye moves around the player as it rotates.
+    for(let i=0;i<8;i++) {
+      await page.mouse.move(720,450);await page.waitForTimeout(30);
+      const delta=await page.evaluate(({x,y,z})=>{
+        const c=Lettercraft.view.camera,yaw=Math.atan2(y-c.y,x-c.x);
+        const yawDelta=Math.atan2(Math.sin(yaw-c.angle),Math.cos(yaw-c.angle));
+        const pitch=Math.atan2(z-c.z,Math.hypot(x-c.x,y-c.y));
+        return {x:yawDelta/.0025,y:(c.pitch-pitch)/.0025};
+      },{x,y,z});
+      await page.mouse.move(720+delta.x,450+delta.y);await page.waitForTimeout(80);
+    }
   }
   async function clickWorld() {await page.mouse.down();await page.mouse.up();}
   async function keyHold(key,ms) {await page.keyboard.down(key);await page.waitForTimeout(ms);await page.keyboard.up(key);}
@@ -57,13 +59,13 @@ const root = path.resolve(__dirname, '..');
     await pointAt(initial.x+3,initial.y,.9);
     const before=await page.evaluate(()=>({...Lettercraft.game.player}));await keyHold('w',150);
     const after=await page.evaluate(()=>({...Lettercraft.game.player}));
-    assert.ok(after.x>before.x+.2);assert.ok(Math.abs(after.y-before.y)<.04);
+    assert.ok((after.x-before.x)*Math.cos(before.angle)+(after.y-before.y)*Math.sin(before.angle)>.2);
     await keyHold('ArrowUp',160);assert.equal(await page.evaluate(()=>Lettercraft.game.tools.pickaxe),1);
     const strafeBefore=await page.evaluate(()=>Lettercraft.game.player.y);
     await keyHold('d',120);assert.ok(await page.evaluate(()=>Lettercraft.game.player.y)>strafeBefore+.2);
     await keyHold('ArrowLeft',120);await pointAt(24,19,1.6);
     fs.mkdirSync(path.join(root,'.artifacts'),{recursive:true});
-    await page.screenshot({path:path.join(root,'.artifacts/lettercraft-first-person.png')});
+    await page.screenshot({path:path.join(root,'.artifacts/lettercraft-third-person.png')});
     await release();assert.equal(await page.locator('#lc-capture').isVisible(),true);
     const stopped=await page.evaluate(()=>({x:Lettercraft.game.player.x,y:Lettercraft.game.player.y}));
     await keyHold('w',120);assert.deepEqual(await page.evaluate(()=>({x:Lettercraft.game.player.x,y:Lettercraft.game.player.y})),stopped);
@@ -114,6 +116,6 @@ const root = path.resolve(__dirname, '..');
     assert.equal(await page.locator('#lc-error').isVisible(),true);
     await page.locator('#lc-error-back').click();assert.equal(await page.evaluate(()=>state.isGameMode),false);
     assert.deepEqual(errors,[]);
-    console.log('PASS: FPS pointer lock/Esc, mouse yaw/pitch, crosshair mining/occlusion, collision, WASD/arrows, tools, hold while looking, monster chase/five hits/invulnerability, timeout/retry/win, Thai marks, responsive layout, cleanup and no remote writes.');
+    console.log('PASS: third-person orbit/Esc, crosshair mining/occlusion, collision, WASD/arrows, tools, hold while looking, monster chase/five hits/invulnerability, timeout/retry/win, Thai marks, responsive layout, cleanup and no remote writes.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

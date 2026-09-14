@@ -27,17 +27,104 @@ test('ray slabs handle nearest face, parallel misses, inside origins and behind 
 });
 function view(){return Object.assign(Object.create(View.prototype),{width:800,height:600,time:0,camera:{...camera},labels:[]});}
 function game(){return {size:32,player:{x:2,y:5,angle:0,pitch:-.4},heightAt:()=>0,entities:[],enemies:[],drops:[]};}
+function fixedCamera(v,g){v.camera={x:g.player.x,y:g.player.y,z:g.heightAt(g.player.x,g.player.y)+1.6,angle:g.player.angle,pitch:g.player.pitch};}
+
+test('third-person camera frames the full avatar behind its facing with shoulder clearance',()=>{
+ const v=view(),g=game();Object.assign(g.player,{x:16,y:16,pitch:-.32,facing:0});
+ const c=v.updateCamera(g,0);
+ assert.ok(c.x<13&&c.z>2,'camera must trail behind and above the avatar');
+ for(const z of [0,1.6]) {const p=v.project(16,16,z);assert.ok(p.visible&&p.y>50&&p.y<550,'full avatar must clear screen edges');assert.ok(p.x<380,'avatar must leave the center reticle clear');}
+ g.player.x=17;v.updateCamera(g,1/60);assert.ok(v.camera.x>c.x&&v.camera.x<c.x+1,'follow movement must ease');
+ g.player.angle=Math.PI/2;v.updateCamera(g,1/60);close(v.camera.angle,Math.PI/2);
+});
+
+test('camera clamps zoom and retracts before trees, foliage, terrain, and map bounds',()=>{
+ const v=view(),g=game();Object.assign(g.player,{x:16,y:16,pitch:0});g.cameraDistance=100;
+ let c=v.updateCamera(g,0);assert.ok(Math.hypot(c.x-16,c.y-16)<7.1);
+ g.cameraDistance=.1;c=v.updateCamera(g,0);assert.ok(Math.hypot(c.x-16,c.y-16)>2.1);
+ g.cameraDistance=7;v.updateCamera(g,0);g.entities=[{id:'tree',kind:'tree',x:13,y:16}];c=v.updateCamera(g,1/60);
+ assert.ok(c.x>13.55,'sweep must stop in front of the trunk');
+ for(const b of v._scene(g,c).boxes)assert.equal(View.rayBox(c,{x:0,y:0,z:0},b.min,b.max),null,'camera must remain outside geometry');
+ const blockedX=c.x;g.entities=[];v.updateCamera(g,1/60);assert.ok(v.camera.x<blockedX&&v.camera.x>9.1,'recovery must ease');
+ g.player.pitch=-.5;g.entities=[{id:'tree',kind:'tree',x:13,y:16}];c=v.updateCamera(g,0);assert.ok(c.x>13.9,'canopy must retract camera');
+ g.entities=[];g.heightAt=x=>x<14?3:0;c=v.updateCamera(g,0);assert.ok(c.x>14,'raised terrain must retract camera');
+ g.heightAt=()=>0;g.player.x=.4;g.player.pitch=0;c=v.updateCamera(g,0);assert.ok(c.x>=.15,'camera must stay inside the map');
+});
+
+test('avatar has six articulated body parts and walk/run geometry changes while feet stay supported',()=>{
+ const v=view(),g=game();g.player.z=.75;g.player.facing=Math.PI/2;
+ const idle=v._avatar(g);for(const name of ['head','body','leftArm','rightArm','leftLeg','rightLeg'])assert.ok(idle.some(b=>b.part===name));
+ const limbVertices=parts=>{const out=[];v._boxVertices(out,parts.find(b=>b.part==='leftLeg'));return out;};
+ const resting=limbVertices(idle);g.player.moving=true;v.time=.15;const walking=limbVertices(v._avatar(g));
+ assert.notDeepEqual(walking,resting);g.player.running=true;assert.notDeepEqual(limbVertices(v._avatar(g)),walking);
+ const all=[];for(const b of v._avatar(g))v._boxVertices(all,b);const zs=all.filter((_,i)=>i%8===2);assert.ok(Math.min(...zs)>=.7499&&Math.min(...zs)<.78,'feet must use player elevation');
+ for(const time of [.05,.1,.3,.5]) {v.time=time;const frame=[];for(const b of v._avatar(g))v._boxVertices(frame,b);close(Math.min(...frame.filter((_,i)=>i%8===2)),.75);}
+});
+
+test('avatar rotation follows body facing independently of orbit and idle arms breathe',()=>{
+ const v=view(),g=game();g.player.facing=0;
+ const points=(name)=>{const out=[];v._boxVertices(out,v._avatar(g).find(b=>b.part===name));return out;};
+ const face=points('eye'),arm=points('leftArm');g.player.angle=Math.PI/2;assert.deepEqual(points('eye'),face);
+ g.player.facing=Math.PI/2;const turned=points('eye');assert.ok(turned.filter((_,i)=>i%8===1).every(y=>y>5.2));
+ v.time=.4;assert.notDeepEqual(points('leftArm'),arm);
+});
+
+test('jump, falling, and landing poses react to physics state without changing feet elevation',()=>{
+ const v=view(),g=game();Object.assign(g.player,{z:2,grounded:true,vz:0,landing:0,facing:0});
+ const geometry=()=>{const out=[];for(const b of v._avatar(g))v._boxVertices(out,b);return out;};
+ const standing=geometry();g.player.grounded=false;g.player.vz=4;const rising=geometry();assert.notDeepEqual(rising,standing,'takeoff must pose the arms and legs');
+ g.player.vz=-3;const falling=geometry();assert.notDeepEqual(falling,rising,'falling must use a different pose');
+ g.player.grounded=true;g.player.landing=.18;const landing=geometry();assert.notDeepEqual(landing,standing,'landing must absorb impact');
+ const maxZ=points=>Math.max(...points.filter((_,i)=>i%8===2));assert.ok(maxZ(landing)<maxZ(standing)-.08,'landing must lower the body');
+ for(const points of [standing,rising,falling,landing])close(Math.min(...points.filter((_,i)=>i%8===2)),2);
+ g.player.landing=0;assert.deepEqual(geometry(),standing,'landing must recover to the standing pose');
+});
+
+test('held pickaxe, axe and sword have distinct visible geometry and upgraded materials',()=>{
+ const v=view(),g=game();g.tools={pickaxe:0,axe:0,sword:0};
+ const weapons=[];
+ for(const tool of ['pickaxe','axe','sword']) {g.activeTool=tool;const parts=v._avatar(g).filter(b=>b.part.startsWith('held'));
+  assert.ok(parts.length>=4,'tools need readable handles, metal and shaped edges');
+  assert.ok(parts.some(b=>b.max.y>.65),'weapon silhouette must clear the body at rest');
+  const out=[];for(const b of parts)v._boxVertices(out,b);weapons.push(out);
+ }
+ assert.notDeepEqual(weapons[0],weapons[1]);assert.notDeepEqual(weapons[1],weapons[2]);
+ g.tools.sword=2;const upgraded=[];for(const b of v._avatar(g).filter(b=>b.part.startsWith('held')))v._boxVertices(upgraded,b);
+ assert.notDeepEqual(upgraded.filter((_,i)=>i%8>=3),weapons[2].filter((_,i)=>i%8>=3),'tool level must change the rendered material');
+});
+
+test('tool-specific attacks animate the hand and attached weapon and settle back to rest',()=>{
+ const v=view(),g=game();g.player.swingDuration=.22;
+ const snapshots=[];
+ for(const tool of ['pickaxe','axe','sword']) {g.activeTool=tool;g.player.swing=0;
+  const render=()=>{const out=[];for(const b of v._avatar(g).filter(b=>b.part.startsWith('held')||b.part==='rightHand'))v._boxVertices(out,b);return out;};
+  const rest=render();g.player.swing=.11;const attack=render();assert.notDeepEqual(attack,rest);
+  const rig=v._avatar(g),hand=rig.find(b=>b.part==='rightHand');
+  for(const b of rig.filter(b=>b.part.startsWith('held')))assert.deepEqual(b.transform,hand.transform,'tool pieces must follow the same grip transform');
+  snapshots.push(hand.transform);g.player.swing=0;assert.deepEqual(render(),rest);
+ }
+ assert.notDeepEqual(snapshots[0],snapshots[1]);assert.notDeepEqual(snapshots[1],snapshots[2]);
+ assert.ok(Math.abs(snapshots[2].twist)>.1,'sword must sweep across the body');
+});
+
+test('pick uses the resolved rendered camera and avatar never intercepts its ray',()=>{
+ const v=view(),g=game();Object.assign(g.player,{x:16,y:16,pitch:0});v.updateCamera(g,0);
+ v.camera={x:12,y:16,z:.8,angle:0,pitch:0};g.player.angle=Math.PI;
+ g.entities=[{id:'rock',kind:'rock',x:19,y:16}];assert.equal(v.pick(g),'rock');
+ g.entities=[];assert.equal(v.pick(g),null);
+});
 test('center pick resolves nearest actual cube and foliage occludes targets',()=>{
  const v=view(),g=game();g.entities=[{id:'far',kind:'rock',x:5,y:5},{id:'near',kind:'rock',x:4,y:5}];
- assert.equal(v.pick(g),'near');g.player.pitch=.28;g.entities=[{id:'tree',kind:'tree',x:4,y:5}];assert.equal(v.pick(g),null);
+ fixedCamera(v,g);assert.equal(v.pick(g),'near');g.player.pitch=.28;fixedCamera(v,g);g.entities=[{id:'tree',kind:'tree',x:4,y:5}];assert.equal(v.pick(g),null);
 });
-test('pick reads current player yaw and terrain eye height before render',()=>{
+test('fixed primitive camera can target independently of player orbit',()=>{
  const v=view(),g=game();g.heightAt=()=>.75;g.player.angle=Math.PI/2;
- g.entities=[{id:'rock',kind:'rock',x:2,y:7}];assert.equal(v.pick(g),'rock');
- g.player.angle=-Math.PI/2;assert.equal(v.pick(g),null);
+ fixedCamera(v,g);g.entities=[{id:'rock',kind:'rock',x:2,y:7}];assert.equal(v.pick(g),'rock');
+ v.camera.angle=-Math.PI/2;assert.equal(v.pick(g),null);
 });
 test('terrain blocks a ray aimed through a raised step',()=>{
  const v=view(),g=game();g.player.pitch=-.5;
+ fixedCamera(v,g);
  g.drops=[{id:'hidden',kind:'letter',char:'A',x:4.5,y:5}];
  assert.equal(v.pick(g),'hidden');
  g.heightAt=x=>x>=3&&x<4?.75:0;
@@ -45,6 +132,7 @@ test('terrain blocks a ray aimed through a raised step',()=>{
 });
 test('a visible letter plaque is pickable but an intervening trunk hides it',()=>{
  const v=view(),g=game();g.player.pitch=Math.atan2(1.45-1.6,4.54);
+ fixedCamera(v,g);
  g.entities=[{id:'rock',kind:'rock',char:'A',x:7,y:5}];
  assert.equal(v.pick(g),'rock');
  g.entities.push({id:'tree',kind:'tree',x:4,y:5});
@@ -53,18 +141,18 @@ test('a visible letter plaque is pickable but an intervening trunk hides it',()=
  assert.equal(v._visibleLabels(g,camera,scene,[...v._terrain(g),...scene.boxes]).some(p=>p.item.id==='rock'),false);
 });
 test('the first rock plaque stays above the footer with the starting camera',()=>{
- const v=view(),g=game();v.width=1440;v.height=900;g.player.pitch=-.22;
+ const v=view(),g=game();v.width=1440;v.height=900;g.player.pitch=-.32;
  g.entities=[{id:'first',kind:'rock',char:'A',x:3,y:5}];
- const c=v._camera(g),scene=v._scene(g,c);
+ const c=v.updateCamera(g,0),scene=v._scene(g,c);
  const label=v._visibleLabels(g,c,scene,[...v._terrain(g),...scene.boxes]).find(p=>p.item.id==='first');
  assert.ok(label,'starting rock letter must be visible');
  assert.ok(label.y>90&&label.y<720,`plaque y=${label.y} overlaps HUD`);
 });
 test('a nearby drop plaque and its progress ring stay above the footer',()=>{
- const v=view(),g=game();v.width=1440;v.height=900;g.player.pitch=-.22;
+ const v=view(),g=game();v.width=1440;v.height=900;g.player.pitch=-.32;
  g.drops=[{id:'drop',kind:'letter',char:'A',x:3.5,y:5}];
  g.collecting={dropId:'drop',elapsed:1};
- const c=v._camera(g),scene=v._scene(g,c);
+ const c=v.updateCamera(g,0),scene=v._scene(g,c);
  const label=v._visibleLabels(g,c,scene,[...v._terrain(g),...scene.boxes]).find(p=>p.item.id==='drop');
  assert.ok(label,'nearby drop letter must remain visible above HUD');
  assert.ok(label.y+label.size*.72<720,'the full collection ring must clear the HUD');

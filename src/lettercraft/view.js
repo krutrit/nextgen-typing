@@ -12,7 +12,7 @@ class LettercraftView {
     this.gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: true });
     if (!this.gl) throw new Error('Lettercraft needs WebGL. Please enable hardware acceleration or try another browser.');
     this.width = this.height = this.dpr = 1;
-    this.camera = { x: 16, y: 16, z: 1.6, angle: 0, pitch: -.22 };
+    this.camera = null;
     this.time = 0;
     this.labels = [];
     this.particles = [];
@@ -69,9 +69,135 @@ class LettercraftView {
 
   project(x, y, z = 0) { return LettercraftView.projectPoint({ x, y, z }, this.camera, this.width, this.height); }
   _height(game, x, y) { return typeof game.heightAt === 'function' ? game.heightAt(x, y) : 0; }
-  _camera(game) {
-    const p = game.player;
-    return { x: p.x, y: p.y, z: this._height(game, p.x, p.y) + 1.6, angle: p.angle || 0, pitch: p.pitch || 0 };
+  _camera(game) { return this.camera || this.updateCamera(game, 0); }
+
+  updateCamera(game, dt = 0) {
+    if(!game || !game.player)return this.camera;
+    const p=game.player,step=Math.max(0,Math.min(.08,Number(dt)||0));
+    const reset=!step||this.cameraGame!==game||this.cameraPlayer!==p||!this.cameraPivot;
+    const follow=reset?1:1-Math.exp(-12*step),recover=reset?1:1-Math.exp(-5*step);
+    const feet=Number.isFinite(p.z)?p.z:this._height(game,p.x,p.y);
+    const anchor={x:p.x,y:p.y,z:feet+1.05},previous=this.cameraPivot||anchor;
+    const pivot={};for(const axis of ['x','y','z'])pivot[axis]=previous[axis]+(anchor[axis]-previous[axis])*follow;
+    const angle=p.angle||0,pitch=Number.isFinite(p.pitch)?p.pitch:-.32;
+    const requested=Math.max(2.2,Math.min(7,Number(game.cameraDistance)||4.4));
+    this.cameraZoom=reset?requested:this.cameraZoom+(requested-this.cameraZoom)*recover;
+    const direction=LettercraftView.cameraDirection({angle,pitch}),shoulder=.65;
+    const end={x:pivot.x-direction.x*this.cameraZoom-Math.sin(angle)*shoulder,
+      y:pivot.y-direction.y*this.cameraZoom+Math.cos(angle)*shoulder,z:pivot.z-direction.z*this.cameraZoom};
+    // Sweep the entire boom from the current player pivot. Padding also protects
+    // the near plane while orbiting around corners and through tree canopies.
+    const delta={x:end.x-anchor.x,y:end.y-anchor.y,z:end.z-anchor.z};
+    const length=Math.hypot(delta.x,delta.y,delta.z),ray={x:delta.x/length,y:delta.y/length,z:delta.z/length};
+    const padding=.18,size=game.size||32;
+    let limit=length;
+    for(const box of [...this._terrain(game),...this._scene(game,anchor).boxes]) {
+      const min={},max={};for(const axis of ['x','y','z']){min[axis]=box.min[axis]-padding;max[axis]=box.max[axis]+padding;}
+      const hit=LettercraftView.rayBox(anchor,ray,min,max);
+      if(hit!==null)limit=Math.min(limit,Math.max(.02,hit-.025));
+    }
+    for(const axis of ['x','y']) {
+      if(ray[axis]>0)limit=Math.min(limit,(size-padding-anchor[axis])/ray[axis]);
+      else if(ray[axis]<0)limit=Math.min(limit,(padding-anchor[axis])/ray[axis]);
+    }
+    const eased=reset?length:this.cameraBoom+(length-this.cameraBoom)*recover;
+    this.cameraBoom=Math.max(.02,Math.min(limit,eased));
+    this.camera={x:anchor.x+ray.x*this.cameraBoom,y:anchor.y+ray.y*this.cameraBoom,z:anchor.z+ray.z*this.cameraBoom,angle,pitch};
+    this.cameraPivot=pivot;this.cameraGame=game;this.cameraPlayer=p;
+    return this.camera;
+  }
+
+  _avatar(game) {
+    const p=game.player,t=this.time||0,parts=[];
+    const feet=Number.isFinite(p.z)?p.z:this._height(game,p.x,p.y),yaw=Number.isFinite(p.facing)?p.facing:p.angle||0;
+    const airborne=p.grounded===false,falling=airborne&&(p.vz||0)<-.1;
+    const crouch=airborne?0:Math.min(1,Math.max(0,(p.landing||0)/.18))*.15,hip=.58-crouch;
+    const stride=airborne?(falling?.18:.5):p.moving?Math.sin(t*(p.running?13:9))*(p.running?.8:.48):0;
+    const breath=Math.sin(t*2.2)*.008-crouch;
+    const sway=airborne?(falling?.6:-.85):p.moving?stride*.8:Math.sin(t*2.2)*.025;
+    const leftSway=airborne?sway:-sway,rightSway=airborne?sway*.8:sway;
+    const part=(name,x,y,z,w,d,h,material,tint=null,pivot=null,swing=0)=>{
+      parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,
+        transform:{x:p.x,y:p.y,z:feet,yaw,pivot:pivot||{x:0,y:0,z:0},swing}});
+    };
+    // A compact original explorer: teal jacket, ochre scarf, dark boots and pack.
+    part('leftLeg',0,-.145,0,.27,.23,hip,9,[.53,.67,.77],{x:0,y:0,z:hip},stride);
+    part('rightLeg',0,.145,0,.27,.23,hip,9,[.53,.67,.77],{x:0,y:0,z:hip},-stride);
+    part('leftBoot',.035,-.145,0,.34,.25,.16,10,null,{x:0,y:0,z:hip},stride);
+    part('rightBoot',.035,.145,0,.34,.25,.16,10,null,{x:0,y:0,z:hip},-stride);
+    part('body',0,0,.55+breath,.36,.5,.62,11,[.56,.74,.7]);
+    part('belt',.005,0,.57+breath,.38,.52,.09,4);
+    part('head',.012,0,1.15+breath,.43,.45,.43,15,[1.15,.97,.86]);
+    part('hair',-.025,0,1.49+breath,.48,.49,.13,4,[.56,.55,.57]);
+    part('hairBack',-.205,0,1.25+breath,.08,.47,.32,4,[.56,.55,.57]);
+    for(const y of [-.11,.11])part('eye',.233,y,1.34+breath,.018,.065,.07,10);
+    part('smile',.235,0,1.24+breath,.02,.1,.025,4,[.6,.55,.5]);
+    part('scarf',.018,0,1.1+breath,.41,.54,.11,8,[1.1,.73,.53]);
+    part('scarfTail',.211,-.125,.9+breath,.04,.11,.27,8,[1.1,.73,.53]);
+    part('backpack',-.265,0,.67+breath,.2,.39,.43,12,[.73,.74,.63]);
+    part('packFlap',-.28,0,1.0+breath,.22,.42,.1,4);
+    const shoulder={x:0,y:0,z:1.12+breath};
+    part('leftArm',0,-.365,.67+breath,.24,.2,.47,11,[.56,.74,.7],shoulder,leftSway);
+    part('leftHand',0,-.365,.56+breath,.23,.2,.17,15,null,shoulder,leftSway);
+
+    const swingProgress=(p.swingDuration&&p.swing>0)?Math.sin(p.swing/p.swingDuration*Math.PI):0;
+    const tool=game.activeTool||'pickaxe';
+    let attackSwing=0,attackTwist=0;
+    if(swingProgress>0) {
+      if(tool==='sword') {
+        attackSwing=swingProgress*.95;
+        attackTwist=-swingProgress*.38;
+      } else if(tool==='axe') {
+        attackSwing=swingProgress*1.35;
+        attackTwist=swingProgress*.05;
+      } else {
+        attackSwing=swingProgress*1.65;
+        attackTwist=0;
+      }
+    }
+    const rightHandTransform={
+      x:p.x,y:p.y,z:feet,yaw,
+      pivot:shoulder,
+      swing:rightSway+attackSwing,
+      twist:attackTwist
+    };
+    parts.push({part:'rightArm',id:null,min:{x:-.12,y:.365-.1,z:.67+breath},max:{x:.12,y:.365+.1,z:1.14+breath},material:11,tint:[.56,.74,.7],transform:rightHandTransform});
+    parts.push({part:'rightHand',id:null,min:{x:-.115,y:.365-.1,z:.56+breath},max:{x:.115,y:.365+.1,z:.73+breath},material:15,tint:null,transform:rightHandTransform});
+
+    const toolLvl=(game.tools&&game.tools[tool])||0;
+    const toolMats=[
+      {mat:4,tint:[1.05,.85,.65]},
+      {mat:3,tint:[1.0,1.02,1.05]},
+      {mat:14,tint:[.45,.95,1.25]}
+    ];
+    const metal=toolMats[Math.min(2,toolLvl)];
+    const heldPart=(name,x,y,z,w,d,h,material,tint=null)=>{
+      parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,transform:rightHandTransform});
+    };
+
+    if(tool==='sword') {
+      heldPart('heldHandle',.06,.42,.52+breath,.05,.05,.28,4,null);
+      heldPart('heldGuard',.06,.56,.66+breath,.24,.24,.06,metal.mat,metal.tint);
+      heldPart('heldBlade',.06,.56,.98+breath,.1,.06,.6,metal.mat,metal.tint);
+      heldPart('heldTip',.06,.56,1.32+breath,.06,.04,.14,metal.mat,metal.tint);
+    } else if(tool==='axe') {
+      heldPart('heldHandle',.06,.42,.38+breath,.07,.07,.7,4,null);
+      heldPart('heldHead',.06,.58,1.02+breath,.16,.22,.14,metal.mat,metal.tint);
+      heldPart('heldBlade',.18,.58,1.02+breath,.16,.16,.24,metal.mat,metal.tint);
+      heldPart('heldBeard',.14,.58,.90+breath,.12,.1,.12,metal.mat,metal.tint);
+    } else {
+      heldPart('heldHandle',.06,.42,.38+breath,.07,.07,.7,4,null);
+      heldPart('heldHead',.06,.58,1.02+breath,.22,.22,.12,metal.mat,metal.tint);
+      heldPart('heldPickLeft',-.14,.58,.98+breath,.18,.1,.1,metal.mat,metal.tint);
+      heldPart('heldPickRight',.24,.58,.98+breath,.18,.1,.1,metal.mat,metal.tint);
+    }
+    // Keep the lowest planted boot corner supported throughout the gait.
+    let bottom=Infinity;
+    for(const b of parts)if(b.part.endsWith('Leg')||b.part.endsWith('Boot'))for(const x of [b.min.x,b.max.x])for(const z of [b.min.z,b.max.z]) {
+      const tr=b.transform;bottom=Math.min(bottom,feet+tr.pivot.z-(x-tr.pivot.x)*Math.sin(tr.swing)+(z-tr.pivot.z)*Math.cos(tr.swing));
+    }
+    for(const b of parts)b.transform.z+=feet-bottom;
+    return parts;
   }
 
   // These descriptors are the shared source of truth for visible cubes and ray occlusion.
@@ -181,7 +307,7 @@ class LettercraftView {
 
   pick(game) {
     if(!game || !game.player) return null;
-    const camera=this._camera(game), scene=this._scene(game,camera), boxes=[...this._terrain(game),...scene.boxes];
+    const camera=this.camera||this.updateCamera(game,0), scene=this._scene(game,camera), boxes=[...this._terrain(game),...scene.boxes];
     const hit=this._nearest(camera,LettercraftView.cameraDirection(camera),boxes,20);
     let id=hit.box?hit.box.id:null,nearest=hit.distance;
     for(const label of this._visibleLabels(game,camera,scene,boxes)) {
@@ -252,6 +378,20 @@ class LettercraftView {
   _boxVertices(out,b,highlight=false,faces=null) {
     const {min:a,max:c}=b;
     const corners=[[a.x,a.y,a.z],[c.x,a.y,a.z],[c.x,c.y,a.z],[a.x,c.y,a.z],[a.x,a.y,c.z],[c.x,a.y,c.z],[c.x,c.y,c.z],[a.x,c.y,c.z]];
+    if(b.transform) {
+      const t=b.transform,p=t.pivot,cs=Math.cos(t.swing),ss=Math.sin(t.swing),cy=Math.cos(t.yaw),sy=Math.sin(t.yaw);
+      const twist=t.twist||0,ct=Math.cos(twist),st=Math.sin(twist);
+      for(const corner of corners) {
+        const x=corner[0]-p.x,y=corner[1]-p.y,z=corner[2]-p.z;
+        let rx=x*cs+z*ss,rz=-x*ss+z*cs,ry=y;
+        if(twist) {
+          const ty=ry*ct-rz*st,tz=ry*st+rz*ct;
+          ry=ty;rz=tz;
+        }
+        rx+=p.x;ry+=p.y;rz+=p.z;
+        corner[0]=t.x+rx*cy-ry*sy;corner[1]=t.y+rx*sy+ry*cy;corner[2]=t.z+rz;
+      }
+    }
     const quads=[[4,5,6,7],[0,3,2,1],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
     const shades=[1,.5,.77,.9,.83,.65];
     for(let face=0;face<6;face++) {
@@ -322,11 +462,13 @@ class LettercraftView {
   render(game,dt,hoverId=null) {
     if(this.disposed||!game||!game.player)return;
     const gl=this.gl; if(gl.isContextLost())return;
-    dt=Math.max(0,Math.min(.08,Number(dt)||0));this.time+=dt;this.camera=this._camera(game);
+    dt=Math.max(0,Math.min(.08,Number(dt)||0));this.time+=dt;
+    if(!this.camera||this.cameraGame!==game||this.cameraPlayer!==game.player)this.updateCamera(game,0);
     const scene=this._scene(game,this.camera),terrain=this._terrain(game),boxes=[...terrain,...scene.boxes];
     const vertices=this._groundVertices(game,terrain).slice();
     for(const box of scene.boxes)this._boxVertices(vertices,box,hoverId!=null&&box.id===hoverId);
     for(const detail of this._surfaceDetails(game,scene.boxes,hoverId))this._boxVertices(vertices,detail);
+    for(const part of this._avatar(game))this._boxVertices(vertices,part);
     // Distant block clouds are geometry, so looking up remains a true perspective view.
     for(let i=0;i<10;i++) {
       const x=3+(i*17)%36,y=2+(i*11)%35;
@@ -374,7 +516,6 @@ class LettercraftView {
     }
     ctx.globalAlpha=1;
     this._particles(game,dt,boxes);
-    this._hand(ctx,game);
     const x=this.width/2,y=this.height/2;
     ctx.strokeStyle='rgba(18,36,35,.7)';ctx.lineWidth=4;
     for(const color of ['rgba(18,36,35,.7)',hoverId!=null?'#ffe481':'#fffced']) {
@@ -391,27 +532,6 @@ class LettercraftView {
       ctx.arc(x,y,24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,game.collecting.elapsed/3));ctx.stroke();
     }
     if(game.invulnerable>0) {ctx.strokeStyle='rgba(193,65,43,'+Math.min(.5,game.invulnerable*.35)+')';ctx.lineWidth=18;ctx.strokeRect(0,0,this.width,this.height);}
-  }
-
-  _hand(ctx,game) {
-    const scale=Math.max(.6,Math.min(1.2,this.height/650)),swing=Math.sin(Math.min(1,(game.player.swing||0)/.24)*Math.PI);
-    const x=this.width*.76-swing*37*scale,y=this.height-Math.min(136,this.height*.22)+swing*24*scale;
-    ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(-.33-swing*.5);
-    ctx.fillStyle='#534831';ctx.fillRect(-31,14,73,126);ctx.fillStyle='#718565';ctx.fillRect(-26,18,62,116);
-    ctx.fillStyle='#b87d51';ctx.fillRect(-27,-19,61,58);ctx.fillStyle='#e2ae77';ctx.fillRect(-23,-23,51,46);
-    ctx.fillStyle='#f0bd88';ctx.fillRect(-23,-23,12,40);
-    const tool=game.activeTool||'pickaxe',level=Number((game.tools||{})[tool])||0;
-    const metal=level>=2?'#87e1d6':level===1?'#d5e0d6':'#b7aaa0',edge=level>=2?'#3f8f87':'#64716d';
-    ctx.fillStyle='#4f3528';ctx.fillRect(-4,-151,17,151);ctx.fillStyle='#ac7544';ctx.fillRect(0,-145,8,141);
-    ctx.fillStyle=edge;
-    if(tool==='sword') {
-      ctx.fillRect(-9,-207,28,139);ctx.fillRect(-23,-83,56,12);ctx.fillStyle=metal;ctx.fillRect(-4,-198,18,112);ctx.fillStyle='#f1f1cc';ctx.fillRect(-3,-191,5,100);
-    } else if(tool==='axe') {
-      ctx.fillRect(-48,-164,65,62);ctx.fillRect(-58,-154,15,42);ctx.fillStyle=metal;ctx.fillRect(-45,-158,52,48);ctx.fillStyle='#e5e7c9';ctx.fillRect(-52,-150,9,33);
-    } else {
-      ctx.fillRect(-54,-161,111,22);ctx.fillRect(-67,-151,24,32);ctx.fillRect(48,-151,21,39);ctx.fillStyle=metal;ctx.fillRect(-51,-157,103,13);ctx.fillRect(-62,-149,16,20);ctx.fillRect(52,-147,12,27);
-    }
-    ctx.restore();
   }
 
   _particles(game,dt,boxes) {

@@ -2,7 +2,10 @@
 class LettercraftGame {
     constructor(text, rng = Math.random) {
         this.rng = rng; this.size = 32; this.id = 1;
-        this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.22, swing: 0 };
+        // angle/pitch describe orbit orientation; facing belongs to the body.
+        this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.32, facing: 0, moving: false, running: false, swing: 0 };
+        this.cameraDistance = 4.4;
+        Object.assign(this.player, { z: this.heightAt(16.5,16.5), vz: 0, grounded: true, landing: 0, swingDuration: .22 });
         this.hearts = 5; this.invulnerable = 0; this.elapsed = 0;
         this.status = 'ready'; this.reason = ''; this.goal = 0; this.collected = 0;
         this.goals = Object.create(null); this.inventory = Object.create(null);
@@ -37,11 +40,12 @@ class LettercraftGame {
     say(message) { this.message = message; this.messageTime = 2.5; }
     needs(char) { return (this.inventory[char] || 0) < (this.goals[char] || 0); }
     selectedDrop() {
+        if (!this.player.grounded) return null;
         if (this.collecting) return this.drops.find(d => d.id === this.collecting.dropId) || null;
         let best = null, distance = 1.35;
         for (const d of this.drops) {
             const dist = Math.hypot(d.x - this.player.x, d.y - this.player.y);
-            if (d.kind === 'letter' && this.needs(d.char) && dist < distance) { best = d; distance = dist; }
+            if (d.kind === 'letter' && this.needs(d.char) && dist < distance && Math.abs(this.player.z-this.heightAt(d.x,d.y)) < .65) { best = d; distance = dist; }
         }
         return best;
     }
@@ -57,6 +61,11 @@ class LettercraftGame {
     }
     keyDown(code, key, rawKey = key) {
         if (this.status !== 'playing' || this.keys.has(code)) return;
+        if (code === 'Space') {
+            this.keys.set(code, { key, rawKey, printable: false }); this.cancelCollection();
+            if (this.player.grounded) { this.player.vz=5.8;this.player.grounded=false;this.event('jump',this.player); }
+            return;
+        }
         const wasMoving = this.direction().moving;
         const printable = key.length === 1 || rawKey.length === 1;
         const otherChar = [...this.keys.values()].some(k => k.printable);
@@ -73,7 +82,10 @@ class LettercraftGame {
         this.keys.delete(code); this.blocked.delete(code);
     }
     cancelCollection() { this.collecting = null; }
-    clearInput() { this.cancelCollection(); this.keys.clear(); this.blocked.clear(); }
+    clearInput() { this.cancelCollection(); this.keys.clear(); this.blocked.clear(); this.player.moving = false; this.player.running = false; }
+    zoom(delta) {
+        if (Number.isFinite(delta)) this.cameraDistance = Math.max(2.2, Math.min(7, this.cameraDistance + delta * 0.004));
+    }
     look(dx, dy) {
         if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
         this.player.angle = (this.player.angle + dx * 0.0025) % (Math.PI * 2);
@@ -97,9 +109,43 @@ class LettercraftGame {
         // Small substeps prevent tunnelling during knockback and slow frames.
         const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.15));
         for (let i = 0; i < steps; i++) {
-            if (this.isFree(body.x + dx / steps, body.y, radius, body.id)) body.x += dx / steps;
-            if (this.isFree(body.x, body.y + dy / steps, radius, body.id)) body.y += dy / steps;
+            const free=(x,y)=>body===this.player?this.playerCanMove(x,y,radius):this.isFree(x,y,radius,body.id);
+            if (free(body.x + dx / steps, body.y)) body.x += dx / steps;
+            if (free(body.x, body.y + dy / steps)) body.y += dy / steps;
         }
+    }
+    collisionBoxes() {
+        const boxes=[];
+        for (const e of this.entities) {
+            const z=this.heightAt(e.x,e.y), box=(r,bottom,top)=>boxes.push({id:e.id,x:e.x,y:e.y,r,bottom:z+bottom,top:z+top});
+            if(e.kind==='tree') {box(.4,0,1.7);box(.825,1.65,2.45);box(.64,2.45,3);}
+            else box(.4,0,e.kind==='rock'?1.02:1.23);
+        }
+        return boxes;
+    }
+    playerCanMove(x,y,radius=.27) {
+        if(x<.5||y<.5||x>this.size-.5||y>this.size-.5)return false;
+        const p=this.player,ground=this.heightAt(x,y);
+        // Existing quarter steps auto-step; taller faces require an actual jump.
+        const feet=p.grounded&&ground-p.z<=.26?Math.max(p.z,ground):p.z;
+        if(ground>feet+.001)return false;
+        for(const b of this.collisionBoxes()) if(Math.abs(x-b.x)<radius+b.r&&Math.abs(y-b.y)<radius+b.r&&feet<b.top-.001&&feet+1.6>b.bottom+.001)return false;
+        if(feet>p.z)p.z=feet;
+        return true;
+    }
+    verticalStep(dt) {
+        const p=this.player,old=p.z,ground=this.heightAt(p.x,p.y),boxes=this.collisionBoxes().filter(b=>Math.abs(p.x-b.x)<.27+b.r&&Math.abs(p.y-b.y)<.27+b.r);
+        let support=ground;
+        for(const b of boxes)if(b.top<=old+.001)support=Math.max(support,b.top);
+        p.landing=Math.max(0,p.landing-dt);
+        if(p.grounded&&Math.abs(old-support)<.001){p.z=support;p.vz=0;return;}
+        p.grounded=false;p.vz-=15*dt;let next=old+p.vz*dt;
+        if(p.vz>0) {
+            for(const b of boxes)if(old+1.6<=b.bottom+.001&&next+1.6>=b.bottom){next=Math.min(next,b.bottom-1.6);p.vz=0;}
+        } else if(next<=support) {
+            next=support;p.vz=0;p.grounded=true;p.landing=.18;this.event('land',p);
+        }
+        p.z=next;
     }
     lineClear(a, b, ignoreId) {
         const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 0.15);
@@ -111,12 +157,13 @@ class LettercraftGame {
         this.cancelCollection();
         if (this.cooldown > 0.00001) return false;
         const e = [...this.entities, ...this.enemies].find(o => o.id === id);
-        if (!e) { this.player.swing = 0.2; this.cooldown = 0.25; return false; }
+        if (!e) { this.player.swingDuration = this.player.swing = 0.2; this.cooldown = 0.25; return false; }
         if (Math.hypot(e.x - this.player.x, e.y - this.player.y) > 1.85) { this.say('เดินเข้าไปใกล้อีกนิด'); return false; }
         if (!this.lineClear(this.player, e, e.id)) { this.say('มีสิ่งกีดขวางอยู่ข้างหน้า'); return false; }
         const tool = e.kind === 'rock' ? 'pickaxe' : e.kind === 'tree' ? 'axe' : 'sword';
         const level = this.tools[tool];
-        this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swing = 0.22; this.activeTool = tool;
+        this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swingDuration = this.player.swing = 0.22; this.activeTool = tool;
+        this.player.facing = Math.atan2(e.y-this.player.y, e.x-this.player.x);
         e.hp -= level + 1; e.stun = e.kind === 'enemy' ? 1.25 : 0.8;
         this.event('hit', e);
         if (e.hp <= 0) {
@@ -172,7 +219,17 @@ class LettercraftGame {
         this.player.swing = Math.max(0, this.player.swing - dt); this.messageTime = Math.max(0, this.messageTime - dt);
         if (this.remaining <= 60 && !this.warned) { this.warned = true; this.event('warning', this.player); this.say('เหลือเวลาอีก 1 นาที!'); }
         const dir = this.direction();
-        if (dir.moving) { this.cancelCollection(); this.move(this.player, dir.x * 3.5 * dt, dir.y * 3.5 * dt); }
+        this.player.moving = false;
+        this.player.running = dir.moving && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'));
+        if (dir.moving) {
+            this.cancelCollection();
+            const p = this.player, target = Math.atan2(dir.y, dir.x);
+            p.facing += Math.atan2(Math.sin(target-p.facing), Math.cos(target-p.facing)) * (1-Math.exp(-14*dt));
+            const x=p.x,y=p.y,speed=p.running?5:3.5;
+            this.move(p, dir.x * speed * dt, dir.y * speed * dt);
+            p.moving = Math.hypot(p.x-x,p.y-y) > .0001;
+        }
+        this.verticalStep(dt);
         this.flowTime -= dt;
         if (this.enemies.length && this.flowTime <= 0) this.buildFlow();
         if (this.elapsed >= this.nextSpawn) { this.buildFlow(); this.spawnEnemy(); this.nextSpawn = this.elapsed + 25; }
@@ -207,13 +264,13 @@ class LettercraftGame {
                 if (this.hearts <= 0) { this.finish('lost', 'hearts'); return; }
             }
         }
-        for (const d of [...this.drops]) if (d.kind === 'tool' && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
+        for (const d of [...this.drops]) if (d.kind === 'tool' && this.player.grounded && Math.abs(this.player.z-this.heightAt(d.x,d.y))<.65 && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
             this.tools[d.tool] = Math.min(2, this.tools[d.tool] + 1); this.drops = this.drops.filter(o => o.id !== d.id);
             this.event('tool', d, { tool: d.tool }); this.say('ได้อุปกรณ์ใหม่! ฟันหรือขุดเร็วขึ้นแล้ว');
         }
         if (this.collecting) {
             const d = this.drops.find(o => o.id === this.collecting.dropId);
-            if (!d || !this.keys.has(this.collecting.code) || Math.hypot(d.x - this.player.x, d.y - this.player.y) > 1.35) { this.cancelCollection(); return; }
+            if (!d || !this.player.grounded || Math.abs(this.player.z-this.heightAt(d.x,d.y))>=.65 || !this.keys.has(this.collecting.code) || Math.hypot(d.x - this.player.x, d.y - this.player.y) > 1.35) { this.cancelCollection(); return; }
             this.collecting.elapsed += dt;
             if (this.collecting.elapsed >= 3 - 0.000001) {
                 this.inventory[d.char] = (this.inventory[d.char] || 0) + 1; this.collected++;

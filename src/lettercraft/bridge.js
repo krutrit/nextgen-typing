@@ -32,6 +32,9 @@ const Lettercraft = {
         });
         listen(document, 'pointerlockerror', () => this.captureFailed());
         listen(canvas, 'contextmenu', e => e.preventDefault());
+        canvas.addEventListener('wheel', e => {
+            if (!this.panel && this.hasControl()) { e.preventDefault(); this.game.zoom(e.deltaY); }
+        }, { signal, passive: false });
         listen(canvas, 'pointerdown', e => {
             if (this.panel || this.game.status !== 'playing') return;
             if (e.button === 2 && this.fallbackActive) { e.preventDefault(); this.dragging = true; return; }
@@ -177,6 +180,7 @@ const Lettercraft = {
         if (!state.isGameMode || !this.view || this.panel === 'error') return;
         const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
         this.advanceClock(now, !this.panel && !this.background && !document.hidden && this.hasControl());
+        this.view.updateCamera(this.game, dt);
         this.aim(); this.view.render(this.game, dt, this.hoverId);
         // Ray and camera follow the player even while the mouse stays still.
         this.aim(); this.renderHUD();

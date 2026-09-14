@@ -1647,7 +1647,10 @@
 class LettercraftGame {
     constructor(text, rng = Math.random) {
         this.rng = rng; this.size = 32; this.id = 1;
-        this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.22, swing: 0 };
+        // angle/pitch describe orbit orientation; facing belongs to the body.
+        this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.32, facing: 0, moving: false, running: false, swing: 0 };
+        this.cameraDistance = 4.4;
+        Object.assign(this.player, { z: this.heightAt(16.5,16.5), vz: 0, grounded: true, landing: 0, swingDuration: .22 });
         this.hearts = 5; this.invulnerable = 0; this.elapsed = 0;
         this.status = 'ready'; this.reason = ''; this.goal = 0; this.collected = 0;
         this.goals = Object.create(null); this.inventory = Object.create(null);
@@ -1682,11 +1685,12 @@ class LettercraftGame {
     say(message) { this.message = message; this.messageTime = 2.5; }
     needs(char) { return (this.inventory[char] || 0) < (this.goals[char] || 0); }
     selectedDrop() {
+        if (!this.player.grounded) return null;
         if (this.collecting) return this.drops.find(d => d.id === this.collecting.dropId) || null;
         let best = null, distance = 1.35;
         for (const d of this.drops) {
             const dist = Math.hypot(d.x - this.player.x, d.y - this.player.y);
-            if (d.kind === 'letter' && this.needs(d.char) && dist < distance) { best = d; distance = dist; }
+            if (d.kind === 'letter' && this.needs(d.char) && dist < distance && Math.abs(this.player.z-this.heightAt(d.x,d.y)) < .65) { best = d; distance = dist; }
         }
         return best;
     }
@@ -1702,6 +1706,11 @@ class LettercraftGame {
     }
     keyDown(code, key, rawKey = key) {
         if (this.status !== 'playing' || this.keys.has(code)) return;
+        if (code === 'Space') {
+            this.keys.set(code, { key, rawKey, printable: false }); this.cancelCollection();
+            if (this.player.grounded) { this.player.vz=5.8;this.player.grounded=false;this.event('jump',this.player); }
+            return;
+        }
         const wasMoving = this.direction().moving;
         const printable = key.length === 1 || rawKey.length === 1;
         const otherChar = [...this.keys.values()].some(k => k.printable);
@@ -1718,7 +1727,10 @@ class LettercraftGame {
         this.keys.delete(code); this.blocked.delete(code);
     }
     cancelCollection() { this.collecting = null; }
-    clearInput() { this.cancelCollection(); this.keys.clear(); this.blocked.clear(); }
+    clearInput() { this.cancelCollection(); this.keys.clear(); this.blocked.clear(); this.player.moving = false; this.player.running = false; }
+    zoom(delta) {
+        if (Number.isFinite(delta)) this.cameraDistance = Math.max(2.2, Math.min(7, this.cameraDistance + delta * 0.004));
+    }
     look(dx, dy) {
         if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
         this.player.angle = (this.player.angle + dx * 0.0025) % (Math.PI * 2);
@@ -1742,9 +1754,43 @@ class LettercraftGame {
         // Small substeps prevent tunnelling during knockback and slow frames.
         const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.15));
         for (let i = 0; i < steps; i++) {
-            if (this.isFree(body.x + dx / steps, body.y, radius, body.id)) body.x += dx / steps;
-            if (this.isFree(body.x, body.y + dy / steps, radius, body.id)) body.y += dy / steps;
+            const free=(x,y)=>body===this.player?this.playerCanMove(x,y,radius):this.isFree(x,y,radius,body.id);
+            if (free(body.x + dx / steps, body.y)) body.x += dx / steps;
+            if (free(body.x, body.y + dy / steps)) body.y += dy / steps;
         }
+    }
+    collisionBoxes() {
+        const boxes=[];
+        for (const e of this.entities) {
+            const z=this.heightAt(e.x,e.y), box=(r,bottom,top)=>boxes.push({id:e.id,x:e.x,y:e.y,r,bottom:z+bottom,top:z+top});
+            if(e.kind==='tree') {box(.4,0,1.7);box(.825,1.65,2.45);box(.64,2.45,3);}
+            else box(.4,0,e.kind==='rock'?1.02:1.23);
+        }
+        return boxes;
+    }
+    playerCanMove(x,y,radius=.27) {
+        if(x<.5||y<.5||x>this.size-.5||y>this.size-.5)return false;
+        const p=this.player,ground=this.heightAt(x,y);
+        // Existing quarter steps auto-step; taller faces require an actual jump.
+        const feet=p.grounded&&ground-p.z<=.26?Math.max(p.z,ground):p.z;
+        if(ground>feet+.001)return false;
+        for(const b of this.collisionBoxes()) if(Math.abs(x-b.x)<radius+b.r&&Math.abs(y-b.y)<radius+b.r&&feet<b.top-.001&&feet+1.6>b.bottom+.001)return false;
+        if(feet>p.z)p.z=feet;
+        return true;
+    }
+    verticalStep(dt) {
+        const p=this.player,old=p.z,ground=this.heightAt(p.x,p.y),boxes=this.collisionBoxes().filter(b=>Math.abs(p.x-b.x)<.27+b.r&&Math.abs(p.y-b.y)<.27+b.r);
+        let support=ground;
+        for(const b of boxes)if(b.top<=old+.001)support=Math.max(support,b.top);
+        p.landing=Math.max(0,p.landing-dt);
+        if(p.grounded&&Math.abs(old-support)<.001){p.z=support;p.vz=0;return;}
+        p.grounded=false;p.vz-=15*dt;let next=old+p.vz*dt;
+        if(p.vz>0) {
+            for(const b of boxes)if(old+1.6<=b.bottom+.001&&next+1.6>=b.bottom){next=Math.min(next,b.bottom-1.6);p.vz=0;}
+        } else if(next<=support) {
+            next=support;p.vz=0;p.grounded=true;p.landing=.18;this.event('land',p);
+        }
+        p.z=next;
     }
     lineClear(a, b, ignoreId) {
         const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 0.15);
@@ -1756,12 +1802,13 @@ class LettercraftGame {
         this.cancelCollection();
         if (this.cooldown > 0.00001) return false;
         const e = [...this.entities, ...this.enemies].find(o => o.id === id);
-        if (!e) { this.player.swing = 0.2; this.cooldown = 0.25; return false; }
+        if (!e) { this.player.swingDuration = this.player.swing = 0.2; this.cooldown = 0.25; return false; }
         if (Math.hypot(e.x - this.player.x, e.y - this.player.y) > 1.85) { this.say('เดินเข้าไปใกล้อีกนิด'); return false; }
         if (!this.lineClear(this.player, e, e.id)) { this.say('มีสิ่งกีดขวางอยู่ข้างหน้า'); return false; }
         const tool = e.kind === 'rock' ? 'pickaxe' : e.kind === 'tree' ? 'axe' : 'sword';
         const level = this.tools[tool];
-        this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swing = 0.22; this.activeTool = tool;
+        this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swingDuration = this.player.swing = 0.22; this.activeTool = tool;
+        this.player.facing = Math.atan2(e.y-this.player.y, e.x-this.player.x);
         e.hp -= level + 1; e.stun = e.kind === 'enemy' ? 1.25 : 0.8;
         this.event('hit', e);
         if (e.hp <= 0) {
@@ -1817,7 +1864,17 @@ class LettercraftGame {
         this.player.swing = Math.max(0, this.player.swing - dt); this.messageTime = Math.max(0, this.messageTime - dt);
         if (this.remaining <= 60 && !this.warned) { this.warned = true; this.event('warning', this.player); this.say('เหลือเวลาอีก 1 นาที!'); }
         const dir = this.direction();
-        if (dir.moving) { this.cancelCollection(); this.move(this.player, dir.x * 3.5 * dt, dir.y * 3.5 * dt); }
+        this.player.moving = false;
+        this.player.running = dir.moving && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'));
+        if (dir.moving) {
+            this.cancelCollection();
+            const p = this.player, target = Math.atan2(dir.y, dir.x);
+            p.facing += Math.atan2(Math.sin(target-p.facing), Math.cos(target-p.facing)) * (1-Math.exp(-14*dt));
+            const x=p.x,y=p.y,speed=p.running?5:3.5;
+            this.move(p, dir.x * speed * dt, dir.y * speed * dt);
+            p.moving = Math.hypot(p.x-x,p.y-y) > .0001;
+        }
+        this.verticalStep(dt);
         this.flowTime -= dt;
         if (this.enemies.length && this.flowTime <= 0) this.buildFlow();
         if (this.elapsed >= this.nextSpawn) { this.buildFlow(); this.spawnEnemy(); this.nextSpawn = this.elapsed + 25; }
@@ -1852,13 +1909,13 @@ class LettercraftGame {
                 if (this.hearts <= 0) { this.finish('lost', 'hearts'); return; }
             }
         }
-        for (const d of [...this.drops]) if (d.kind === 'tool' && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
+        for (const d of [...this.drops]) if (d.kind === 'tool' && this.player.grounded && Math.abs(this.player.z-this.heightAt(d.x,d.y))<.65 && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
             this.tools[d.tool] = Math.min(2, this.tools[d.tool] + 1); this.drops = this.drops.filter(o => o.id !== d.id);
             this.event('tool', d, { tool: d.tool }); this.say('ได้อุปกรณ์ใหม่! ฟันหรือขุดเร็วขึ้นแล้ว');
         }
         if (this.collecting) {
             const d = this.drops.find(o => o.id === this.collecting.dropId);
-            if (!d || !this.keys.has(this.collecting.code) || Math.hypot(d.x - this.player.x, d.y - this.player.y) > 1.35) { this.cancelCollection(); return; }
+            if (!d || !this.player.grounded || Math.abs(this.player.z-this.heightAt(d.x,d.y))>=.65 || !this.keys.has(this.collecting.code) || Math.hypot(d.x - this.player.x, d.y - this.player.y) > 1.35) { this.cancelCollection(); return; }
             this.collecting.elapsed += dt;
             if (this.collecting.elapsed >= 3 - 0.000001) {
                 this.inventory[d.char] = (this.inventory[d.char] || 0) + 1; this.collected++;
@@ -1884,7 +1941,7 @@ class LettercraftView {
     this.gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: true });
     if (!this.gl) throw new Error('Lettercraft needs WebGL. Please enable hardware acceleration or try another browser.');
     this.width = this.height = this.dpr = 1;
-    this.camera = { x: 16, y: 16, z: 1.6, angle: 0, pitch: -.22 };
+    this.camera = null;
     this.time = 0;
     this.labels = [];
     this.particles = [];
@@ -1941,9 +1998,135 @@ class LettercraftView {
 
   project(x, y, z = 0) { return LettercraftView.projectPoint({ x, y, z }, this.camera, this.width, this.height); }
   _height(game, x, y) { return typeof game.heightAt === 'function' ? game.heightAt(x, y) : 0; }
-  _camera(game) {
-    const p = game.player;
-    return { x: p.x, y: p.y, z: this._height(game, p.x, p.y) + 1.6, angle: p.angle || 0, pitch: p.pitch || 0 };
+  _camera(game) { return this.camera || this.updateCamera(game, 0); }
+
+  updateCamera(game, dt = 0) {
+    if(!game || !game.player)return this.camera;
+    const p=game.player,step=Math.max(0,Math.min(.08,Number(dt)||0));
+    const reset=!step||this.cameraGame!==game||this.cameraPlayer!==p||!this.cameraPivot;
+    const follow=reset?1:1-Math.exp(-12*step),recover=reset?1:1-Math.exp(-5*step);
+    const feet=Number.isFinite(p.z)?p.z:this._height(game,p.x,p.y);
+    const anchor={x:p.x,y:p.y,z:feet+1.05},previous=this.cameraPivot||anchor;
+    const pivot={};for(const axis of ['x','y','z'])pivot[axis]=previous[axis]+(anchor[axis]-previous[axis])*follow;
+    const angle=p.angle||0,pitch=Number.isFinite(p.pitch)?p.pitch:-.32;
+    const requested=Math.max(2.2,Math.min(7,Number(game.cameraDistance)||4.4));
+    this.cameraZoom=reset?requested:this.cameraZoom+(requested-this.cameraZoom)*recover;
+    const direction=LettercraftView.cameraDirection({angle,pitch}),shoulder=.65;
+    const end={x:pivot.x-direction.x*this.cameraZoom-Math.sin(angle)*shoulder,
+      y:pivot.y-direction.y*this.cameraZoom+Math.cos(angle)*shoulder,z:pivot.z-direction.z*this.cameraZoom};
+    // Sweep the entire boom from the current player pivot. Padding also protects
+    // the near plane while orbiting around corners and through tree canopies.
+    const delta={x:end.x-anchor.x,y:end.y-anchor.y,z:end.z-anchor.z};
+    const length=Math.hypot(delta.x,delta.y,delta.z),ray={x:delta.x/length,y:delta.y/length,z:delta.z/length};
+    const padding=.18,size=game.size||32;
+    let limit=length;
+    for(const box of [...this._terrain(game),...this._scene(game,anchor).boxes]) {
+      const min={},max={};for(const axis of ['x','y','z']){min[axis]=box.min[axis]-padding;max[axis]=box.max[axis]+padding;}
+      const hit=LettercraftView.rayBox(anchor,ray,min,max);
+      if(hit!==null)limit=Math.min(limit,Math.max(.02,hit-.025));
+    }
+    for(const axis of ['x','y']) {
+      if(ray[axis]>0)limit=Math.min(limit,(size-padding-anchor[axis])/ray[axis]);
+      else if(ray[axis]<0)limit=Math.min(limit,(padding-anchor[axis])/ray[axis]);
+    }
+    const eased=reset?length:this.cameraBoom+(length-this.cameraBoom)*recover;
+    this.cameraBoom=Math.max(.02,Math.min(limit,eased));
+    this.camera={x:anchor.x+ray.x*this.cameraBoom,y:anchor.y+ray.y*this.cameraBoom,z:anchor.z+ray.z*this.cameraBoom,angle,pitch};
+    this.cameraPivot=pivot;this.cameraGame=game;this.cameraPlayer=p;
+    return this.camera;
+  }
+
+  _avatar(game) {
+    const p=game.player,t=this.time||0,parts=[];
+    const feet=Number.isFinite(p.z)?p.z:this._height(game,p.x,p.y),yaw=Number.isFinite(p.facing)?p.facing:p.angle||0;
+    const airborne=p.grounded===false,falling=airborne&&(p.vz||0)<-.1;
+    const crouch=airborne?0:Math.min(1,Math.max(0,(p.landing||0)/.18))*.15,hip=.58-crouch;
+    const stride=airborne?(falling?.18:.5):p.moving?Math.sin(t*(p.running?13:9))*(p.running?.8:.48):0;
+    const breath=Math.sin(t*2.2)*.008-crouch;
+    const sway=airborne?(falling?.6:-.85):p.moving?stride*.8:Math.sin(t*2.2)*.025;
+    const leftSway=airborne?sway:-sway,rightSway=airborne?sway*.8:sway;
+    const part=(name,x,y,z,w,d,h,material,tint=null,pivot=null,swing=0)=>{
+      parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,
+        transform:{x:p.x,y:p.y,z:feet,yaw,pivot:pivot||{x:0,y:0,z:0},swing}});
+    };
+    // A compact original explorer: teal jacket, ochre scarf, dark boots and pack.
+    part('leftLeg',0,-.145,0,.27,.23,hip,9,[.53,.67,.77],{x:0,y:0,z:hip},stride);
+    part('rightLeg',0,.145,0,.27,.23,hip,9,[.53,.67,.77],{x:0,y:0,z:hip},-stride);
+    part('leftBoot',.035,-.145,0,.34,.25,.16,10,null,{x:0,y:0,z:hip},stride);
+    part('rightBoot',.035,.145,0,.34,.25,.16,10,null,{x:0,y:0,z:hip},-stride);
+    part('body',0,0,.55+breath,.36,.5,.62,11,[.56,.74,.7]);
+    part('belt',.005,0,.57+breath,.38,.52,.09,4);
+    part('head',.012,0,1.15+breath,.43,.45,.43,15,[1.15,.97,.86]);
+    part('hair',-.025,0,1.49+breath,.48,.49,.13,4,[.56,.55,.57]);
+    part('hairBack',-.205,0,1.25+breath,.08,.47,.32,4,[.56,.55,.57]);
+    for(const y of [-.11,.11])part('eye',.233,y,1.34+breath,.018,.065,.07,10);
+    part('smile',.235,0,1.24+breath,.02,.1,.025,4,[.6,.55,.5]);
+    part('scarf',.018,0,1.1+breath,.41,.54,.11,8,[1.1,.73,.53]);
+    part('scarfTail',.211,-.125,.9+breath,.04,.11,.27,8,[1.1,.73,.53]);
+    part('backpack',-.265,0,.67+breath,.2,.39,.43,12,[.73,.74,.63]);
+    part('packFlap',-.28,0,1.0+breath,.22,.42,.1,4);
+    const shoulder={x:0,y:0,z:1.12+breath};
+    part('leftArm',0,-.365,.67+breath,.24,.2,.47,11,[.56,.74,.7],shoulder,leftSway);
+    part('leftHand',0,-.365,.56+breath,.23,.2,.17,15,null,shoulder,leftSway);
+
+    const swingProgress=(p.swingDuration&&p.swing>0)?Math.sin(p.swing/p.swingDuration*Math.PI):0;
+    const tool=game.activeTool||'pickaxe';
+    let attackSwing=0,attackTwist=0;
+    if(swingProgress>0) {
+      if(tool==='sword') {
+        attackSwing=swingProgress*.95;
+        attackTwist=-swingProgress*.38;
+      } else if(tool==='axe') {
+        attackSwing=swingProgress*1.35;
+        attackTwist=swingProgress*.05;
+      } else {
+        attackSwing=swingProgress*1.65;
+        attackTwist=0;
+      }
+    }
+    const rightHandTransform={
+      x:p.x,y:p.y,z:feet,yaw,
+      pivot:shoulder,
+      swing:rightSway+attackSwing,
+      twist:attackTwist
+    };
+    parts.push({part:'rightArm',id:null,min:{x:-.12,y:.365-.1,z:.67+breath},max:{x:.12,y:.365+.1,z:1.14+breath},material:11,tint:[.56,.74,.7],transform:rightHandTransform});
+    parts.push({part:'rightHand',id:null,min:{x:-.115,y:.365-.1,z:.56+breath},max:{x:.115,y:.365+.1,z:.73+breath},material:15,tint:null,transform:rightHandTransform});
+
+    const toolLvl=(game.tools&&game.tools[tool])||0;
+    const toolMats=[
+      {mat:4,tint:[1.05,.85,.65]},
+      {mat:3,tint:[1.0,1.02,1.05]},
+      {mat:14,tint:[.45,.95,1.25]}
+    ];
+    const metal=toolMats[Math.min(2,toolLvl)];
+    const heldPart=(name,x,y,z,w,d,h,material,tint=null)=>{
+      parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,transform:rightHandTransform});
+    };
+
+    if(tool==='sword') {
+      heldPart('heldHandle',.06,.42,.52+breath,.05,.05,.28,4,null);
+      heldPart('heldGuard',.06,.56,.66+breath,.24,.24,.06,metal.mat,metal.tint);
+      heldPart('heldBlade',.06,.56,.98+breath,.1,.06,.6,metal.mat,metal.tint);
+      heldPart('heldTip',.06,.56,1.32+breath,.06,.04,.14,metal.mat,metal.tint);
+    } else if(tool==='axe') {
+      heldPart('heldHandle',.06,.42,.38+breath,.07,.07,.7,4,null);
+      heldPart('heldHead',.06,.58,1.02+breath,.16,.22,.14,metal.mat,metal.tint);
+      heldPart('heldBlade',.18,.58,1.02+breath,.16,.16,.24,metal.mat,metal.tint);
+      heldPart('heldBeard',.14,.58,.90+breath,.12,.1,.12,metal.mat,metal.tint);
+    } else {
+      heldPart('heldHandle',.06,.42,.38+breath,.07,.07,.7,4,null);
+      heldPart('heldHead',.06,.58,1.02+breath,.22,.22,.12,metal.mat,metal.tint);
+      heldPart('heldPickLeft',-.14,.58,.98+breath,.18,.1,.1,metal.mat,metal.tint);
+      heldPart('heldPickRight',.24,.58,.98+breath,.18,.1,.1,metal.mat,metal.tint);
+    }
+    // Keep the lowest planted boot corner supported throughout the gait.
+    let bottom=Infinity;
+    for(const b of parts)if(b.part.endsWith('Leg')||b.part.endsWith('Boot'))for(const x of [b.min.x,b.max.x])for(const z of [b.min.z,b.max.z]) {
+      const tr=b.transform;bottom=Math.min(bottom,feet+tr.pivot.z-(x-tr.pivot.x)*Math.sin(tr.swing)+(z-tr.pivot.z)*Math.cos(tr.swing));
+    }
+    for(const b of parts)b.transform.z+=feet-bottom;
+    return parts;
   }
 
   // These descriptors are the shared source of truth for visible cubes and ray occlusion.
@@ -2053,7 +2236,7 @@ class LettercraftView {
 
   pick(game) {
     if(!game || !game.player) return null;
-    const camera=this._camera(game), scene=this._scene(game,camera), boxes=[...this._terrain(game),...scene.boxes];
+    const camera=this.camera||this.updateCamera(game,0), scene=this._scene(game,camera), boxes=[...this._terrain(game),...scene.boxes];
     const hit=this._nearest(camera,LettercraftView.cameraDirection(camera),boxes,20);
     let id=hit.box?hit.box.id:null,nearest=hit.distance;
     for(const label of this._visibleLabels(game,camera,scene,boxes)) {
@@ -2124,6 +2307,20 @@ class LettercraftView {
   _boxVertices(out,b,highlight=false,faces=null) {
     const {min:a,max:c}=b;
     const corners=[[a.x,a.y,a.z],[c.x,a.y,a.z],[c.x,c.y,a.z],[a.x,c.y,a.z],[a.x,a.y,c.z],[c.x,a.y,c.z],[c.x,c.y,c.z],[a.x,c.y,c.z]];
+    if(b.transform) {
+      const t=b.transform,p=t.pivot,cs=Math.cos(t.swing),ss=Math.sin(t.swing),cy=Math.cos(t.yaw),sy=Math.sin(t.yaw);
+      const twist=t.twist||0,ct=Math.cos(twist),st=Math.sin(twist);
+      for(const corner of corners) {
+        const x=corner[0]-p.x,y=corner[1]-p.y,z=corner[2]-p.z;
+        let rx=x*cs+z*ss,rz=-x*ss+z*cs,ry=y;
+        if(twist) {
+          const ty=ry*ct-rz*st,tz=ry*st+rz*ct;
+          ry=ty;rz=tz;
+        }
+        rx+=p.x;ry+=p.y;rz+=p.z;
+        corner[0]=t.x+rx*cy-ry*sy;corner[1]=t.y+rx*sy+ry*cy;corner[2]=t.z+rz;
+      }
+    }
     const quads=[[4,5,6,7],[0,3,2,1],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
     const shades=[1,.5,.77,.9,.83,.65];
     for(let face=0;face<6;face++) {
@@ -2194,11 +2391,13 @@ class LettercraftView {
   render(game,dt,hoverId=null) {
     if(this.disposed||!game||!game.player)return;
     const gl=this.gl; if(gl.isContextLost())return;
-    dt=Math.max(0,Math.min(.08,Number(dt)||0));this.time+=dt;this.camera=this._camera(game);
+    dt=Math.max(0,Math.min(.08,Number(dt)||0));this.time+=dt;
+    if(!this.camera||this.cameraGame!==game||this.cameraPlayer!==game.player)this.updateCamera(game,0);
     const scene=this._scene(game,this.camera),terrain=this._terrain(game),boxes=[...terrain,...scene.boxes];
     const vertices=this._groundVertices(game,terrain).slice();
     for(const box of scene.boxes)this._boxVertices(vertices,box,hoverId!=null&&box.id===hoverId);
     for(const detail of this._surfaceDetails(game,scene.boxes,hoverId))this._boxVertices(vertices,detail);
+    for(const part of this._avatar(game))this._boxVertices(vertices,part);
     // Distant block clouds are geometry, so looking up remains a true perspective view.
     for(let i=0;i<10;i++) {
       const x=3+(i*17)%36,y=2+(i*11)%35;
@@ -2246,7 +2445,6 @@ class LettercraftView {
     }
     ctx.globalAlpha=1;
     this._particles(game,dt,boxes);
-    this._hand(ctx,game);
     const x=this.width/2,y=this.height/2;
     ctx.strokeStyle='rgba(18,36,35,.7)';ctx.lineWidth=4;
     for(const color of ['rgba(18,36,35,.7)',hoverId!=null?'#ffe481':'#fffced']) {
@@ -2263,27 +2461,6 @@ class LettercraftView {
       ctx.arc(x,y,24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,game.collecting.elapsed/3));ctx.stroke();
     }
     if(game.invulnerable>0) {ctx.strokeStyle='rgba(193,65,43,'+Math.min(.5,game.invulnerable*.35)+')';ctx.lineWidth=18;ctx.strokeRect(0,0,this.width,this.height);}
-  }
-
-  _hand(ctx,game) {
-    const scale=Math.max(.6,Math.min(1.2,this.height/650)),swing=Math.sin(Math.min(1,(game.player.swing||0)/.24)*Math.PI);
-    const x=this.width*.76-swing*37*scale,y=this.height-Math.min(136,this.height*.22)+swing*24*scale;
-    ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(-.33-swing*.5);
-    ctx.fillStyle='#534831';ctx.fillRect(-31,14,73,126);ctx.fillStyle='#718565';ctx.fillRect(-26,18,62,116);
-    ctx.fillStyle='#b87d51';ctx.fillRect(-27,-19,61,58);ctx.fillStyle='#e2ae77';ctx.fillRect(-23,-23,51,46);
-    ctx.fillStyle='#f0bd88';ctx.fillRect(-23,-23,12,40);
-    const tool=game.activeTool||'pickaxe',level=Number((game.tools||{})[tool])||0;
-    const metal=level>=2?'#87e1d6':level===1?'#d5e0d6':'#b7aaa0',edge=level>=2?'#3f8f87':'#64716d';
-    ctx.fillStyle='#4f3528';ctx.fillRect(-4,-151,17,151);ctx.fillStyle='#ac7544';ctx.fillRect(0,-145,8,141);
-    ctx.fillStyle=edge;
-    if(tool==='sword') {
-      ctx.fillRect(-9,-207,28,139);ctx.fillRect(-23,-83,56,12);ctx.fillStyle=metal;ctx.fillRect(-4,-198,18,112);ctx.fillStyle='#f1f1cc';ctx.fillRect(-3,-191,5,100);
-    } else if(tool==='axe') {
-      ctx.fillRect(-48,-164,65,62);ctx.fillRect(-58,-154,15,42);ctx.fillStyle=metal;ctx.fillRect(-45,-158,52,48);ctx.fillStyle='#e5e7c9';ctx.fillRect(-52,-150,9,33);
-    } else {
-      ctx.fillRect(-54,-161,111,22);ctx.fillRect(-67,-151,24,32);ctx.fillRect(48,-151,21,39);ctx.fillStyle=metal;ctx.fillRect(-51,-157,103,13);ctx.fillRect(-62,-149,16,20);ctx.fillRect(52,-147,12,27);
-    }
-    ctx.restore();
   }
 
   _particles(game,dt,boxes) {
@@ -2351,6 +2528,9 @@ const Lettercraft = {
         });
         listen(document, 'pointerlockerror', () => this.captureFailed());
         listen(canvas, 'contextmenu', e => e.preventDefault());
+        canvas.addEventListener('wheel', e => {
+            if (!this.panel && this.hasControl()) { e.preventDefault(); this.game.zoom(e.deltaY); }
+        }, { signal, passive: false });
         listen(canvas, 'pointerdown', e => {
             if (this.panel || this.game.status !== 'playing') return;
             if (e.button === 2 && this.fallbackActive) { e.preventDefault(); this.dragging = true; return; }
@@ -2496,6 +2676,7 @@ const Lettercraft = {
         if (!state.isGameMode || !this.view || this.panel === 'error') return;
         const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
         this.advanceClock(now, !this.panel && !this.background && !document.hidden && this.hasControl());
+        this.view.updateCamera(this.game, dt);
         this.aim(); this.view.render(this.game, dt, this.hoverId);
         // Ray and camera follow the player even while the mouse stays still.
         this.aim(); this.renderHUD();
