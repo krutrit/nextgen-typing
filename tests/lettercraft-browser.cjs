@@ -6,7 +6,9 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 
 (async () => {
-  const server = http.createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(fs.readFileSync(path.join(root,'index.html')));});
+  const server = http.createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname,file=path.join(root,pathname==='/'?'index.html':pathname.slice(1));
+    if(!file.startsWith(root)||!fs.existsSync(file)){res.statusCode=404;return res.end('missing');}
+    res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8');res.end(fs.readFileSync(file));});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const browser = await chromium.launch({ headless:true, channel:'chrome' });
   const page = await browser.newPage({viewport:{width:1440,height:900}});

@@ -1,5 +1,5 @@
 /* Connect the standalone game to the existing lesson UI. */
-const Lettercraft = {
+var Lettercraft = {
     game: null, view: null, frame: null, listeners: null, panel: null,
     hoverId: null, last: 0, questSignature: '', background: false,
     fallback: false, fallbackActive: false, dragging: false, capturePending: false,
