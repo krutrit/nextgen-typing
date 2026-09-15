@@ -16,7 +16,7 @@
                 <div class="lc-tools" aria-label="อุปกรณ์"><div class="lc-tool"><span>⛏</span><b>พลั่ว</b><small id="lc-pickaxe">ไม้</small></div><div class="lc-tool"><span>🪓</span><b>ขวาน</b><small id="lc-axe">ไม้</small></div><div class="lc-tool"><span>⚔</span><b>ดาบ</b><small id="lc-sword">ไม้</small></div></div>
                 <div class="lc-bag"><div class="lc-bag-title">กระเป๋าตัวอักษร <small>เก็บให้ครบทุกช่อง</small></div><div id="lc-quest" class="lc-quest"></div></div>
             </div>
-            <div class="lc-shortcuts"><span><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> เดิน</span><span>เมาส์: มอง / คลิกตี</span><span>กดอักษรค้าง <b>3 วิ</b></span><span><kbd>Esc</kbd> ปล่อยเมาส์</span></div>
+            <div class="lc-shortcuts"><span><kbd>WASD</kbd> / ลูกศร เดิน</span><span><kbd>Space</kbd> กระโดด · <kbd>Shift</kbd> วิ่ง</span><span>เมาส์: หมุน / ล้อซูม / คลิกตี</span><span>กดอักษรค้าง <b>3 วิ</b> · <kbd>Esc</kbd> ปล่อยเมาส์</span></div>
         </footer>
         <div id="lc-overlay" class="lc-overlay">
             <div class="lc-dialog" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="lc-dialog-title">
@@ -25,16 +25,17 @@
                 <div id="lc-intro">
                     <p class="lc-lead">ออกเดินทาง ขุดสมบัติ และเก็บตัวอักษร<br>พิชิตภารกิจ <b>20 ชิ้น</b> ใน <b>5 นาที</b></p>
                     <div class="lc-tutorial">
-                        <div><span>01</span><p><b>มองผ่านสายตานักสำรวจ</b><strong>WASD / ลูกศร</strong> เดินตามทิศที่มอง<br>เมาส์หันซ้าย–ขวา และมองขึ้น–ลง</p></div>
+                        <div><span>01</span><p><b>ควบคุมนักสำรวจเต็มตัว</b><strong>WASD / ลูกศร</strong> เดินตามทิศกล้อง<br>เมาส์หมุนกล้องรอบตัว · ล้อเมาส์ซูม<br><strong>Space</strong> กระโดด · <strong>Shift + เดิน</strong> วิ่ง</p></div>
                         <div><span>02</span><p><b>เล็ง แล้วคลิกขุดหรือฟัน</b>เข้าใกล้ต้นไม้ หิน สัตว์ หรือมอนสเตอร์<br>ใช้ <strong>เป้าเล็งกลางจอ</strong> แล้วคลิกซ้ายจนแตก</p></div>
                         <div><span>03</span><p><b>กดค้างเพื่อเก็บ</b>เข้าใกล้ตัวอักษรที่ตก หยุดเดิน<br>กดปุ่มตรงตัวค้าง <strong>3 วินาที</strong></p></div>
                         <div><span>04</span><p><b>อัปเกรด & เอาตัวรอด</b>เดินเก็บอุปกรณ์เพื่อฟันหรือขุดเร็วขึ้น<br>มี <strong>5 หัวใจ</strong> ระวังมอนสเตอร์!</p></div>
                     </div>
-                    <p class="lc-note">คลิกเริ่มเพื่อล็อกเมาส์ • กด Esc เพื่อปล่อยเมาส์ แล้วคลิกในโลกเพื่อเล่นต่อ<br>ปล่อยปุ่ม เดิน หรือโดนตี ต้องเริ่มเก็บใหม่ แต่หันเมาส์ระหว่างเก็บได้<br>ถ้าอักษรตรงกับ WASD ให้หยุดแล้วกดใหม่เพื่อเก็บ ใช้ลูกศรเดินออกได้</p>
+                    <p class="lc-note">คลิกเริ่มเพื่อล็อกเมาส์ • กด Esc เพื่อปล่อยเมาส์ แล้วคลิกในโลกเพื่อเล่นต่อ<br>ปล่อยปุ่ม เดิน กระโดด หรือโดนตี ต้องเริ่มเก็บใหม่ แต่หมุนกล้องระหว่างเก็บได้<br>ถ้าอักษรตรงกับ WASD ให้หยุดแล้วกดใหม่เพื่อเก็บ ใช้ลูกศรเดินออกได้</p>
                     <div class="lc-dialog-actions"><button id="lc-start-button" type="button" class="lc-primary">เริ่มสำรวจ <span>→</span></button><button id="lc-back-button" type="button" class="lc-secondary">กลับบทเรียน</button></div>
                     <small class="lc-device-note">สำหรับคอมพิวเตอร์ที่มีคีย์บอร์ดและเมาส์ • เปิด/ปิดเสียงได้จากหน้าบทเรียน</small>
                 </div>
                 <div id="lc-help" hidden>
+                    <p class="lc-note">มุมมองบุคคลที่สาม: ขยับเมาส์หมุนกล้องรอบตัว · ล้อเมาส์ซูมเข้า/ออก<br><b>Space</b> กระโดดเมื่อยืนบนพื้น · <b>Shift + เดิน</b> วิ่ง<br>หยุดบนพื้นใกล้ตัวอักษรเพื่อเก็บ — กระโดดจะยกเลิกการเก็บ</p>
                     <div class="lc-help-copy"><p><b>W / ↑</b> เดินหน้า • <b>S / ↓</b> ถอยหลัง • <b>A D / ← →</b> เดินด้านข้างตามทิศที่มอง</p><p><b>เมาส์</b> หันซ้าย–ขวา มองขึ้น–ลง • <b>Esc</b> ปล่อยเมาส์เพื่อกดเมนู คลิกในโลกเพื่อล็อกเมาส์อีกครั้ง</p><p><b>คลิกซ้าย</b> ฟันหรือขุดเฉพาะวัตถุที่เป้ากลางจอเล็งและอยู่ใกล้ จนตัวอักษรดรอป ไม่สามารถตีทะลุสิ่งกีดขวาง</p><p><b>กดตัวอักษรค้าง 3 วินาที</b> ขณะหยุดใกล้ของ เพื่อรับเข้ากระเป๋า อุปกรณ์ไม่ลดเวลาเก็บ</p><p>หากปุ่มเก็บเป็น WASD ให้ปล่อยปุ่มเดินก่อนแล้วกดใหม่ค้าง ใช้ลูกศรเดินออกได้ ขยับเมาส์มองรอบตัวระหว่างเก็บได้</p><p>อุปกรณ์ที่เดินเก็บจะอัปเกรดอัตโนมัติ: พลั่วขุดหิน ขวานตัดต้นไม้ ดาบฟันสัตว์และมอนสเตอร์ เกมเลือกใช้ให้ตรงเป้าหมาย</p><p>มีหัวใจ 5 ดวง โดนตีครั้งละ 1 ดวง หลังโดนตีอมตะ 2 วินาที เก็บอักษรจากบทเรียนให้ครบ 20 ชิ้นก่อน 5 นาทีจึงชนะ</p></div>
                     <p class="lc-note">เวลายังเดินต่อขณะปล่อยเมาส์ ดูวิธีเล่น หรือสลับแท็บ<br>หากเบราว์เซอร์ไม่อนุญาต Pointer Lock ให้ใช้การลากเมาส์ขวาเพื่อมองแทน</p><button id="lc-resume-button" type="button" class="lc-primary">กลับไปสำรวจ →</button>
                 </div>

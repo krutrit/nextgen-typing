@@ -29,6 +29,24 @@ function view(){return Object.assign(Object.create(View.prototype),{width:800,he
 function game(){return {size:32,player:{x:2,y:5,angle:0,pitch:-.4},heightAt:()=>0,entities:[],enemies:[],drops:[]};}
 function fixedCamera(v,g){v.camera={x:g.player.x,y:g.player.y,z:g.heightAt(g.player.x,g.player.y)+1.6,angle:g.player.angle,pitch:g.player.pitch};}
 
+test('generated meadow decoration is cached, bounded, and keeps paths and resources clear',()=>{
+ const v=view(),g=game();g.entities=[{kind:'rock',x:5.5,y:5.5}];
+ const flowers=v._decorations(g);assert.ok(flowers.length>30&&flowers.length<600);
+ assert.equal(v._decorations(g),flowers);assert.deepEqual(view()._decorations(g),flowers);
+ for(const b of flowers){const x=(b.min.x+b.max.x)/2,y=(b.min.y+b.max.y)/2;
+  assert.ok(Math.abs(x-16)>1.1&&Math.abs(y-16)>1.1);
+  assert.ok(Math.hypot(x-5.5,y-5.5)>.9);assert.equal(b.id,null);
+  assert.ok(b.max.z-g.heightAt(x,y)<.5,'plants must remain low, non-solid ground cover');
+ }
+});
+test('ambient and directional light shade actual rotated face normals',()=>{
+ const v=view(),box={min:{x:0,y:0,z:0},max:{x:1,y:1,z:1},material:13};
+ const a=[];v._boxVertices(a,box);assert.ok(a[5]>a[6*8+5],'top must receive more light than underside');
+ const b=[];v._boxVertices(b,{...box,transform:{x:0,y:0,z:0,pivot:{x:0,y:0,z:0},swing:0,yaw:Math.PI}});
+ assert.notEqual(a[12*8+5],b[12*8+5],'turning a side changes its sun exposure');
+ assert.ok(b.filter((_,i)=>i%8===5).every(c=>c>=.55),'ambient fill keeps shaded faces readable');
+});
+
 test('third-person camera frames the full avatar behind its facing with shoulder clearance',()=>{
  const v=view(),g=game();Object.assign(g.player,{x:16,y:16,pitch:-.32,facing:0});
  const c=v.updateCamera(g,0);
@@ -93,6 +111,21 @@ test('held pickaxe, axe and sword have distinct visible geometry and upgraded ma
  assert.notDeepEqual(upgraded.filter((_,i)=>i%8>=3),weapons[2].filter((_,i)=>i%8>=3),'tool level must change the rendered material');
 });
 
+test('every weapon component is physically connected to its grip without floating gaps',()=>{
+ const v=view(),g=game();
+ for(const tool of ['pickaxe','axe','sword']) {
+  g.activeTool=tool;const parts=v._avatar(g).filter(b=>b.part==='rightHand'||b.part.startsWith('held'));
+  const seen=new Set([0]);for(let pass=0;pass<parts.length;pass++)for(let i=0;i<parts.length;i++)for(const j of [...seen]) {
+   if(['x','y','z'].every(a=>parts[i].min[a]<=parts[j].max[a]+.001&&parts[i].max[a]>=parts[j].min[a]-.001))seen.add(i);
+  }
+  assert.equal(seen.size,parts.length,tool+' has floating/disconnected components');
+ }
+});
+test('walking support offset is applied only once to the shared hand and weapon transform',()=>{
+ const v=view(),g=game();g.player.moving=true;v.time=.16;
+ const parts=v._avatar(g),left=parts.find(b=>b.part==='leftHand'),right=parts.find(b=>b.part==='rightHand');
+ assert.ok(Math.abs(left.transform.z-right.transform.z)<1e-8,'weapon arm must not accumulate the foot correction for each component');
+});
 test('tool-specific attacks animate the hand and attached weapon and settle back to rest',()=>{
  const v=view(),g=game();g.player.swingDuration=.22;
  const snapshots=[];
@@ -156,6 +189,21 @@ test('a nearby drop plaque and its progress ring stay above the footer',()=>{
  const label=v._visibleLabels(g,c,scene,[...v._terrain(g),...scene.boxes]).find(p=>p.item.id==='drop');
  assert.ok(label,'nearby drop letter must remain visible above HUD');
  assert.ok(label.y+label.size*.72<720,'the full collection ring must clear the HUD');
+});
+test('enemy world geometry reacts to walking, attack and hurt without replacing its identity',()=>{
+ const v=view(),g=game();const e={id:44,kind:'enemy',char:'a',x:6,y:5,hp:4,maxHp:4};g.enemies=[e];
+ const rest=v._scene(g,camera).boxes;e.moving=true;v.time=.2;const walk=v._scene(g,camera).boxes;assert.notDeepEqual(walk,rest);
+ e.attackTime=.18;const attack=v._scene(g,camera).boxes;assert.notDeepEqual(attack,walk);
+ e.hurtTime=.2;const hurt=v._scene(g,camera).boxes;assert.notDeepEqual(hurt,attack);assert.ok(hurt.every(b=>b.id===44));
+});
+test('enemy facial features remain outside the head during diagonal pursuit',()=>{
+ const v=view(),g=game();
+ for(const angle of [0,Math.PI/4,Math.PI/2,Math.PI*3/4,Math.PI]) {
+  g.enemies=[{id:44,x:6,y:5,angle,char:'a'}];
+  const face=v._scene(g,camera).boxes.filter(b=>b.material===10);
+  assert.equal(face.length,3);
+  for(const b of face)assert.ok(b.max.x>=6+.38||b.min.x<=6-.38||b.max.y>=5+.38||b.min.y<=5-.38,'eyes and mouth must not be buried inside the head');
+ }
 });
 test('damage produces surface cracks and target frame follows the main cube rather than ore',()=>{
  const v=view(),g=game();

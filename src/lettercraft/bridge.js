@@ -202,7 +202,7 @@ const Lettercraft = {
         const levels = ['ไม้', 'หิน ×2', 'คริสตัล ×3'];
         for (const tool of ['pickaxe','axe','sword']) {
             this.el('lc-'+tool).textContent = levels[g.tools[tool]];
-            this.el('lc-'+tool).parentElement.classList.toggle('lc-equipped', g.activeTool === tool);
+            this.el('lc-'+tool).parentElement.classList.toggle('lc-equipped', (g.activeTool || 'pickaxe') === tool);
         }
         const signature = JSON.stringify(g.inventory);
         if (signature !== this.questSignature) {
@@ -215,7 +215,7 @@ const Lettercraft = {
         }
         const selected = g.selectedDrop(), entity = [...g.entities,...g.enemies].find(e=>e.id===this.hoverId);
         const hoveredDrop = g.drops.find(d => d.id === this.hoverId && d.kind === 'letter');
-        let hint = 'WASD / ลูกศร เดินสำรวจ • เลื่อนเมาส์หัน • คลิกซ้ายขุดหรือฟัน';
+        let hint = 'WASD / ลูกศร เดิน • Space กระโดด • ล้อเมาส์ซูม • คลิกซ้ายขุดหรือฟัน';
         if (selected) hint = 'กด [ ' + this.displayChar(selected.char) + ' ] ค้าง 3 วินาทีเพื่อเก็บ' + (g.collecting ? ' · ' + Math.floor(g.collecting.elapsed/3*100) + '%' : ' · ใช้ลูกศรเดินออก');
         else if (entity) hint = ({rock:'หิน',tree:'ต้นไม้',animal:'แกะบล็อก',enemy:'มอนสเตอร์'})[entity.kind] + ' [ ' + this.displayChar(entity.char) + ' ] · ' + (Math.hypot(entity.x-g.player.x,entity.y-g.player.y)>1.85?'เดินเข้าไปใกล้อีกนิด':'คลิกซ้ายเพื่อ'+(entity.kind==='rock'?'ขุด':'ฟัน')) + ' · ' + entity.hp + '/' + entity.maxHp;
         if ((hoveredDrop && !g.needs(hoveredDrop.char)) || (entity && !g.needs(entity.char))) hint = 'ตัวอักษร [ ' + this.displayChar((hoveredDrop || entity).char) + ' ] ครบแล้ว · สำรวจหาตัวที่ยังขาดในกระเป๋า';

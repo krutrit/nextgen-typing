@@ -20,7 +20,19 @@ After each phase: syntax, unit tests, bundle sync, regression/lesson integration
 - Architecture + baseline: complete (38 tests pass, clean checkout).
 - Phase 1: complete — 44 unit tests and Chrome lesson-boundary checks passed; orbit/zoom/follow/camera collision/body rig inspected.
 - Phase 2: complete — 52 tests and Chrome Space jump/landing plus lesson-boundary checks passed. Core adds z/vz/grounded and swept landing/ceiling/step collision; renderer adds rising/falling/landing poses.
-- Phase 3: in progress — held weapon geometry and attack easing; no second inventory or damage system.
-- Phase 4–6: pending.
+- Phase 3: complete — connected weapon geometry, stepped tips/edges/guards, distinct eased swings, material levels, one shared-grip transform correction. Two user-visible bugs reproduced in tests before fixes (floating weapon parts and repeated gait offset). 56 tests and lesson integration passed.
+- Phase 4: complete — original enemy flow/pursuit extended with patrol/idle, cooldown, LOS/vertical damage checks, hit flash, moving arms/legs and HP. Core/renderer tests and full Chrome combat regression pass.
+- Phase 5: complete — deterministic cached flowers/grass, flat compass mosaic, retained terrain/trees/clouds, transformed-face directional light plus ambient fill, gradient sky matching horizon fog. 63 tests and Chrome lesson integration pass. No dependency or imported asset; decorative plants are deliberately non-solid.
+- Phase 6: complete — retained compact HUD, fixed initial equipped-tool highlight, updated intro/help/shortcuts for third-person orbit, wheel zoom, Space jump, Shift run and grounded collection. Real Chrome wheel/jump and lesson integration tests pass; full browser gameplay regression passes. Original login/progress/Apps Script/admin toggle code preserved.
+
+## Verification / artifacts (2026-09-15)
+
+- Unit suite: 64 passing across core, physics, enemies, renderer after review.
+- Syntax: core/view/bridge; generated index bundle check; git diff whitespace check.
+- Chrome integration: lesson finish/entry/exit, admin toggle, languages, sound, progress, 20 letters / 5 minutes, jump and mouse wheel. Remote requests intercepted; no live progress writes.
+- Chrome gameplay: orbit/Esc, crosshair mining/occlusion, collision, WASD/arrows, real tool pickup, hold while looking, monster chase/five hits/invulnerability, timeout/retry/win, Thai marks, responsive layout and cleanup.
+- Visual QA: all three held weapons inspected at crystal level using a local visual fixture; no JavaScript errors, WebGL getError = 0. Screenshots `.artifacts/lettercraft-{sword,axe,pickaxe}-polished.png`; ordinary gameplay screenshot `.artifacts/lettercraft-third-person.png`.
+- No production deployment or commit performed. Screenshots of upgraded tools deliberately set the existing tool level for inspection, not evidence of earning every upgrade in one live round.
+- Independent code review: no Critical/Important findings. Minor diagonal enemy face occlusion reproduced in a new test and fixed by projecting facial features onto the axis-aligned head surface; geometry remains shared with ray picking.
 
 Decision: retain orbit angle/pitch names to minimize disruption; add separate facing. Run uses Shift only while walking, so existing Shift handling for Thai collection remains authoritative. Camera distance range 2.2–7 tiles; obstacles may retract further to avoid clipping. Tight spaces can temporarily crop the avatar; no camera inside blocks.

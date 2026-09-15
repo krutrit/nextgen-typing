@@ -103,7 +103,7 @@ test('tools accelerate attacks but collection stays three seconds',()=>{
 test('five separate hits lose; invulnerability prevents repeat contact',()=>{
  const g=fixture();g.enemies=[{id:7,kind:'enemy',char:'a',x:10.5,y:10.5,hp:4,maxHp:4,stun:0}];
  g.update(0.01);assert.equal(g.hearts,4);g.update(0.05);assert.equal(g.hearts,4);
- for(let i=0;i<4;i++){g.invulnerable=0;g.enemies[0].x=g.player.x;g.enemies[0].y=g.player.y;g.update(0.01);}
+ for(let i=0;i<4;i++){g.invulnerable=0;g.enemies[0].attackCooldown=0;g.enemies[0].x=g.player.x;g.enemies[0].y=g.player.y;g.update(0.01);}
  assert.equal(g.hearts,0);assert.equal(g.status,'lost');
 });
 test('lethal damage takes priority over collecting the last letter',()=>{

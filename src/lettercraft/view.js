@@ -140,13 +140,16 @@ class LettercraftView {
     part('leftArm',0,-.365,.67+breath,.24,.2,.47,11,[.56,.74,.7],shoulder,leftSway);
     part('leftHand',0,-.365,.56+breath,.23,.2,.17,15,null,shoulder,leftSway);
 
-    const swingProgress=(p.swingDuration&&p.swing>0)?Math.sin(p.swing/p.swingDuration*Math.PI):0;
+    const attackPhase=p.swing>0?1-p.swing/(p.swingDuration||.22):0;
+    // Short wind-up, decisive stroke, then a gentler recovery to the grip pose.
+    const ease=v=>v*v*(3-2*v);
+    const swingProgress=p.swing>0?(attackPhase<.3?ease(attackPhase/.3):1-ease((attackPhase-.3)/.7)):0;
     const tool=game.activeTool||'pickaxe';
     let attackSwing=0,attackTwist=0;
     if(swingProgress>0) {
       if(tool==='sword') {
         attackSwing=swingProgress*.95;
-        attackTwist=-swingProgress*.38;
+        attackTwist=-swingProgress*1.05;
       } else if(tool==='axe') {
         attackSwing=swingProgress*1.35;
         attackTwist=swingProgress*.05;
@@ -166,37 +169,49 @@ class LettercraftView {
 
     const toolLvl=(game.tools&&game.tools[tool])||0;
     const toolMats=[
-      {mat:4,tint:[1.05,.85,.65]},
-      {mat:3,tint:[1.0,1.02,1.05]},
-      {mat:14,tint:[.45,.95,1.25]}
+      {mat:12,tint:[1.18,1.04,.82]},
+      {mat:3,tint:[1.18,1.21,1.25]},
+      {mat:11,tint:[1.0,1.22,1.28]}
     ];
     const metal=toolMats[Math.min(2,toolLvl)];
     const heldPart=(name,x,y,z,w,d,h,material,tint=null)=>{
       parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,transform:rightHandTransform});
     };
 
+    const piece=(name,y,z,d,h,material=metal.mat,tint=metal.tint,w=.12,x=.075)=>heldPart(name,x,y,z+breath,w,d,h,material,tint);
     if(tool==='sword') {
-      heldPart('heldHandle',.06,.42,.52+breath,.05,.05,.28,4,null);
-      heldPart('heldGuard',.06,.56,.66+breath,.24,.24,.06,metal.mat,metal.tint);
-      heldPart('heldBlade',.06,.56,.98+breath,.1,.06,.6,metal.mat,metal.tint);
-      heldPart('heldTip',.06,.56,1.32+breath,.06,.04,.14,metal.mat,metal.tint);
-    } else if(tool==='axe') {
-      heldPart('heldHandle',.06,.42,.38+breath,.07,.07,.7,4,null);
-      heldPart('heldHead',.06,.58,1.02+breath,.16,.22,.14,metal.mat,metal.tint);
-      heldPart('heldBlade',.18,.58,1.02+breath,.16,.16,.24,metal.mat,metal.tint);
-      heldPart('heldBeard',.14,.58,.90+breath,.12,.1,.12,metal.mat,metal.tint);
+      piece('heldHandle',.43,.46,.09,.35,4,[.72,.67,.61],.09);
+      piece('heldPommel',.43,.40,.14,.09,8,[1,.8,.5]);
+      piece('heldGuard',.43,.79,.5,.08,8,[1,.87,.65],.15);
+      piece('heldBlade',.43,.86,.19,.64);
+      piece('heldRidge',.43,.88,.055,.60,7,[.9,1,1],.025,.01);
+      piece('heldTip',.43,1.50,.12,.14);
+      piece('heldTipCap',.43,1.64,.055,.06);
     } else {
-      heldPart('heldHandle',.06,.42,.38+breath,.07,.07,.7,4,null);
-      heldPart('heldHead',.06,.58,1.02+breath,.22,.22,.12,metal.mat,metal.tint);
-      heldPart('heldPickLeft',-.14,.58,.98+breath,.18,.1,.1,metal.mat,metal.tint);
-      heldPart('heldPickRight',.24,.58,.98+breath,.18,.1,.1,metal.mat,metal.tint);
+      piece('heldHandle',.43,.36,.09,.80,4,[1.13,.95,.8],.09);
+      piece('heldGrip',.43,.53,.11,.22,12,[.63,.64,.62],.11);
+      piece('heldSocket',.43,1.06,.17,.18,8,[.84,.77,.58],.16);
+      if(tool==='axe') {
+        piece('heldBlade',.65,1.06,.38,.22);
+        piece('heldBeard',.70,.92,.28,.14);
+        piece('heldEdge',.85,.98,.075,.26,7,[.87,.97,1],.095);
+        piece('heldBack',.29,1.09,.18,.10);
+      } else {
+        piece('heldHead',.43,1.13,.73,.13);
+        piece('heldPickLeft',.075,1.04,.16,.12);
+        piece('heldPickRight',.785,1.04,.16,.12);
+        piece('heldLeftTip',.01,.94,.09,.11,7,[.88,.96,1],.09);
+        piece('heldRightTip',.85,.94,.09,.11,7,[.88,.96,1],.09);
+      }
     }
     // Keep the lowest planted boot corner supported throughout the gait.
     let bottom=Infinity;
     for(const b of parts)if(b.part.endsWith('Leg')||b.part.endsWith('Boot'))for(const x of [b.min.x,b.max.x])for(const z of [b.min.z,b.max.z]) {
       const tr=b.transform;bottom=Math.min(bottom,feet+tr.pivot.z-(x-tr.pivot.x)*Math.sin(tr.swing)+(z-tr.pivot.z)*Math.cos(tr.swing));
     }
-    for(const b of parts)b.transform.z+=feet-bottom;
+    for(const transform of new Set(parts.map(b=>b.transform)))transform.z+=feet-bottom;
+    const recoil=Math.max(0,((game.invulnerable||0)-1.7)/.3);
+    if(recoil)for(const b of parts)if(!b.part.endsWith('Leg')&&!b.part.endsWith('Boot')) {b.min.x-=recoil*.08;b.max.x-=recoil*.08;b.tint=[1.25,.93,.85];}
     return parts;
   }
 
@@ -231,11 +246,21 @@ class LettercraftView {
         cube(x+.465,y+.13,z+1.08,.026,.045,.065,10,e.id);
         labelZ=z+1.43;
       } else {
-        for (const dy of [-.23,.23]) cube(x,y+dy,z,.38,.24,.35,5,e.id,[.65,.85,.8]);
-        cube(x,y,z+.3,.55,.68,.76,5,e.id);
-        cube(x,y,z+1.06,.74,.74,.53,5,e.id,[1.15,1,.82]);
-        for (const dy of [-.2,.2]) cube(x-.378,y+dy,z+1.34,.02,.15,.13,10,e.id);
-        cube(x-.38,y,z+1.13,.024,.28,.08,10,e.id);
+        const a=Number.isFinite(e.angle)?e.angle:Math.PI,c=Math.cos(a),s=Math.sin(a);
+        const walk=e.moving?Math.sin(this.time*10)*.15:0,attack=Math.sin(Math.min(1,(e.attackTime||0)/.3)*Math.PI)*.35;
+        const bob=Math.sin(this.time*2+e.id)*.012,flash=e.hurtTime>0?[1.5,1.1,.82]:null;
+        for(const side of [-1,1]) {
+          cube(x-s*side*.22+c*walk*side,y+c*side*.22+s*walk*side,z+Math.max(0,walk*side)*.25,.28,.25,.35,5,e.id,flash||[.65,.85,.8]);
+          cube(x-s*side*.44+c*(attack-walk*side),y+c*side*.44+s*(attack-walk*side),z+.61+bob+attack*.25,.22,.22,.48,5,e.id,flash||[.85,1.05,.9]);
+        }
+        cube(x,y,z+.3+bob,.55,.68,.76,5,e.id,flash);
+        cube(x,y,z+1.06+bob,.74,.74,.53,5,e.id,flash||[1.15,1,.82]);
+        const face=(side,height,h)=>{
+          const dx=c*.38-s*side*.18,dy=s*.38+c*side*.18,scale=.38/Math.max(Math.abs(dx),Math.abs(dy));
+          cube(x+dx*scale,y+dy*scale,z+height+bob,.09,.09,h,10,e.id);
+        };
+        for(const side of [-1,1])face(side,1.34,.13);
+        face(0,1.17,.07);
         labelZ=z+1.83;
       }
       if (e.char) labels.push({ item:e, x, y, z:labelZ, drop:false });
@@ -268,6 +293,25 @@ class LettercraftView {
     this.terrainGame=game;this.terrainHeight=game.heightAt;this.terrainSize=game.size;this.terrain=boxes;
     this.terrainVertices=null;
     return boxes;
+  }
+
+  _decorations(game) {
+    if(this.decorGame===game&&this.decorHeight===game.heightAt)return this.decorations;
+    const boxes=[],size=game.size||32;
+    const add=(x,y,z,w,d,h,material,tint)=>boxes.push({min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,id:null});
+    for(let x=1.5;x<size-1;x+=2)for(let y=1.5;y<size-1;y+=2) {
+      if(Math.abs(x-size/2)<1.3||Math.abs(y-size/2)<1.3||(game.entities||[]).some(e=>Math.hypot(e.x-x,e.y-y)<1.3))continue;
+      const seed=(Math.floor(x)*37+Math.floor(y)*53)%13,z=this._height(game,x,y);
+      if(seed%3===0) {
+        add(x,y,z,.045,.045,.23,5,[.8,1.15,.8]);
+        add(x,y,z+.2,.19,.19,.07,13,seed%2?[1,.64,.64]:[1,.84,.31]);
+        add(x,y,z+.27,.075,.075,.025,8,[1.1,1,.8]);
+      } else {
+        add(x,y,z,.04,.16,.12+seed*.012,14,[.87,1.05,.78]);
+        add(x+.12,y+.05,z,.035,.12,.14,5,[1.1,1.15,.8]);
+      }
+    }
+    this.decorGame=game;this.decorHeight=game.heightAt;this.decorations=boxes;return boxes;
   }
 
   _nearest(origin, direction, boxes, limit = 44) {
@@ -355,6 +399,20 @@ class LettercraftView {
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    const skyVertex=compile(gl.VERTEX_SHADER,`attribute vec2 aSky; varying float vHeight;
+      void main(){vHeight=aSky.y;gl_Position=vec4(aSky,1.0,1.0);}`);
+    let skyFragment;
+    try {skyFragment=compile(gl.FRAGMENT_SHADER,`precision mediump float; varying float vHeight; uniform float uPitch;
+      void main(){float h=sin(uPitch)+vHeight*.7*cos(uPitch);
+        vec3 color=mix(vec3(.66,.83,.87),vec3(.29,.60,.83),smoothstep(0.0,1.0,h));
+        gl_FragColor=vec4(color,1.0);}`);
+    } catch(error){gl.deleteShader(skyVertex);throw error;}
+    this.skyProgram=gl.createProgram();gl.attachShader(this.skyProgram,skyVertex);gl.attachShader(this.skyProgram,skyFragment);gl.linkProgram(this.skyProgram);
+    gl.deleteShader(skyVertex);gl.deleteShader(skyFragment);
+    if(!gl.getProgramParameter(this.skyProgram,gl.LINK_STATUS))throw new Error('Sky program: '+gl.getProgramInfoLog(this.skyProgram));
+    this.skyAttribute=gl.getAttribLocation(this.skyProgram,'aSky');this.skyPitch=gl.getUniformLocation(this.skyProgram,'uPitch');
+    this.skyBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.skyBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
   }
 
   _atlas() {
@@ -393,13 +451,15 @@ class LettercraftView {
       }
     }
     const quads=[[4,5,6,7],[0,3,2,1],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
-    const shades=[1,.5,.77,.9,.83,.65];
     for(let face=0;face<6;face++) {
       if(faces && !faces.includes(face))continue;
       const material=b.ground&&face!==0?1:b.material;
       const u0=(material*16+.5)/256,u1=(material*16+15.5)/256;
       const uv=[[u0,.03125],[u1,.03125],[u1,.96875],[u0,.96875]];
-      const shade=shades[face],tint=b.tint||[1,1,1];
+      const q=quads[face],v=corners[q[0]],u=corners[q[1]],w=corners[q[2]];
+      const ax=u[0]-v[0],ay=u[1]-v[1],az=u[2]-v[2],bx=w[0]-v[0],by=w[1]-v[1],bz=w[2]-v[2];
+      const nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx,length=Math.hypot(nx,ny,nz)||1;
+      const shade=.6+.48*Math.max(0,(nx*.42-ny*.55+nz*.72)/length),tint=b.tint||[1,1,1];
       for(const k of [0,1,2,0,2,3])out.push(...corners[quads[face][k]],...uv[k],
         shade*tint[0]*(highlight?1.2:1),shade*tint[1]*(highlight?1.12:1),shade*tint[2]*(highlight?.72:1));
     }
@@ -417,6 +477,10 @@ class LettercraftView {
       if(x===0||this._height(game,x-.5,y+.5)<h)faces.push(5);
       this._boxVertices(out,b,false,faces);
     }
+    for(const b of this._decorations(game))this._boxVertices(out,b);
+    // Flat compass mosaic: a landmark with no extra collision or hidden pickups.
+    const center=size/2;
+    for(let i=-2;i<=2;i++)this._boxVertices(out,{min:{x:center+i*.2,y:center-.08,z:.003},max:{x:center+i*.2+.16,y:center+.08,z:.008},material:i===2?11:8});
     this.terrainVertices=out;
     return out;
   }
@@ -466,7 +530,8 @@ class LettercraftView {
     if(!this.camera||this.cameraGame!==game||this.cameraPlayer!==game.player)this.updateCamera(game,0);
     const scene=this._scene(game,this.camera),terrain=this._terrain(game),boxes=[...terrain,...scene.boxes];
     const vertices=this._groundVertices(game,terrain).slice();
-    for(const box of scene.boxes)this._boxVertices(vertices,box,hoverId!=null&&box.id===hoverId);
+    const hurt=new Set([...(game.entities||[]),...(game.enemies||[])].filter(e=>e.hurtTime>0).map(e=>e.id));
+    for(const box of scene.boxes)this._boxVertices(vertices,hurt.has(box.id)?{...box,tint:[1.4,1.24,1.06]}:box,hoverId!=null&&box.id===hoverId);
     for(const detail of this._surfaceDetails(game,scene.boxes,hoverId))this._boxVertices(vertices,detail);
     for(const part of this._avatar(game))this._boxVertices(vertices,part);
     // Distant block clouds are geometry, so looking up remains a true perspective view.
@@ -476,6 +541,10 @@ class LettercraftView {
       this._boxVertices(vertices,{min:{x:x+.8,y:y-.6,z:8.1+(i%3)},max:{x:x+2.8,y:y+2.8,z:8.7+(i%3)},material:13});
     }
     gl.viewport(0,0,this.canvas.width,this.canvas.height);gl.clearColor(.66,.83,.87,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.disable(gl.DEPTH_TEST);gl.useProgram(this.skyProgram);gl.bindBuffer(gl.ARRAY_BUFFER,this.skyBuffer);
+    for(const location of Object.values(this.attributes))gl.disableVertexAttribArray(location);
+    gl.enableVertexAttribArray(this.skyAttribute);gl.vertexAttribPointer(this.skyAttribute,2,gl.FLOAT,false,0,0);
+    gl.uniform1f(this.skyPitch,this.camera.pitch);gl.drawArrays(gl.TRIANGLES,0,3);gl.disableVertexAttribArray(this.skyAttribute);
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.useProgram(this.program);
     gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     const stride=8*4;
@@ -509,9 +578,9 @@ class LettercraftView {
       ctx.font='700 '+Math.round(s*.65)+'px "Noto Sans Thai",Tahoma,sans-serif';
       ctx.fillText(p.item.kind==='tool'?({axe:'🪓',pickaxe:'⛏',sword:'⚔'}[p.item.tool]||'⚒'):this._displayChar(p.item.char),p.x,p.y+1);
       if(complete) {ctx.font='700 11px Tahoma,sans-serif';ctx.fillStyle='#163b2b';ctx.fillRect(p.x-26,p.y+s/2+5,52,17);ctx.fillStyle='#dcecc1';ctx.fillText('ครบแล้ว',p.x,p.y+s/2+14);}
-      if(Number.isFinite(p.item.hp)&&p.item.hp<p.item.maxHp) {
+      if(Number.isFinite(p.item.hp)&&(p.item.kind==='enemy'||p.item.hp<p.item.maxHp)) {
         ctx.fillStyle='#203133';ctx.fillRect(p.x-s/2,p.y-s/2-11,s,5);
-        ctx.fillStyle='#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
+        ctx.fillStyle=p.item.kind==='enemy'?'#ffad82':'#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
       }
     }
     ctx.globalAlpha=1;
@@ -558,6 +627,8 @@ class LettercraftView {
     if(this.disposed)return;
     const gl=this.gl;
     if(gl) {if(this.buffer)gl.deleteBuffer(this.buffer);if(this.texture)gl.deleteTexture(this.texture);if(this.program)gl.deleteProgram(this.program);}
+    if(gl){if(this.skyBuffer)gl.deleteBuffer(this.skyBuffer);if(this.skyProgram)gl.deleteProgram(this.skyProgram);}
+    this.skyBuffer=this.skyProgram=null;this.decorGame=this.decorations=null;
     this.buffer=this.texture=this.program=null;this.terrainVertices=null;this.terrainGame=null;
     this.labels=[];this.particles=[];this.disposed=true;
   }

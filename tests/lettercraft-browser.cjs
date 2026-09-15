@@ -21,15 +21,16 @@ const root = path.resolve(__dirname, '..');
   async function release() { await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.pointerLockElement); }
   async function pointAt(x,y,z) {
     // Iterative real mouse orbit: the eye moves around the player as it rotates.
-    for(let i=0;i<8;i++) {
-      await page.mouse.move(720,450);await page.waitForTimeout(30);
+    let mouseX=720,mouseY=450;await page.mouse.move(mouseX,mouseY);await page.waitForTimeout(80);
+    for(let i=0;i<14;i++) {
       const delta=await page.evaluate(({x,y,z})=>{
         const c=Lettercraft.view.camera,yaw=Math.atan2(y-c.y,x-c.x);
         const yawDelta=Math.atan2(Math.sin(yaw-c.angle),Math.cos(yaw-c.angle));
         const pitch=Math.atan2(z-c.z,Math.hypot(x-c.x,y-c.y));
         return {x:yawDelta/.0025,y:(c.pitch-pitch)/.0025};
       },{x,y,z});
-      await page.mouse.move(720+delta.x,450+delta.y);await page.waitForTimeout(80);
+      mouseX+=delta.x;mouseY+=delta.y;
+      await page.mouse.move(mouseX,mouseY);await page.waitForTimeout(60);
     }
   }
   async function clickWorld() {await page.mouse.down();await page.mouse.up();}
@@ -77,6 +78,9 @@ const root = path.resolve(__dirname, '..');
     await page.evaluate(()=>{const g=Lettercraft.game;g.player.x=16.5;g.player.y=16.5;g.entities=[{id:900,kind:'rock',char:'a',x:17.5,y:16.5,hp:4,maxHp:4},{id:901,kind:'rock',char:'b',x:18,y:16.5,hp:4,maxHp:4}];g.drops=[];});
     await pointAt(18,16.5,.55);await clickWorld();
     assert.equal(await page.evaluate(()=>Lettercraft.game.entities[1].hp),4,'Cannot mine behind an occluder');
+    // Aim ray is shoulder-offset; walk straight at the block rather than along that angled ray.
+    await page.mouse.move(720,450);await page.waitForTimeout(30);
+    const walkYaw=await page.evaluate(()=>Lettercraft.game.player.angle);await page.mouse.move(720-walkYaw/.0025,450);
     await keyHold('w',600);assert.ok(await page.evaluate(()=>Lettercraft.game.player.x)<16.84,'Rock blocks walking');
     await page.evaluate(()=>{const g=Lettercraft.game;g.entities=[];g.enemies=[{id:950,kind:'enemy',char:'a',x:g.player.x+2.5,y:g.player.y,hp:4,maxHp:4,stun:0}];});
     await page.waitForFunction(()=>Lettercraft.game.hearts===4);

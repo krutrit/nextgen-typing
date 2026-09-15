@@ -165,7 +165,8 @@ class LettercraftGame {
         this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swingDuration = this.player.swing = 0.22; this.activeTool = tool;
         this.player.facing = Math.atan2(e.y-this.player.y, e.x-this.player.x);
         e.hp -= level + 1; e.stun = e.kind === 'enemy' ? 1.25 : 0.8;
-        this.event('hit', e);
+        e.hurtTime=.24;
+        this.event('hit', e, { damage: level+1 });
         if (e.hp <= 0) {
             this.entities = this.entities.filter(o => o.id !== id); this.enemies = this.enemies.filter(o => o.id !== id);
             this.drops.push({ id: this.id++, kind: 'letter', char: e.char, x: e.x, y: e.y });
@@ -233,6 +234,7 @@ class LettercraftGame {
         this.flowTime -= dt;
         if (this.enemies.length && this.flowTime <= 0) this.buildFlow();
         if (this.elapsed >= this.nextSpawn) { this.buildFlow(); this.spawnEnemy(); this.nextSpawn = this.elapsed + 25; }
+        for (const e of this.entities) e.hurtTime=Math.max(0,(e.hurtTime||0)-dt);
         for (const e of this.entities) if (e.kind === 'animal') {
             e.stun = Math.max(0, (e.stun || 0) - dt);
             if (!e.stun && Math.hypot(e.x - this.player.x, e.y - this.player.y) > 2) {
@@ -243,8 +245,19 @@ class LettercraftGame {
         }
         for (const e of this.enemies) {
             e.stun = Math.max(0, (e.stun || 0) - dt);
+            e.hurtTime=Math.max(0,(e.hurtTime||0)-dt);
+            e.attackTime=Math.max(0,(e.attackTime||0)-dt);
+            e.attackCooldown=Math.max(0,(e.attackCooldown||0)-dt);
+            e.moving=false;e.state=e.stun?'hurt':e.attackTime?'attack':'idle';
             const distance = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-            if (!e.stun && distance < 8 && distance > 0.55) {
+            // Continue the existing flow-field pursuit; only distant idle enemies patrol.
+            if(!e.stun&&distance>=8) {
+                e.wanderTime=(e.wanderTime||0)-dt;
+                if(e.wanderTime<=0){e.wanderTime=1.5+this.rng()*2;e.wanderAngle=this.rng()*Math.PI*2;e.rest=this.rng()<.25;}
+                if(!e.rest){const x=e.x,y=e.y;e.angle=e.wanderAngle;this.move(e,Math.cos(e.angle)*.55*dt,Math.sin(e.angle)*.55*dt);e.moving=Math.hypot(e.x-x,e.y-y)>.0001;e.state='wander';}
+            }
+            if (!e.stun && !e.attackTime && distance < 8 && distance > 0.55) {
+                e.state='chase';
                 let target = this.player;
                 if (!this.lineClear(e, this.player, null)) {
                     const cx = Math.floor(e.x), cy = Math.floor(e.y); let best = Infinity; target = null;
@@ -255,9 +268,10 @@ class LettercraftGame {
                         if (score >= 0 && score < best && this.isFree(nx + 0.5, ny + 0.5)) { best = score; target = { x: nx + 0.5, y: ny + 0.5 }; }
                     }
                 }
-                if (target) { const dx = target.x - e.x, dy = target.y - e.y, len = Math.hypot(dx,dy) || 1; e.angle = Math.atan2(dy,dx); this.move(e, dx / len * 2 * dt, dy / len * 2 * dt); }
+                if (target) { const dx = target.x - e.x, dy = target.y - e.y, len = Math.hypot(dx,dy) || 1; e.angle = Math.atan2(dy,dx);const x=e.x,y=e.y; this.move(e, dx / len * 2 * dt, dy / len * 2 * dt);e.moving=Math.hypot(e.x-x,e.y-y)>.0001; }
             }
-            if (!e.stun && Math.hypot(e.x - this.player.x, e.y - this.player.y) < 0.7 && this.invulnerable === 0) {
+            if (!e.stun && !e.attackCooldown && Math.hypot(e.x - this.player.x, e.y - this.player.y) < 0.7 && Math.abs(this.player.z-this.heightAt(e.x,e.y))<1.1 && this.lineClear(e,this.player,null) && this.invulnerable === 0) {
+                e.attackCooldown=1.05;e.attackTime=.3;e.state='attack';e.angle=Math.atan2(this.player.y-e.y,this.player.x-e.x);
                 this.hearts--; this.invulnerable = 2; this.cancelCollection(); this.event('hurt', this.player);
                 const dx = this.player.x - e.x || 0.3, dy = this.player.y - e.y, len = Math.hypot(dx,dy) || 1;
                 this.move(this.player, dx / len, dy / len);
