@@ -716,25 +716,48 @@
 
     // --- INITIALIZATION ---
     function init() {
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) overlay.classList.remove('hidden');
-
         renderKeyboard();
-        // The lesson is immediately usable with safe local defaults. Remote
-        // classroom data updates it later without blocking the first paint.
-        onDataLoaded(mockData, false);
-        
+
+        // 1. ตรวจสอบข้อมูลแคชห้องเรียนใน localStorage เพื่อให้เปิดเว็บได้ทันทีพร้อมรายชื่อนักเรียนจริง
+        let hasCache = false;
+        const cachedStr = localStorage.getItem('ngt_cached_classroom');
+        if (cachedStr) {
+            try {
+                const cachedData = JSON.parse(cachedStr);
+                if (cachedData && cachedData.users && cachedData.users.length > 3) {
+                    hasCache = true;
+                    onDataLoaded(cachedData, false);
+                }
+            } catch (e) {
+                console.warn("Invalid cached classroom data:", e);
+            }
+        }
+
+        // 2. ถ้ายังไม่มีแคช (เปิดครั้งแรก) ให้แสดงหน้าต่างโหลดข้อมูลไว้ก่อน เพื่อไม่ให้เห็น dropdown ห้องว่างเปล่า
+        const overlay = document.getElementById('loading-overlay');
+        if (!hasCache && overlay) {
+            overlay.classList.remove('hidden');
+            // Timeout ป้องกันค้างนานเกิน 15 วินาที
+            setTimeout(() => {
+                if (!state.isDataLoaded) {
+                    console.warn("Server response timeout, using defaults.");
+                    onDataLoaded(mockData, false);
+                }
+            }, 15000);
+        }
+
+        // 3. ดึงข้อมูลล่าสุดจาก Server เสมอ (เพื่ออัปเดตความคืบหน้า รายชื่อ และห้องเรียน)
         if (typeof google !== 'undefined' && google.script) {
             google.script.run
                 .withSuccessHandler((data) => onDataLoaded(data, true))
                 .withFailureHandler((error) => {
                     console.error("Failed to load from GAS:", error);
                     console.warn("เชื่อมต่อฐานข้อมูลไม่ได้ ใช้ข้อมูลในเครื่องต่อ:", error);
+                    if (!state.isDataLoaded) onDataLoaded(mockData, false);
                 })
                 .getData();
         } else {
-            console.log("Running Locally. Trying to fetch from WEB_APP_URL...");
-            
+            console.log("Running on Web/GitHub Pages. Fetching from WEB_APP_URL...");
             if (WEB_APP_URL && WEB_APP_URL.startsWith('http')) {
                 fetch(`${WEB_APP_URL}?action=getData`)
                     .then(response => response.json())
@@ -744,29 +767,39 @@
                     })
                     .catch(err => {
                         console.error("Fetch Error:", err);
-                        console.warn('ไม่สามารถดึงข้อมูลจาก Server ได้ ใช้ข้อมูลในเครื่องต่อ:', err);
+                        console.warn('ไม่สามารถดึงข้อมูลจาก Server ได้:', err);
+                        if (!state.isDataLoaded) onDataLoaded(mockData, false);
                     });
             } else {
-                setTimeout(() => {
-                    console.warn("No WEB_APP_URL configured for local mode.");
-                }, 500);
+                if (!state.isDataLoaded) onDataLoaded(mockData, false);
             }
         }
 
         document.addEventListener('keydown', handleGlobalKeydown);
         document.addEventListener('click', (e) => focusInput(e));
-        
-
     }
 
     function onDataLoaded(data, isRemote) {
-        const firstLoad = !state.isDataLoaded;
+        const isFirst = !state.isDataLoaded;
         state.isDataLoaded = true;
         
-        if(data) {
+        if (data) {
             mockData.users = data.users || ['Guest'];
             mockData.settings = Object.assign({ targetLength: 1000, enableMinigame: true }, data.settings || {});
-            if(data.progress) mockData.progress = data.progress;
+            if (data.progress) mockData.progress = data.progress;
+
+            // บันทึกข้อมูลห้องเรียนและนักเรียนจริงลง localStorage แคชไว้
+            if (isRemote && data.users && data.users.length > 3) {
+                try {
+                    localStorage.setItem('ngt_cached_classroom', JSON.stringify({
+                        users: data.users,
+                        settings: data.settings,
+                        progress: data.progress
+                    }));
+                } catch (e) {
+                    console.warn("Could not cache classroom data:", e);
+                }
+            }
         }
 
         const localGameSetting = localStorage.getItem('ngt_enableMinigame');
@@ -776,34 +809,37 @@
             mockData.settings.enableMinigame = localGameSetting === 'true';
         }
 
-        // เตรียม dropdown ห้องสำหรับหน้า Login
+        // อัปเดต dropdown ห้องสำหรับหน้า Login เสมอ
         populateLoginRooms();
+
+        // ถ้า Admin panel เปิดอยู่ ให้อัปเดตตารางและห้องของ Admin ด้วย
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel && !adminPanel.classList.contains('hidden')) {
+            updateAdminView(mockData);
+            refreshRoomDropdowns();
+        }
 
         state.userSettings = mockData.settings;
         const targetDisplay = document.getElementById('target-display');
-        if(targetDisplay) targetDisplay.innerText = state.userSettings.targetLength;
+        if (targetDisplay) targetDisplay.innerText = state.userSettings.targetLength;
 
+        // ซ่อน Loading overlay เมื่อข้อมูลพร้อม
         const overlay = document.getElementById('loading-overlay');
         if (overlay) overlay.classList.add('hidden');
 
         scheduleLettercraftPreload();
 
-        // A background response must never reset a lesson that the student has
-        // already started typing while the network request was pending.
-        if (!firstLoad) {
-            const savedUser = localStorage.getItem('ngt_currentUser');
-            if (!state.currentUser && !state.userInput && savedUser && mockData.users.includes(savedUser)) loginUser(savedUser);
-            else updateAuthUI();
-            return;
-        }
-        
         // Auto Login Check
         const savedUser = localStorage.getItem('ngt_currentUser');
         if (savedUser && mockData.users.includes(savedUser)) {
-            loginUser(savedUser);
+            if (!state.currentUser || state.currentUser === 'Guest') {
+                loginUser(savedUser);
+            }
         } else {
             updateAuthUI();
-            loadLesson(0);
+            if (isFirst && !state.userInput) {
+                loadLesson(0);
+            }
         }
     }
 
