@@ -54,6 +54,34 @@ class LettercraftView {
     return far < 0 ? null : near;
   }
 
+  static transformPoint(point, t, inverse=false) {
+    if(!t)return {...point};
+    const p=t.pivot||{x:0,y:0,z:0},cs=Math.cos(t.swing||0),ss=Math.sin(t.swing||0),cy=Math.cos(t.yaw||0),sy=Math.sin(t.yaw||0),ct=Math.cos(t.twist||0),st=Math.sin(t.twist||0);
+    let {x,y,z}=point;
+    if(inverse) {
+      x-=t.x||0;y-=t.y||0;z-=t.z||0;
+      [x,y]=[x*cy+y*sy,-x*sy+y*cy];x-=p.x;y-=p.y;z-=p.z;
+      [y,z]=[y*ct+z*st,-y*st+z*ct];[x,z]=[x*cs-z*ss,x*ss+z*cs];
+      return {x:x+p.x,y:y+p.y,z:z+p.z};
+    }
+    x-=p.x;y-=p.y;z-=p.z;[x,z]=[x*cs+z*ss,-x*ss+z*cs];[y,z]=[y*ct-z*st,y*st+z*ct];x+=p.x;y+=p.y;z+=p.z;
+    return {x:(t.x||0)+x*cy-y*sy,y:(t.y||0)+x*sy+y*cy,z:(t.z||0)+z};
+  }
+
+  static rayDescriptor(origin,direction,box,padding=0) {
+    const o=LettercraftView.transformPoint(origin,box.transform,true);
+    const end=LettercraftView.transformPoint({x:origin.x+direction.x,y:origin.y+direction.y,z:origin.z+direction.z},box.transform,true);
+    const d={x:end.x-o.x,y:end.y-o.y,z:end.z-o.z},min={},max={};
+    for(const axis of ['x','y','z']){min[axis]=box.min[axis]-padding;max[axis]=box.max[axis]+padding;}
+    return LettercraftView.rayBox(o,d,min,max);
+  }
+
+  _segment(parts,name,a,b,width,material,id=null,tint=null) {
+    const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,length=Math.hypot(dx,dy,dz);
+    parts.push({part:name,id,material,tint,min:{x:-width/2,y:-width/2,z:0},max:{x:width/2,y:width/2,z:length},
+      transform:{x:a.x,y:a.y,z:a.z,yaw:Math.atan2(dy,dx),swing:Math.atan2(Math.hypot(dx,dy),dz),pivot:{x:0,y:0,z:0}}});
+  }
+
   resize() {
     const r = this.canvas.getBoundingClientRect();
     this.width = Math.max(1, r.width || this.canvas.clientWidth || 1);
@@ -92,8 +120,7 @@ class LettercraftView {
     const padding=.18,size=game.size||32;
     let limit=length;
     for(const box of [...this._terrain(game),...this._scene(game,anchor).boxes]) {
-      const min={},max={};for(const axis of ['x','y','z']){min[axis]=box.min[axis]-padding;max[axis]=box.max[axis]+padding;}
-      const hit=LettercraftView.rayBox(anchor,ray,min,max);
+      const hit=LettercraftView.rayDescriptor(anchor,ray,box,padding);
       if(hit!==null)limit=Math.min(limit,Math.max(.02,hit-.025));
     }
     for(const axis of ['x','y']) {
@@ -158,14 +185,18 @@ class LettercraftView {
         attackTwist=0;
       }
     }
-    const rightHandTransform={
-      x:p.x,y:p.y,z:feet,yaw,
-      pivot:shoulder,
-      swing:rightSway+attackSwing,
-      twist:attackTwist
-    };
-    parts.push({part:'rightArm',id:null,min:{x:-.12,y:.365-.1,z:.67+breath},max:{x:.12,y:.365+.1,z:1.14+breath},material:11,tint:[.56,.74,.7],transform:rightHandTransform});
-    parts.push({part:'rightHand',id:null,min:{x:-.115,y:.365-.1,z:.56+breath},max:{x:.115,y:.365+.1,z:.73+breath},material:15,tint:null,transform:rightHandTransform});
+    const root={x:p.x,y:p.y,z:feet,yaw},world=point=>LettercraftView.transformPoint(point,root);
+    const shoulderPoint={x:0,y:.365,z:1.08+breath};
+    const elbow={x:.15+Math.sin(attackSwing)*.12,y:.37+attackTwist*.08,z:.83+breath+attackSwing*.12};
+    const hand={x:.38+Math.sin(attackSwing)*.14,y:.37+attackTwist*.14,z:.82+breath+attackSwing*.27+rightSway*.025};
+    this._segment(parts,'rightArm',world(shoulderPoint),world(elbow),.21,11,null,[.56,.74,.7]);
+    this._segment(parts,'rightForearm',world(elbow),world(hand),.17,11,null,[.56,.74,.7]);
+    part('rightElbow',elbow.x,elbow.y,elbow.z-.09,.19,.19,.18,11,[.56,.74,.7]);
+    part('rightHand',hand.x,hand.y,hand.z-.095,.2,.19,.19,15);
+    // The wrist has its own grip frame. Every weapon piece is authored around
+    // this origin, so wrist rotation cannot separate the handle from the hand.
+    const handWorld=world(hand),gripYaw=yaw+attackTwist*.35;
+    const rightHandTransform={...handWorld,yaw:gripYaw,pivot:{x:0,y:0,z:0},swing:(tool==='sword'?.82:.72)-attackSwing*.65,twist:attackTwist*.35};
 
     const toolLvl=(game.tools&&game.tools[tool])||0;
     const toolMats=[
@@ -178,13 +209,13 @@ class LettercraftView {
       parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,transform:rightHandTransform});
     };
 
-    const piece=(name,y,z,d,h,material=metal.mat,tint=metal.tint,w=.12,x=.075)=>heldPart(name,x,y,z+breath,w,d,h,material,tint);
+    const piece=(name,y,z,d,h,material=metal.mat,tint=metal.tint,w=.12,x=0)=>heldPart(name,x,y-.43,z-.64,w,d,h,material,tint);
     if(tool==='sword') {
       piece('heldHandle',.43,.46,.09,.35,4,[.72,.67,.61],.09);
       piece('heldPommel',.43,.40,.14,.09,8,[1,.8,.5]);
       piece('heldGuard',.43,.79,.5,.08,8,[1,.87,.65],.15);
       piece('heldBlade',.43,.86,.19,.64);
-      piece('heldRidge',.43,.88,.055,.60,7,[.9,1,1],.025,.01);
+      piece('heldRidge',.43,.88,.055,.60,7,[.9,1,1],.025,-.065);
       piece('heldTip',.43,1.50,.12,.14);
       piece('heldTipCap',.43,1.64,.055,.06);
     } else {
@@ -210,8 +241,62 @@ class LettercraftView {
       const tr=b.transform;bottom=Math.min(bottom,feet+tr.pivot.z-(x-tr.pivot.x)*Math.sin(tr.swing)+(z-tr.pivot.z)*Math.cos(tr.swing));
     }
     for(const transform of new Set(parts.map(b=>b.transform)))transform.z+=feet-bottom;
-    const recoil=Math.max(0,((game.invulnerable||0)-1.7)/.3);
-    if(recoil)for(const b of parts)if(!b.part.endsWith('Leg')&&!b.part.endsWith('Boot')) {b.min.x-=recoil*.08;b.max.x-=recoil*.08;b.tint=[1.25,.93,.85];}
+    return parts;
+  }
+
+  _animal(game,e) {
+    const defaults={pig:[.28,.21,.28,.72,.5,.4],cow:[.34,.25,.48,.88,.58,.5],goat:[.28,.2,.44,.7,.44,.4],sheep:[.28,.23,.32,.78,.6,.48],chicken:[0,.13,.24,.4,.34,.31]};
+    const species=defaults[e.species]?e.species:'sheep',v=defaults[species];
+    const profile=typeof game.animalProfile==='function'?game.animalProfile(e):{stanceX:v[0],stanceY:v[1],legHeight:v[2],bodyLength:v[3],bodyWidth:v[4],bodyHeight:v[5]};
+    const {stanceX,stanceY,legHeight,bodyLength,bodyWidth,bodyHeight}=profile;
+    const z=Number.isFinite(e.z)?e.z:this._height(game,e.x,e.y),root={x:e.x,y:e.y,z,yaw:e.angle||0},parts=[];
+    const pink=[1,.64,.68],cream=[.96,.93,.82],brown=[.7,.5,.32],white=[1,1,.96];
+    const coat=species==='pig'?pink:species==='goat'?brown:white;
+    const bob=e.moving?Math.sin((e.gait||0)*11)*.012:0;
+    const add=(name,x,y,h,w,d,height,material=13,tint=coat)=>parts.push({part:name,id:e.id,min:{x:x-w/2,y:y-d/2,z:h},max:{x:x+w/2,y:y+d/2,z:h+height},material,tint,transform:root});
+    add('animalBody',0,0,legHeight+bob,bodyLength,bodyWidth,bodyHeight);
+    let index=0;
+    for(const x of species==='chicken'?[0]:[-stanceX,stanceX])for(const y of [-stanceY,stanceY]) {
+      const nominal=LettercraftView.transformPoint({x,y,z:0},root);
+      const foot=e.feet&&e.feet[index]||{...nominal,z:e.grounded===false?z:this._height(game,nominal.x,nominal.y)};
+      const hip=LettercraftView.transformPoint({x,y,z:legHeight+.06+bob},root);
+      const ankle={x:foot.x,y:foot.y,z:foot.z+.055},width=species==='chicken'?.045:.085;
+      // Two-bone IK bends in the animal's forward plane while preserving the
+      // terrain contact. Very distant endpoints extend rather than detach.
+      const delta={x:ankle.x-hip.x,y:ankle.y-hip.y,z:ankle.z-hip.z},distance=Math.hypot(delta.x,delta.y,delta.z)||1e-6;
+      const unit={x:delta.x/distance,y:delta.y/distance,z:delta.z/distance};
+      const forward={x:-Math.cos(root.yaw),y:-Math.sin(root.yaw),z:0},dot=forward.x*unit.x+forward.y*unit.y;
+      const bend={x:forward.x-dot*unit.x,y:forward.y-dot*unit.y,z:-dot*unit.z},bendLength=Math.hypot(bend.x,bend.y,bend.z)||1;
+      const bone=Math.max(legHeight*.59,distance*.5),offset=Math.sqrt(Math.max(0,bone*bone-distance*distance*.25));
+      const knee={};for(const axis of ['x','y','z'])knee[axis]=(hip[axis]+ankle[axis])*.5+bend[axis]/bendLength*offset;
+      this._segment(parts,'animalUpperLeg'+index,hip,knee,width,13,e.id,species==='chicken'?[1,.69,.2]:coat);
+      this._segment(parts,'animalLowerLeg'+index,knee,ankle,width,13,e.id,species==='chicken'?[1,.69,.2]:coat);
+      parts.push({part:'animalFoot'+index,id:e.id,min:{x:-.07,y:-.06,z:0},max:{x:species==='chicken'?.13:.07,y:.06,z:.075},material:species==='chicken'?8:10,transform:{x:foot.x,y:foot.y,z:foot.z,yaw:root.yaw}});
+      index++;
+    }
+    const front=bodyLength*.43,headZ=legHeight+bodyHeight*.62+bob;
+    if(species==='chicken') {
+      add('chickenNeck',front,0,headZ,.19,.23,.24);add('chickenHead',front+.05,0,headZ+.13,.25,.27,.22);
+      add('beak',front+.23,0,headZ+.16,.15,.15,.08,8,[1,.8,.3]);
+      add('comb',front+.04,0,headZ+.35,.15,.075,.11,13,[.9,.2,.13]);
+      add('wattle',front+.17,0,headZ+.07,.065,.085,.13,13,[.85,.2,.16]);
+      for(const side of [-1,1])add('wing',-.03,side*.18,legHeight+.07,.26,.08,.19,13,cream);
+      add('tail',-.25,0,legHeight+.2,.18,.17,.24,13,cream);
+    } else {
+      const long=species==='goat'?.31:species==='cow'?.35:.28;
+      add('animalHead',front+.09,0,headZ,long,bodyWidth*.69,.29);
+      add('muzzle',front+long*.68,0,headZ+.02,.17,bodyWidth*.58,.15,13,species==='pig'?pink:cream);
+      for(const side of [-1,1]) {
+        add('ear',front+.02,side*bodyWidth*.44,headZ+.22,.17,.13,species==='pig'?.13:.075,13,species==='pig'?pink:coat);
+        if(species==='cow'||species==='goat')add('horn',front-.025,side*.13,headZ+.29,.07,.065,species==='goat'?.23:.14,13,cream);
+      }
+      if(species==='pig')for(const side of [-1,1])add('nostril',front+long*.68+.09,side*.07,headZ+.07,.012,.037,.035,10);
+      if(species==='cow')for(const side of [-1,1])add('cowPatch',-.12,side*(bodyWidth/2+.005),legHeight+.12,.28,.015,.24,10);
+      if(species==='goat')add('beard',front+.19,0,headZ-.09,.12,.12,.14,13,cream);
+      if(species==='sheep')for(const x of [-.24,0,.24])for(const side of [-1,1])add('fleece',x,side*.25,legHeight+.08,.29,.18,.35,6,white);
+      add('tail',-bodyLength/2-.05,0,legHeight+bodyHeight*.6,.17,.08,species==='pig'?.09:.18,13,coat);
+    }
+    for(const side of [-1,1])add('animalEye',front+.13,side*(species==='chicken'?.141:bodyWidth*.35+.007),headZ+(species==='chicken'?.25:.19),.065,.018,.065,10);
     return parts;
   }
 
@@ -221,7 +306,7 @@ class LettercraftView {
     const cube = (x, y, z, w, d, h, material, id = null, tint = null) => {
       boxes.push({ min: { x: x-w/2, y: y-d/2, z }, max: { x: x+w/2, y: y+d/2, z: z+h }, material, id, tint });
     };
-    for (const e of [...(game.entities || []), ...(game.enemies || []).map(e => ({ ...e, kind: 'enemy' }))]) {
+    for (const e of game.entities || []) {
       if (Math.hypot(e.x-camera.x, e.y-camera.y) > 28) continue;
       const z = this._height(game, e.x, e.y), x = e.x, y = e.y;
       let labelZ = z + 1.1;
@@ -237,31 +322,8 @@ class LettercraftView {
         cube(x+.1,y-.405,z+.58,.18,.025,.15,8,e.id);
         labelZ=z+1.45;
       } else if (e.kind === 'animal') {
-        for (const dx of [-.24,.24]) for (const dy of [-.24,.24]) cube(x+dx,y+dy,z,.16,.16,.4,4,e.id,[.6,.57,.6]);
-        cube(x,y,z+.35,.8,.8,.57,6,e.id);
-        cube(x+.22,y,z+.83,.44,.48,.4,9,e.id);
-        cube(x+.451,y-.13,z+1.07,.024,.12,.1,7,e.id);
-        cube(x+.465,y-.13,z+1.08,.026,.045,.065,10,e.id);
-        cube(x+.451,y+.13,z+1.07,.024,.12,.1,7,e.id);
-        cube(x+.465,y+.13,z+1.08,.026,.045,.065,10,e.id);
-        labelZ=z+1.43;
-      } else {
-        const a=Number.isFinite(e.angle)?e.angle:Math.PI,c=Math.cos(a),s=Math.sin(a);
-        const walk=e.moving?Math.sin(this.time*10)*.15:0,attack=Math.sin(Math.min(1,(e.attackTime||0)/.3)*Math.PI)*.35;
-        const bob=Math.sin(this.time*2+e.id)*.012,flash=e.hurtTime>0?[1.5,1.1,.82]:null;
-        for(const side of [-1,1]) {
-          cube(x-s*side*.22+c*walk*side,y+c*side*.22+s*walk*side,z+Math.max(0,walk*side)*.25,.28,.25,.35,5,e.id,flash||[.65,.85,.8]);
-          cube(x-s*side*.44+c*(attack-walk*side),y+c*side*.44+s*(attack-walk*side),z+.61+bob+attack*.25,.22,.22,.48,5,e.id,flash||[.85,1.05,.9]);
-        }
-        cube(x,y,z+.3+bob,.55,.68,.76,5,e.id,flash);
-        cube(x,y,z+1.06+bob,.74,.74,.53,5,e.id,flash||[1.15,1,.82]);
-        const face=(side,height,h)=>{
-          const dx=c*.38-s*side*.18,dy=s*.38+c*side*.18,scale=.38/Math.max(Math.abs(dx),Math.abs(dy));
-          cube(x+dx*scale,y+dy*scale,z+height+bob,.09,.09,h,10,e.id);
-        };
-        for(const side of [-1,1])face(side,1.34,.13);
-        face(0,1.17,.07);
-        labelZ=z+1.83;
+        const animal=this._animal(game,e);boxes.push(...animal);
+        labelZ=(Number.isFinite(e.z)?e.z:z)+(typeof game.animalProfile==='function'?game.animalProfile(e).height:1.3)+.24;
       }
       if (e.char) labels.push({ item:e, x, y, z:labelZ, drop:false });
     }
@@ -317,7 +379,7 @@ class LettercraftView {
   _nearest(origin, direction, boxes, limit = 44) {
     let distance=limit, box=null;
     for(const b of boxes) {
-      const hit=LettercraftView.rayBox(origin,direction,b.min,b.max);
+      const hit=LettercraftView.rayDescriptor(origin,direction,b);
       if(hit!==null && hit<distance) {distance=hit;box=b;}
     }
     return {distance,box};
@@ -437,17 +499,9 @@ class LettercraftView {
     const {min:a,max:c}=b;
     const corners=[[a.x,a.y,a.z],[c.x,a.y,a.z],[c.x,c.y,a.z],[a.x,c.y,a.z],[a.x,a.y,c.z],[c.x,a.y,c.z],[c.x,c.y,c.z],[a.x,c.y,c.z]];
     if(b.transform) {
-      const t=b.transform,p=t.pivot,cs=Math.cos(t.swing),ss=Math.sin(t.swing),cy=Math.cos(t.yaw),sy=Math.sin(t.yaw);
-      const twist=t.twist||0,ct=Math.cos(twist),st=Math.sin(twist);
       for(const corner of corners) {
-        const x=corner[0]-p.x,y=corner[1]-p.y,z=corner[2]-p.z;
-        let rx=x*cs+z*ss,rz=-x*ss+z*cs,ry=y;
-        if(twist) {
-          const ty=ry*ct-rz*st,tz=ry*st+rz*ct;
-          ry=ty;rz=tz;
-        }
-        rx+=p.x;ry+=p.y;rz+=p.z;
-        corner[0]=t.x+rx*cy-ry*sy;corner[1]=t.y+rx*sy+ry*cy;corner[2]=t.z+rz;
+        const point=LettercraftView.transformPoint({x:corner[0],y:corner[1],z:corner[2]},b.transform);
+        corner[0]=point.x;corner[1]=point.y;corner[2]=point.z;
       }
     }
     const quads=[[4,5,6,7],[0,3,2,1],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
@@ -489,7 +543,7 @@ class LettercraftView {
     const primary=new Map(),details=[];
     const volume=b=>(b.max.x-b.min.x)*(b.max.y-b.min.y)*(b.max.z-b.min.z);
     for(const box of boxes) if(box.id!=null&&(!primary.has(box.id)||volume(box)>volume(primary.get(box.id))))primary.set(box.id,box);
-    const items=new Map([...(game.entities||[]),...(game.enemies||[])].map(e=>[e.id,e]));
+    const items=new Map((game.entities||[]).map(e=>[e.id,e]));
     // Thin cuboids share the depth-tested batch; a small outward offset avoids
     // z-fighting. Decorative details never become ray or collision bodies.
     const segment=(from,to,width,material,detail)=>{
@@ -498,6 +552,7 @@ class LettercraftView {
       details.push({min,max,material,detail,id:null});
     };
     for(const [id,box] of primary) {
+      const detailStart=details.length;
       const a=box.min,b=box.max,item=items.get(id);
       if(id===hoverId) {
         const lo={x:a.x-.01,y:a.y-.01,z:a.z-.01},hi={x:b.x+.01,y:b.y+.01,z:b.z+.01};
@@ -509,6 +564,7 @@ class LettercraftView {
           }
         }
       }
+      for(let i=detailStart;i<details.length;i++)details[i].transform=box.transform;
       if(!item||!Number.isFinite(item.hp)||!Number.isFinite(item.maxHp)||item.maxHp<=0||item.hp>=item.maxHp)continue;
       const severity=1-Math.max(0,item.hp/item.maxHp);
       const paths=[[[.26,.12],[.44,.12],[.44,.36],[.62,.36],[.62,.6],[.78,.6],[.78,.84]],
@@ -519,6 +575,7 @@ class LettercraftView {
         const point=([pu,pv])=>({[normal]:(side<0?a[normal]:b[normal])+side*.006,[u]:a[u]+pu*(b[u]-a[u]),[v]:a[v]+pv*(b[v]-a[v])});
         for(const path of paths)for(let i=1;i<path.length;i++)segment(point(path[i-1]),point(path[i]),.005+severity*.006,10,'crack');
       }
+      for(let i=detailStart;i<details.length;i++)details[i].transform=box.transform;
     }
     return details;
   }
@@ -530,7 +587,7 @@ class LettercraftView {
     if(!this.camera||this.cameraGame!==game||this.cameraPlayer!==game.player)this.updateCamera(game,0);
     const scene=this._scene(game,this.camera),terrain=this._terrain(game),boxes=[...terrain,...scene.boxes];
     const vertices=this._groundVertices(game,terrain).slice();
-    const hurt=new Set([...(game.entities||[]),...(game.enemies||[])].filter(e=>e.hurtTime>0).map(e=>e.id));
+    const hurt=new Set((game.entities||[]).filter(e=>e.hurtTime>0).map(e=>e.id));
     for(const box of scene.boxes)this._boxVertices(vertices,hurt.has(box.id)?{...box,tint:[1.4,1.24,1.06]}:box,hoverId!=null&&box.id===hoverId);
     for(const detail of this._surfaceDetails(game,scene.boxes,hoverId))this._boxVertices(vertices,detail);
     for(const part of this._avatar(game))this._boxVertices(vertices,part);
@@ -578,9 +635,9 @@ class LettercraftView {
       ctx.font='700 '+Math.round(s*.65)+'px "Noto Sans Thai",Tahoma,sans-serif';
       ctx.fillText(p.item.kind==='tool'?({axe:'🪓',pickaxe:'⛏',sword:'⚔'}[p.item.tool]||'⚒'):this._displayChar(p.item.char),p.x,p.y+1);
       if(complete) {ctx.font='700 11px Tahoma,sans-serif';ctx.fillStyle='#163b2b';ctx.fillRect(p.x-26,p.y+s/2+5,52,17);ctx.fillStyle='#dcecc1';ctx.fillText('ครบแล้ว',p.x,p.y+s/2+14);}
-      if(Number.isFinite(p.item.hp)&&(p.item.kind==='enemy'||p.item.hp<p.item.maxHp)) {
+      if(Number.isFinite(p.item.hp)&&p.item.hp<p.item.maxHp) {
         ctx.fillStyle='#203133';ctx.fillRect(p.x-s/2,p.y-s/2-11,s,5);
-        ctx.fillStyle=p.item.kind==='enemy'?'#ffad82':'#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
+        ctx.fillStyle='#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
       }
     }
     ctx.globalAlpha=1;
@@ -600,7 +657,6 @@ class LettercraftView {
       ctx.strokeStyle='#ffe481';ctx.beginPath();
       ctx.arc(x,y,24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,game.collecting.elapsed/3));ctx.stroke();
     }
-    if(game.invulnerable>0) {ctx.strokeStyle='rgba(193,65,43,'+Math.min(.5,game.invulnerable*.35)+')';ctx.lineWidth=18;ctx.strokeRect(0,0,this.width,this.height);}
   }
 
   _particles(game,dt,boxes) {

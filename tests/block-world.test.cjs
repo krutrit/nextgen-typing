@@ -53,7 +53,7 @@ test('terrain is stepped, remains walkable and keeps the spawn area level',()=>{
 test('animal bodies block walking while animals may still wander around their own footprint',()=>{
  const g=fixture();g.entities=[{id:999,kind:'animal',char:'a',x:11.5,y:10.5,homeX:11.5,homeY:10.5,hp:3,maxHp:3,wander:0,stun:0}];
  g.move(g.player,3,0);assert.ok(g.player.x<10.84);
- g.player.x=5;g.player.y=5;const y=g.entities[0].y;advance(g,.2);assert.notEqual(g.entities[0].y,y);
+ g.player.x=5;g.player.y=5;const a=g.entities[0],before={x:a.x,y:a.y};advance(g,.2);assert.ok(Math.hypot(a.x-before.x,a.y-before.y)>.01);
 });
 test('a successful attack does not snap camera yaw or pitch to object center',()=>{
  const g=fixture();g.player.angle=.2;g.player.pitch=-.4;g.player.facing=2;g.attack(999);
@@ -100,19 +100,8 @@ test('tools accelerate attacks but collection stays three seconds',()=>{
  advance(g,0.46);g.attack(999);assert.equal(g.entities.length,0);
  g.player.x=11.5;g.keyDown('KeyA','a');advance(g,1.6);assert.equal(g.collected,0);advance(g,1.41);assert.equal(g.collected,1);
 });
-test('five separate hits lose; invulnerability prevents repeat contact',()=>{
- const g=fixture();g.enemies=[{id:7,kind:'enemy',char:'a',x:10.5,y:10.5,hp:4,maxHp:4,stun:0}];
- g.update(0.01);assert.equal(g.hearts,4);g.update(0.05);assert.equal(g.hearts,4);
- for(let i=0;i<4;i++){g.invulnerable=0;g.enemies[0].attackCooldown=0;g.enemies[0].x=g.player.x;g.enemies[0].y=g.player.y;g.update(0.01);}
- assert.equal(g.hearts,0);assert.equal(g.status,'lost');
-});
-test('lethal damage takes priority over collecting the last letter',()=>{
- const g=fixture();drop(g);g.keyDown('KeyA','a');advance(g,2.99);g.hearts=1;
- g.enemies=[{id:7,kind:'enemy',char:'a',x:g.player.x,y:g.player.y,hp:4,maxHp:4,stun:0}];
- g.update(0.05);assert.equal(g.status,'lost');assert.equal(g.collected,0);
-});
-test('inactive time counts toward five minutes but cannot collect or damage',()=>{
- const g=fixture();drop(g);g.keyDown('KeyA','a');g.update(200,false);assert.equal(g.collected,0);assert.equal(g.hearts,5);
+test('inactive time counts toward five minutes but cannot collect',()=>{
+ const g=fixture();drop(g);g.keyDown('KeyA','a');g.update(200,false);assert.equal(g.collected,0);
  g.update(100,false);assert.equal(g.status,'lost');assert.equal(g.remaining,0);g.attack(999);assert.equal(g.entities[0].hp,4);
 });
 test('timeout takes priority over last collectible',()=>{
@@ -149,17 +138,6 @@ test('every quest letter has reachable spare sources across seeds',()=>{
  }
 });
 test('empty lessons cannot start an unwinnable round',()=>{const g=game(' \n\t');assert.equal(g.status,'invalid');assert.equal(g.goal,0);});
-test('monsters spawn after twenty seconds away from player and never exceed three',()=>{
- const g=game();g.nextSpawn=20;advance(g,19.9);assert.equal(g.enemies.length,0);
- advance(g,0.15);assert.equal(g.enemies.length,1);
- assert.ok(Math.hypot(g.enemies[0].x-g.player.x,g.enemies[0].y-g.player.y)>5.8);
- g.invulnerable=999;advance(g,100);assert.equal(g.enemies.length,3);
-});
-test('monsters route around a solid wall and reach the player',()=>{
- const g=fixture();g.entities=[9.5,10.5,11.5].map((y,i)=>({id:90+i,kind:'rock',char:'a',x:12.5,y,hp:4,maxHp:4}));
- g.enemies=[{id:7,kind:'enemy',char:'a',x:14.5,y:10.5,hp:4,maxHp:4,stun:0}];
- advance(g,7);assert.ok(g.hearts<5,'enemy should find a path around wall');
-});
 test('tool pickups equip automatically, upgrade once per drop and cap at crystal',()=>{
  const g=fixture();g.entities=[];
  for(let i=0;i<4;i++){g.drops.push({id:600+i,kind:'tool',tool:'sword',x:g.player.x,y:g.player.y});advance(g,0.05);}

@@ -103,7 +103,8 @@ test('held pickaxe, axe and sword have distinct visible geometry and upgraded ma
  const weapons=[];
  for(const tool of ['pickaxe','axe','sword']) {g.activeTool=tool;const parts=v._avatar(g).filter(b=>b.part.startsWith('held'));
   assert.ok(parts.length>=4,'tools need readable handles, metal and shaped edges');
-  assert.ok(parts.some(b=>b.max.y>.65),'weapon silhouette must clear the body at rest');
+  const world=parts.flatMap(b=>[View.transformPoint(b.min,b.transform),View.transformPoint(b.max,b.transform)]);
+  assert.ok(world.some(p=>p.x>g.player.x+.63),'weapon head must extend ahead of the body');
   const out=[];for(const b of parts)v._boxVertices(out,b);weapons.push(out);
  }
  assert.notDeepEqual(weapons[0],weapons[1]);assert.notDeepEqual(weapons[1],weapons[2]);
@@ -114,7 +115,10 @@ test('held pickaxe, axe and sword have distinct visible geometry and upgraded ma
 test('every weapon component is physically connected to its grip without floating gaps',()=>{
  const v=view(),g=game();
  for(const tool of ['pickaxe','axe','sword']) {
-  g.activeTool=tool;const parts=v._avatar(g).filter(b=>b.part==='rightHand'||b.part.startsWith('held'));
+  g.activeTool=tool;const rig=v._avatar(g),hand=rig.find(b=>b.part==='rightHand');
+  const parts=rig.filter(b=>b.part.startsWith('held'));
+  const grip=parts[0].transform,handCenter=View.transformPoint({x:(hand.min.x+hand.max.x)/2,y:(hand.min.y+hand.max.y)/2,z:(hand.min.z+hand.max.z)/2},hand.transform);
+  close(grip.x,handCenter.x);close(grip.y,handCenter.y);close(grip.z,handCenter.z);
   const seen=new Set([0]);for(let pass=0;pass<parts.length;pass++)for(let i=0;i<parts.length;i++)for(const j of [...seen]) {
    if(['x','y','z'].every(a=>parts[i].min[a]<=parts[j].max[a]+.001&&parts[i].max[a]>=parts[j].min[a]-.001))seen.add(i);
   }
@@ -126,6 +130,16 @@ test('walking support offset is applied only once to the shared hand and weapon 
  const parts=v._avatar(g),left=parts.find(b=>b.part==='leftHand'),right=parts.find(b=>b.part==='rightHand');
  assert.ok(Math.abs(left.transform.z-right.transform.z)<1e-8,'weapon arm must not accumulate the foot correction for each component');
 });
+test('shoulder, elbow, forearm and wrist stay connected through turns and attack phases',()=>{
+ const v=view(),g=game();Object.assign(g.player,{z:.75,moving:true,swingDuration:.22});v.time=.16;
+ for(const tool of ['pickaxe','axe','sword'])for(const facing of [0,.7,Math.PI])for(const swing of [0,.05,.11,.2]) {
+  g.activeTool=tool;Object.assign(g.player,{facing,swing});
+  const rig=v._avatar(g),upper=rig.find(b=>b.part==='rightArm'),lower=rig.find(b=>b.part==='rightForearm'),hand=rig.find(b=>b.part==='rightHand'),grip=rig.find(b=>b.part==='heldHandle').transform;
+  const end=b=>View.transformPoint({x:0,y:0,z:b.max.z},b.transform),start=b=>View.transformPoint({x:0,y:0,z:0},b.transform);
+  const center=View.transformPoint({x:(hand.min.x+hand.max.x)/2,y:(hand.min.y+hand.max.y)/2,z:(hand.min.z+hand.max.z)/2},hand.transform);
+  for(const axis of ['x','y','z']) {close(end(upper)[axis],start(lower)[axis]);close(end(lower)[axis],center[axis]);close(grip[axis],center[axis]);}
+ }
+});
 test('tool-specific attacks animate the hand and attached weapon and settle back to rest',()=>{
  const v=view(),g=game();g.player.swingDuration=.22;
  const snapshots=[];
@@ -133,8 +147,11 @@ test('tool-specific attacks animate the hand and attached weapon and settle back
   const render=()=>{const out=[];for(const b of v._avatar(g).filter(b=>b.part.startsWith('held')||b.part==='rightHand'))v._boxVertices(out,b);return out;};
   const rest=render();g.player.swing=.11;const attack=render();assert.notDeepEqual(attack,rest);
   const rig=v._avatar(g),hand=rig.find(b=>b.part==='rightHand');
-  for(const b of rig.filter(b=>b.part.startsWith('held')))assert.deepEqual(b.transform,hand.transform,'tool pieces must follow the same grip transform');
-  snapshots.push(hand.transform);g.player.swing=0;assert.deepEqual(render(),rest);
+  const grip=rig.find(b=>b.part==='heldHandle').transform;
+  for(const b of rig.filter(b=>b.part.startsWith('held')))assert.equal(b.transform,grip,'tool pieces must share the wrist grip transform');
+  const center=View.transformPoint({x:(hand.min.x+hand.max.x)/2,y:(hand.min.y+hand.max.y)/2,z:(hand.min.z+hand.max.z)/2},hand.transform);
+  close(center.x,grip.x);close(center.y,grip.y);close(center.z,grip.z);
+  snapshots.push(grip);g.player.swing=0;assert.deepEqual(render(),rest);
  }
  assert.notDeepEqual(snapshots[0],snapshots[1]);assert.notDeepEqual(snapshots[1],snapshots[2]);
  assert.ok(Math.abs(snapshots[2].twist)>.1,'sword must sweep across the body');
@@ -190,20 +207,30 @@ test('a nearby drop plaque and its progress ring stay above the footer',()=>{
  assert.ok(label,'nearby drop letter must remain visible above HUD');
  assert.ok(label.y+label.size*.72<720,'the full collection ring must clear the HUD');
 });
-test('enemy world geometry reacts to walking, attack and hurt without replacing its identity',()=>{
- const v=view(),g=game();const e={id:44,kind:'enemy',char:'a',x:6,y:5,hp:4,maxHp:4};g.enemies=[e];
- const rest=v._scene(g,camera).boxes;e.moving=true;v.time=.2;const walk=v._scene(g,camera).boxes;assert.notDeepEqual(walk,rest);
- e.attackTime=.18;const attack=v._scene(g,camera).boxes;assert.notDeepEqual(attack,walk);
- e.hurtTime=.2;const hurt=v._scene(g,camera).boxes;assert.notDeepEqual(hurt,attack);assert.ok(hurt.every(b=>b.id===44));
-});
-test('enemy facial features remain outside the head during diagonal pursuit',()=>{
+test('five species have distinct anatomy and feet follow explicit world terrain contacts',()=>{
  const v=view(),g=game();
- for(const angle of [0,Math.PI/4,Math.PI/2,Math.PI*3/4,Math.PI]) {
-  g.enemies=[{id:44,x:6,y:5,angle,char:'a'}];
-  const face=v._scene(g,camera).boxes.filter(b=>b.material===10);
-  assert.equal(face.length,3);
-  for(const b of face)assert.ok(b.max.x>=6+.38||b.min.x<=6-.38||b.max.y>=5+.38||b.min.y<=5-.38,'eyes and mouth must not be buried inside the head');
+ for(const [species,unique] of [['pig','nostril'],['cow','cowPatch'],['goat','beard'],['sheep','fleece'],['chicken','comb']]) {
+  const count=species==='chicken'?2:4,e={id:44,kind:'animal',species,x:6,y:5,z:.3,angle:.7,feet:Array.from({length:count},(_,i)=>({x:6+(i%2)*.25,y:5+Math.floor(i/2)*.3,z:i*.1,planted:true}))};g.entities=[e];
+  const boxes=v._scene(g,camera).boxes;assert.ok(boxes.some(b=>b.part===unique));assert.ok(boxes.every(b=>b.id===44));
+  assert.equal(boxes.filter(b=>b.part.startsWith('animalFoot')).length,count);
+  for(let i=0;i<count;i++) {
+   const b=boxes.find(b=>b.part==='animalFoot'+i),bottom=View.transformPoint({x:0,y:0,z:0},b.transform);
+   close(bottom.x,e.feet[i].x);close(bottom.y,e.feet[i].y);close(bottom.z,e.feet[i].z);
+   const lower=boxes.find(b=>b.part==='animalLowerLeg'+i),end=View.transformPoint({x:0,y:0,z:lower.max.z},lower.transform);
+   close(end.x,bottom.x);close(end.y,bottom.y);close(end.z,bottom.z+.055);
+  }
+  const rest=v._animal(g,e);v.time+=1;assert.deepEqual(v._animal(g,e),rest,'clock alone must not move animal geometry');
+  e.moving=true;e.gait=.2;assert.notDeepEqual(v._animal(g,e),rest);
  }
+});
+test('rotated animal geometry uses exact local-space rays for targeting and occlusion',()=>{
+ const v=view(),g=game(),e={id:44,kind:'animal',species:'cow',x:6,y:5,z:0,angle:Math.PI/4};g.entities=[e];
+ const boxes=v._scene(g,camera).boxes,body=boxes.find(b=>b.part==='animalBody');
+ const origin=View.transformPoint({x:-3,y:0,z:.7},body.transform),direction={x:Math.cos(e.angle),y:Math.sin(e.angle),z:0};
+ const hit=v._nearest(origin,direction,boxes);assert.equal(hit.box.id,44);
+ close(View.rayDescriptor(origin,direction,body),3-body.max.x);
+ const miss=View.transformPoint({x:-3,y:body.max.y+.02,z:.7},body.transform);
+ assert.equal(View.rayDescriptor(miss,direction,body),null);
 });
 test('damage produces surface cracks and target frame follows the main cube rather than ore',()=>{
  const v=view(),g=game();

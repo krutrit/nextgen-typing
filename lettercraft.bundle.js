@@ -1,18 +1,25 @@
 /* Lettercraft simulation: no browser dependencies. Time is seconds; positions are map tiles. */
 class LettercraftGame {
+    static animals = {
+        pig: {radius:.48,height:.95,stanceX:.28,stanceY:.21,legHeight:.28,bodyLength:.72,bodyWidth:.5,bodyHeight:.4,speed:2.3},
+        cow: {radius:.56,height:1.3,stanceX:.34,stanceY:.25,legHeight:.48,bodyLength:.88,bodyWidth:.58,bodyHeight:.5,speed:2},
+        goat: {radius:.48,height:1.22,stanceX:.28,stanceY:.20,legHeight:.44,bodyLength:.70,bodyWidth:.44,bodyHeight:.4,speed:2.7},
+        sheep: {radius:.50,height:1.08,stanceX:.28,stanceY:.23,legHeight:.32,bodyLength:.78,bodyWidth:.6,bodyHeight:.48,speed:2.2},
+        chicken: {radius:.30,height:.78,stanceX:0,stanceY:.13,legHeight:.24,bodyLength:.40,bodyWidth:.34,bodyHeight:.31,speed:3}
+    };
     constructor(text, rng = Math.random) {
         this.rng = rng; this.size = 32; this.id = 1;
         // angle/pitch describe orbit orientation; facing belongs to the body.
         this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.32, facing: 0, moving: false, running: false, swing: 0 };
         this.cameraDistance = 4.4;
         Object.assign(this.player, { z: this.heightAt(16.5,16.5), vz: 0, grounded: true, landing: 0, swingDuration: .22 });
-        this.hearts = 5; this.invulnerable = 0; this.elapsed = 0;
+        this.elapsed = 0;
         this.status = 'ready'; this.reason = ''; this.goal = 0; this.collected = 0;
         this.goals = Object.create(null); this.inventory = Object.create(null);
         this.entities = []; this.enemies = []; this.drops = []; this.events = [];
         this.tools = { pickaxe: 0, axe: 0, sword: 0 }; this.firstPickaxe = false;
         this.keys = new Map(); this.blocked = new Set(); this.collecting = null;
-        this.cooldown = 0; this.nextSpawn = 20; this.flow = null; this.flowTime = 0;
+        this.cooldown = 0;
         this.message = ''; this.messageTime = 0; this.warned = false;
         const chars = [...new Set(Array.from(String(text)).filter(c => c.length === 1 && /[\p{L}\p{N}\p{M}\p{P}\p{S}]/u.test(c)))];
         for (let i = chars.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [chars[i], chars[j]] = [chars[j], chars[i]]; }
@@ -29,6 +36,11 @@ class LettercraftGame {
         sites.forEach((p, i) => {
             const kind = ['rock', 'tree', 'animal'][i % 3], hp = kind === 'animal' ? 3 : 4;
             this.entities.push({ id: this.id++, kind, char: quest[i % quest.length], ...p, homeX: p.x, homeY: p.y, hp, maxHp: hp, stun: 0, wander: rng() * 6.28 });
+            if(kind==='animal') {
+                const e=this.entities[this.entities.length-1];
+                Object.assign(e,{species:Object.keys(LettercraftGame.animals)[Math.floor(i/3)%5],angle:rng()*Math.PI*2,z:this.heightAt(e.x,e.y),vz:0,grounded:true,gait:0,state:'idle',moving:false,wait:rng()*2});
+                this.animalFeet(e,0);
+            }
         });
     }
     get remaining() { return Math.max(0, 300 - this.elapsed); }
@@ -102,14 +114,15 @@ class LettercraftGame {
         if (Number.isFinite(dx) && Number.isFinite(dy) && Math.hypot(dx, dy) > 0.08) this.player.angle = Math.atan2(dy, dx);
     }
     isFree(x, y, radius = 0.27, ignoreId = null) {
-        if (x < 0.5 || y < 0.5 || x > this.size - 0.5 || y > this.size - 0.5) return false;
-        return !this.entities.some(e => e.id !== ignoreId && Math.abs(x - e.x) < radius + 0.4 && Math.abs(y - e.y) < radius + 0.4);
+        const edge=Math.max(.5,radius);
+        if (x < edge || y < edge || x > this.size - edge || y > this.size - edge) return false;
+        return !this.entities.some(e => e.id !== ignoreId && Math.abs(x - e.x) < radius + (e.kind==='animal'?this.animalProfile(e).radius:.4) && Math.abs(y - e.y) < radius + (e.kind==='animal'?this.animalProfile(e).radius:.4));
     }
     move(body, dx, dy, radius = 0.27) {
         // Small substeps prevent tunnelling during knockback and slow frames.
         const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.15));
         for (let i = 0; i < steps; i++) {
-            const free=(x,y)=>body===this.player?this.playerCanMove(x,y,radius):this.isFree(x,y,radius,body.id);
+            const free=(x,y)=>body===this.player?this.playerCanMove(x,y,radius):this.isFree(x,y,radius,body.id)&&this.heightAt(x,y)-this.heightAt(body.x,body.y)<=.26;
             if (free(body.x + dx / steps, body.y)) body.x += dx / steps;
             if (free(body.x, body.y + dy / steps)) body.y += dy / steps;
         }
@@ -117,9 +130,10 @@ class LettercraftGame {
     collisionBoxes() {
         const boxes=[];
         for (const e of this.entities) {
-            const z=this.heightAt(e.x,e.y), box=(r,bottom,top)=>boxes.push({id:e.id,x:e.x,y:e.y,r,bottom:z+bottom,top:z+top});
+            const z=e.kind==='animal'&&Number.isFinite(e.z)?e.z:this.heightAt(e.x,e.y), box=(r,bottom,top)=>boxes.push({id:e.id,x:e.x,y:e.y,r,bottom:z+bottom,top:z+top});
             if(e.kind==='tree') {box(.4,0,1.7);box(.825,1.65,2.45);box(.64,2.45,3);}
-            else box(.4,0,e.kind==='rock'?1.02:1.23);
+            else if(e.kind==='animal'){const p=this.animalProfile(e);box(p.radius,0,p.height);}
+            else box(.4,0,1.02);
         }
         return boxes;
     }
@@ -156,7 +170,7 @@ class LettercraftGame {
         if (this.status !== 'playing') return false;
         this.cancelCollection();
         if (this.cooldown > 0.00001) return false;
-        const e = [...this.entities, ...this.enemies].find(o => o.id === id);
+        const e = this.entities.find(o => o.id === id);
         if (!e) { this.player.swingDuration = this.player.swing = 0.2; this.cooldown = 0.25; return false; }
         if (Math.hypot(e.x - this.player.x, e.y - this.player.y) > 1.85) { this.say('เดินเข้าไปใกล้อีกนิด'); return false; }
         if (!this.lineClear(this.player, e, e.id)) { this.say('มีสิ่งกีดขวางอยู่ข้างหน้า'); return false; }
@@ -164,50 +178,115 @@ class LettercraftGame {
         const level = this.tools[tool];
         this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swingDuration = this.player.swing = 0.22; this.activeTool = tool;
         this.player.facing = Math.atan2(e.y-this.player.y, e.x-this.player.x);
-        e.hp -= level + 1; e.stun = e.kind === 'enemy' ? 1.25 : 0.8;
+        e.hp -= level + 1; e.stun = 0.8;
+        if(e.kind==='animal'){e.fleeing=true;e.safeTime=0;e.state='hurt';e.path=[];e.repath=0;}
         e.hurtTime=.24;
         this.event('hit', e, { damage: level+1 });
         if (e.hp <= 0) {
-            this.entities = this.entities.filter(o => o.id !== id); this.enemies = this.enemies.filter(o => o.id !== id);
+            this.entities = this.entities.filter(o => o.id !== id);
             this.drops.push({ id: this.id++, kind: 'letter', char: e.char, x: e.x, y: e.y });
             if ((e.kind === 'rock' && !this.firstPickaxe) || this.rng() < 0.25) {
                 this.firstPickaxe = this.firstPickaxe || e.kind === 'rock';
                 this.drops.push({ id: this.id++, kind: 'tool', tool, x: e.x + 0.18, y: e.y + 0.18 });
             }
-            this.event('break', e, { char: e.char }); this.flowTime = 0;
-        } else if (e.kind === 'enemy') {
-            const dx = e.x - this.player.x, dy = e.y - this.player.y, len = Math.hypot(dx, dy) || 1;
-            this.move(e, dx / len * 0.65, dy / len * 0.65);
+            this.event('break', e, { char: e.char });
         }
         return true;
     }
-    buildFlow() {
-        const n = this.size, distances = new Int16Array(n * n).fill(-1);
-        const x = Math.floor(this.player.x), y = Math.floor(this.player.y), queue = [y * n + x];
-        distances[queue[0]] = 0;
-        for (let i = 0; i < queue.length; i++) {
-            const cell = queue[i], cx = cell % n, cy = Math.floor(cell / n);
-            for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-                const nx = cx + dx, ny = cy + dy, next = ny * n + nx;
-                if (nx >= 0 && ny >= 0 && nx < n && ny < n && distances[next] < 0 && this.isFree(nx + 0.5, ny + 0.5)) {
-                    distances[next] = distances[cell] + 1; queue.push(next);
-                }
+    animalProfile(e) { return LettercraftGame.animals[e.species] || LettercraftGame.animals.sheep; }
+    animalAnchors(e) {
+        const p=this.animalProfile(e),c=Math.cos(e.angle||0),s=Math.sin(e.angle||0),feet=[];
+        for(const x of p.stanceX?[-p.stanceX,p.stanceX]:[0])for(const y of [-p.stanceY,p.stanceY])feet.push({x:e.x+x*c-y*s,y:e.y+x*s+y*c});
+        return feet;
+    }
+    animalFeet(e,dt) {
+        const anchors=this.animalAnchors(e),stride=this.animalProfile(e).legHeight*1.65;
+        if(!e.feet)e.feet=anchors.map(p=>({...p,z:this.heightAt(p.x,p.y),planted:true,cycle:-1}));
+        for(let i=0;i<anchors.length;i++) {
+            const f=e.feet[i],a=anchors[i],cycle=(e.gait||0)/stride+([0,.5,.5,0][i]),phase=cycle%1;
+            if(e.grounded===false){Object.assign(f,a,{z:Math.max(this.heightAt(a.x,a.y),e.z),planted:false,cycle:-1});continue;}
+            if(!e.moving){
+                // Settle a lifted foot where it stopped without sliding planted feet.
+                f.z=Math.max(this.heightAt(f.x,f.y),f.z-dt*1.8);f.planted=f.z<=this.heightAt(f.x,f.y)+.001;f.cycle=-1;continue;
+            }
+            if(phase<.55){f.cycle=Math.floor(cycle);f.planted=true;f.z=this.heightAt(f.x,f.y);continue;}
+            // Lead the hip by the remaining swing plus half the next stance.
+            // Without this prediction feet land behind a moving body and legs stretch.
+            if(f.cycle!==Math.floor(cycle)||f.planted){f.from={x:f.x,y:f.y,z:f.z};f.to={x:a.x+Math.cos(e.angle)*stride*.72,y:a.y+Math.sin(e.angle)*stride*.72};f.cycle=Math.floor(cycle);}
+            const t=phase<.55?1:Math.min(1,(phase-.55)/.45),ease=t*t*(3-2*t);
+            f.x=f.from.x+(f.to.x-f.from.x)*ease;f.y=f.from.y+(f.to.y-f.from.y)*ease;
+            const ground=this.heightAt(f.x,f.y),end=this.heightAt(f.to.x,f.to.y);
+            f.z=Math.max(ground,f.from.z+(end-f.from.z)*ease+Math.sin(t*Math.PI)*.16);f.planted=t>=.999;
+        }
+    }
+    animalVertical(e,dt) {
+        const ground=Math.max(...this.animalAnchors(e).map(f=>this.heightAt(f.x,f.y)));
+        if(!Number.isFinite(e.z))e.z=ground;
+        e.vz=e.vz||0;
+        if(ground>=e.z-.001){e.z=Math.min(ground,e.z+3*dt);e.vz=0;e.grounded=true;}
+        else {e.vz-=15*dt;e.z=Math.max(ground,e.z+e.vz*dt);e.grounded=e.z<=ground+.001;if(e.grounded)e.vz=0;}
+    }
+    animalSegmentFree(e,x,y) {
+        const r=this.animalProfile(e).radius,n=Math.max(1,Math.ceil(Math.hypot(x-e.x,y-e.y)/.15));
+        let height=this.heightAt(e.x,e.y);
+        for(let i=1;i<=n;i++){
+            const px=e.x+(x-e.x)*i/n,py=e.y+(y-e.y)*i/n,h=this.heightAt(px,py);
+            if(!this.isFree(px,py,r,e.id)||h-height>.26||Math.hypot(px-this.player.x,py-this.player.y)<r+.27)return false;
+            height=h;
+        }
+        return true;
+    }
+    buildFlow(body) {
+        // Reuse the original bounded grid search, now rooted at an animal and
+        // selecting a reachable escape/wander destination instead of a pursuer.
+        const n=this.size,start=Math.floor(body.y)*n+Math.floor(body.x),parents=new Int16Array(n*n).fill(-1),depth=new Uint8Array(n*n),queue=[start];
+        parents[start]=start;let best=start,bestScore=-Infinity;
+        const radius=this.animalProfile(body).radius,angle=body.wanderAngle||0;
+        for(let i=0;i<queue.length&&i<240;i++){
+            const cell=queue[i],cx=cell%n,cy=Math.floor(cell/n),x=cx+.5,y=cy+.5;
+            const score=body.fleeing?Math.hypot(x-this.player.x,y-this.player.y)-depth[cell]*.08:(x-body.x)*Math.cos(angle)+(y-body.y)*Math.sin(angle)-depth[cell]*.18;
+            if(cell!==start&&score>bestScore){bestScore=score;best=cell;}
+            if(depth[cell]>=7)continue;
+            for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+                const nx=cx+dx,ny=cy+dy,next=ny*n+nx;
+                if(nx<0||ny<0||nx>=n||ny>=n||parents[next]>=0||!this.isFree(nx+.5,ny+.5,radius,body.id))continue;
+                const origin=cell===start?body:{...body,x,y};
+                if(!this.animalSegmentFree(origin,nx+.5,ny+.5))continue;
+                parents[next]=cell;depth[next]=depth[cell]+1;queue.push(next);
             }
         }
-        this.flow = distances; this.flowTime = 0.5;
+        const path=[];for(let cell=best;cell!==start;cell=parents[cell])path.unshift({x:cell%n+.5,y:Math.floor(cell/n)+.5});
+        return path;
     }
-    spawnEnemy() {
-        if (this.enemies.length >= 3) return;
-        if (!this.flow) this.buildFlow();
-        const candidates = [];
-        for (let y = 1; y < this.size - 1; y++) for (let x = 1; x < this.size - 1; x++) {
-            const d = Math.hypot(x + 0.5 - this.player.x, y + 0.5 - this.player.y);
-            if (d >= 6 && d <= 7.8 && this.flow[y * this.size + x] >= 0) candidates.push({ x: x + 0.5, y: y + 0.5 });
+    updateAnimal(e,dt) {
+        const profile=this.animalProfile(e),distance=Math.hypot(e.x-this.player.x,e.y-this.player.y);
+        if(distance<3&&!e.fleeing){e.fleeing=true;e.path=[];e.repath=0;}
+        e.safeTime=e.fleeing&&distance>6?(e.safeTime||0)+dt:0;
+        if(e.safeTime>=2){e.fleeing=false;e.path=[];e.wait=.5;e.safeTime=0;}
+        e.stun=Math.max(0,(e.stun||0)-dt);e.moving=false;e.gait=e.gait||0;e.angle=e.angle||0;
+        e.state=e.stun?'hurt':e.fleeing?'flee':'idle';
+        if(!e.stun){
+            e.wait=Math.max(0,(e.wait||0)-dt);e.repath=Math.max(0,(e.repath||0)-dt);
+            if(e.fleeing||!e.wait){
+                if(!e.path?.length||!e.repath){
+                    if(!e.fleeing)e.wanderAngle=this.rng()*Math.PI*2;
+                    e.path=this.buildFlow(e);e.repath=e.fleeing?1.2:3;
+                }
+                const target=e.path[0];
+                if(target){
+                    if(!this.animalSegmentFree(e,target.x,target.y)){e.path=[];e.repath=0;}
+                    else {
+                        const dx=target.x-e.x,dy=target.y-e.y,len=Math.hypot(dx,dy),speed=e.fleeing?profile.speed:.55,step=Math.min(len,speed*dt),oldX=e.x,oldY=e.y;
+                        this.move(e,dx/(len||1)*step,dy/(len||1)*step,profile.radius);
+                        const moved=Math.hypot(e.x-oldX,e.y-oldY);e.moving=moved>.00001;e.gait+=moved;
+                        if(e.moving){const heading=Math.atan2(e.y-oldY,e.x-oldX);e.angle+=Math.atan2(Math.sin(heading-e.angle),Math.cos(heading-e.angle))*(1-Math.exp(-10*dt));e.state=e.fleeing?'flee':'wander';}
+                        else {e.path=[];e.repath=0;}
+                        if(len<=step+.001){e.path.shift();if(!e.path.length&&!e.fleeing)e.wait=1+this.rng()*2;}
+                    }
+                } else {e.wait=.3;e.repath=.3;}
+            }
         }
-        if (!candidates.length) return;
-        const p = candidates[Math.floor(this.rng() * candidates.length)], chars = Object.keys(this.goals);
-        this.enemies.push({ id: this.id++, kind: 'enemy', char: chars[Math.floor(this.rng() * chars.length)], ...p, hp: 4, maxHp: 4, stun: 0 });
-        this.say('มอนสเตอร์มาแล้ว! คลิกสู้ หรือเดินหลบ');
+        this.animalVertical(e,dt);this.animalFeet(e,dt);
     }
     finish(status, reason = '') { this.status = status; this.reason = reason; this.clearInput(); }
     update(seconds, active = true) {
@@ -216,7 +295,7 @@ class LettercraftGame {
         if (this.remaining <= 0.000001) { this.elapsed = 300; this.finish('lost', 'time'); return; }
         if (!active) { this.clearInput(); return; }
         const dt = Math.min(0.05, seconds);
-        this.invulnerable = Math.max(0, this.invulnerable - dt); this.cooldown = Math.max(0, this.cooldown - dt);
+        this.cooldown = Math.max(0, this.cooldown - dt);
         this.player.swing = Math.max(0, this.player.swing - dt); this.messageTime = Math.max(0, this.messageTime - dt);
         if (this.remaining <= 60 && !this.warned) { this.warned = true; this.event('warning', this.player); this.say('เหลือเวลาอีก 1 นาที!'); }
         const dir = this.direction();
@@ -231,53 +310,8 @@ class LettercraftGame {
             p.moving = Math.hypot(p.x-x,p.y-y) > .0001;
         }
         this.verticalStep(dt);
-        this.flowTime -= dt;
-        if (this.enemies.length && this.flowTime <= 0) this.buildFlow();
-        if (this.elapsed >= this.nextSpawn) { this.buildFlow(); this.spawnEnemy(); this.nextSpawn = this.elapsed + 25; }
         for (const e of this.entities) e.hurtTime=Math.max(0,(e.hurtTime||0)-dt);
-        for (const e of this.entities) if (e.kind === 'animal') {
-            e.stun = Math.max(0, (e.stun || 0) - dt);
-            if (!e.stun && Math.hypot(e.x - this.player.x, e.y - this.player.y) > 2) {
-                e.wander = (e.wander || 0) + dt * 0.6;
-                const x = e.homeX + Math.sin(e.wander) * 0.3, y = e.homeY + Math.cos(e.wander) * 0.3;
-                if (Number.isFinite(x) && this.isFree(x, y, 0.25, e.id)) { e.x = x; e.y = y; }
-            }
-        }
-        for (const e of this.enemies) {
-            e.stun = Math.max(0, (e.stun || 0) - dt);
-            e.hurtTime=Math.max(0,(e.hurtTime||0)-dt);
-            e.attackTime=Math.max(0,(e.attackTime||0)-dt);
-            e.attackCooldown=Math.max(0,(e.attackCooldown||0)-dt);
-            e.moving=false;e.state=e.stun?'hurt':e.attackTime?'attack':'idle';
-            const distance = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-            // Continue the existing flow-field pursuit; only distant idle enemies patrol.
-            if(!e.stun&&distance>=8) {
-                e.wanderTime=(e.wanderTime||0)-dt;
-                if(e.wanderTime<=0){e.wanderTime=1.5+this.rng()*2;e.wanderAngle=this.rng()*Math.PI*2;e.rest=this.rng()<.25;}
-                if(!e.rest){const x=e.x,y=e.y;e.angle=e.wanderAngle;this.move(e,Math.cos(e.angle)*.55*dt,Math.sin(e.angle)*.55*dt);e.moving=Math.hypot(e.x-x,e.y-y)>.0001;e.state='wander';}
-            }
-            if (!e.stun && !e.attackTime && distance < 8 && distance > 0.55) {
-                e.state='chase';
-                let target = this.player;
-                if (!this.lineClear(e, this.player, null)) {
-                    const cx = Math.floor(e.x), cy = Math.floor(e.y); let best = Infinity; target = null;
-                    for (const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]) {
-                        const nx = cx + dx, ny = cy + dy;
-                        if (nx < 0 || ny < 0 || nx >= this.size || ny >= this.size) continue;
-                        const score = this.flow ? this.flow[ny * this.size + nx] : -1;
-                        if (score >= 0 && score < best && this.isFree(nx + 0.5, ny + 0.5)) { best = score; target = { x: nx + 0.5, y: ny + 0.5 }; }
-                    }
-                }
-                if (target) { const dx = target.x - e.x, dy = target.y - e.y, len = Math.hypot(dx,dy) || 1; e.angle = Math.atan2(dy,dx);const x=e.x,y=e.y; this.move(e, dx / len * 2 * dt, dy / len * 2 * dt);e.moving=Math.hypot(e.x-x,e.y-y)>.0001; }
-            }
-            if (!e.stun && !e.attackCooldown && Math.hypot(e.x - this.player.x, e.y - this.player.y) < 0.7 && Math.abs(this.player.z-this.heightAt(e.x,e.y))<1.1 && this.lineClear(e,this.player,null) && this.invulnerable === 0) {
-                e.attackCooldown=1.05;e.attackTime=.3;e.state='attack';e.angle=Math.atan2(this.player.y-e.y,this.player.x-e.x);
-                this.hearts--; this.invulnerable = 2; this.cancelCollection(); this.event('hurt', this.player);
-                const dx = this.player.x - e.x || 0.3, dy = this.player.y - e.y, len = Math.hypot(dx,dy) || 1;
-                this.move(this.player, dx / len, dy / len);
-                if (this.hearts <= 0) { this.finish('lost', 'hearts'); return; }
-            }
-        }
+        for (const e of this.entities) if (e.kind === 'animal') this.updateAnimal(e,dt);
         for (const d of [...this.drops]) if (d.kind === 'tool' && this.player.grounded && Math.abs(this.player.z-this.heightAt(d.x,d.y))<.65 && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
             this.tools[d.tool] = Math.min(2, this.tools[d.tool] + 1); this.drops = this.drops.filter(o => o.id !== d.id);
             this.event('tool', d, { tool: d.tool }); this.say('ได้อุปกรณ์ใหม่! ฟันหรือขุดเร็วขึ้นแล้ว');
@@ -352,6 +386,34 @@ class LettercraftView {
     return far < 0 ? null : near;
   }
 
+  static transformPoint(point, t, inverse=false) {
+    if(!t)return {...point};
+    const p=t.pivot||{x:0,y:0,z:0},cs=Math.cos(t.swing||0),ss=Math.sin(t.swing||0),cy=Math.cos(t.yaw||0),sy=Math.sin(t.yaw||0),ct=Math.cos(t.twist||0),st=Math.sin(t.twist||0);
+    let {x,y,z}=point;
+    if(inverse) {
+      x-=t.x||0;y-=t.y||0;z-=t.z||0;
+      [x,y]=[x*cy+y*sy,-x*sy+y*cy];x-=p.x;y-=p.y;z-=p.z;
+      [y,z]=[y*ct+z*st,-y*st+z*ct];[x,z]=[x*cs-z*ss,x*ss+z*cs];
+      return {x:x+p.x,y:y+p.y,z:z+p.z};
+    }
+    x-=p.x;y-=p.y;z-=p.z;[x,z]=[x*cs+z*ss,-x*ss+z*cs];[y,z]=[y*ct-z*st,y*st+z*ct];x+=p.x;y+=p.y;z+=p.z;
+    return {x:(t.x||0)+x*cy-y*sy,y:(t.y||0)+x*sy+y*cy,z:(t.z||0)+z};
+  }
+
+  static rayDescriptor(origin,direction,box,padding=0) {
+    const o=LettercraftView.transformPoint(origin,box.transform,true);
+    const end=LettercraftView.transformPoint({x:origin.x+direction.x,y:origin.y+direction.y,z:origin.z+direction.z},box.transform,true);
+    const d={x:end.x-o.x,y:end.y-o.y,z:end.z-o.z},min={},max={};
+    for(const axis of ['x','y','z']){min[axis]=box.min[axis]-padding;max[axis]=box.max[axis]+padding;}
+    return LettercraftView.rayBox(o,d,min,max);
+  }
+
+  _segment(parts,name,a,b,width,material,id=null,tint=null) {
+    const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,length=Math.hypot(dx,dy,dz);
+    parts.push({part:name,id,material,tint,min:{x:-width/2,y:-width/2,z:0},max:{x:width/2,y:width/2,z:length},
+      transform:{x:a.x,y:a.y,z:a.z,yaw:Math.atan2(dy,dx),swing:Math.atan2(Math.hypot(dx,dy),dz),pivot:{x:0,y:0,z:0}}});
+  }
+
   resize() {
     const r = this.canvas.getBoundingClientRect();
     this.width = Math.max(1, r.width || this.canvas.clientWidth || 1);
@@ -390,8 +452,7 @@ class LettercraftView {
     const padding=.18,size=game.size||32;
     let limit=length;
     for(const box of [...this._terrain(game),...this._scene(game,anchor).boxes]) {
-      const min={},max={};for(const axis of ['x','y','z']){min[axis]=box.min[axis]-padding;max[axis]=box.max[axis]+padding;}
-      const hit=LettercraftView.rayBox(anchor,ray,min,max);
+      const hit=LettercraftView.rayDescriptor(anchor,ray,box,padding);
       if(hit!==null)limit=Math.min(limit,Math.max(.02,hit-.025));
     }
     for(const axis of ['x','y']) {
@@ -456,14 +517,18 @@ class LettercraftView {
         attackTwist=0;
       }
     }
-    const rightHandTransform={
-      x:p.x,y:p.y,z:feet,yaw,
-      pivot:shoulder,
-      swing:rightSway+attackSwing,
-      twist:attackTwist
-    };
-    parts.push({part:'rightArm',id:null,min:{x:-.12,y:.365-.1,z:.67+breath},max:{x:.12,y:.365+.1,z:1.14+breath},material:11,tint:[.56,.74,.7],transform:rightHandTransform});
-    parts.push({part:'rightHand',id:null,min:{x:-.115,y:.365-.1,z:.56+breath},max:{x:.115,y:.365+.1,z:.73+breath},material:15,tint:null,transform:rightHandTransform});
+    const root={x:p.x,y:p.y,z:feet,yaw},world=point=>LettercraftView.transformPoint(point,root);
+    const shoulderPoint={x:0,y:.365,z:1.08+breath};
+    const elbow={x:.15+Math.sin(attackSwing)*.12,y:.37+attackTwist*.08,z:.83+breath+attackSwing*.12};
+    const hand={x:.38+Math.sin(attackSwing)*.14,y:.37+attackTwist*.14,z:.82+breath+attackSwing*.27+rightSway*.025};
+    this._segment(parts,'rightArm',world(shoulderPoint),world(elbow),.21,11,null,[.56,.74,.7]);
+    this._segment(parts,'rightForearm',world(elbow),world(hand),.17,11,null,[.56,.74,.7]);
+    part('rightElbow',elbow.x,elbow.y,elbow.z-.09,.19,.19,.18,11,[.56,.74,.7]);
+    part('rightHand',hand.x,hand.y,hand.z-.095,.2,.19,.19,15);
+    // The wrist has its own grip frame. Every weapon piece is authored around
+    // this origin, so wrist rotation cannot separate the handle from the hand.
+    const handWorld=world(hand),gripYaw=yaw+attackTwist*.35;
+    const rightHandTransform={...handWorld,yaw:gripYaw,pivot:{x:0,y:0,z:0},swing:(tool==='sword'?.82:.72)-attackSwing*.65,twist:attackTwist*.35};
 
     const toolLvl=(game.tools&&game.tools[tool])||0;
     const toolMats=[
@@ -476,13 +541,13 @@ class LettercraftView {
       parts.push({part:name,id:null,min:{x:x-w/2,y:y-d/2,z},max:{x:x+w/2,y:y+d/2,z:z+h},material,tint,transform:rightHandTransform});
     };
 
-    const piece=(name,y,z,d,h,material=metal.mat,tint=metal.tint,w=.12,x=.075)=>heldPart(name,x,y,z+breath,w,d,h,material,tint);
+    const piece=(name,y,z,d,h,material=metal.mat,tint=metal.tint,w=.12,x=0)=>heldPart(name,x,y-.43,z-.64,w,d,h,material,tint);
     if(tool==='sword') {
       piece('heldHandle',.43,.46,.09,.35,4,[.72,.67,.61],.09);
       piece('heldPommel',.43,.40,.14,.09,8,[1,.8,.5]);
       piece('heldGuard',.43,.79,.5,.08,8,[1,.87,.65],.15);
       piece('heldBlade',.43,.86,.19,.64);
-      piece('heldRidge',.43,.88,.055,.60,7,[.9,1,1],.025,.01);
+      piece('heldRidge',.43,.88,.055,.60,7,[.9,1,1],.025,-.065);
       piece('heldTip',.43,1.50,.12,.14);
       piece('heldTipCap',.43,1.64,.055,.06);
     } else {
@@ -508,8 +573,62 @@ class LettercraftView {
       const tr=b.transform;bottom=Math.min(bottom,feet+tr.pivot.z-(x-tr.pivot.x)*Math.sin(tr.swing)+(z-tr.pivot.z)*Math.cos(tr.swing));
     }
     for(const transform of new Set(parts.map(b=>b.transform)))transform.z+=feet-bottom;
-    const recoil=Math.max(0,((game.invulnerable||0)-1.7)/.3);
-    if(recoil)for(const b of parts)if(!b.part.endsWith('Leg')&&!b.part.endsWith('Boot')) {b.min.x-=recoil*.08;b.max.x-=recoil*.08;b.tint=[1.25,.93,.85];}
+    return parts;
+  }
+
+  _animal(game,e) {
+    const defaults={pig:[.28,.21,.28,.72,.5,.4],cow:[.34,.25,.48,.88,.58,.5],goat:[.28,.2,.44,.7,.44,.4],sheep:[.28,.23,.32,.78,.6,.48],chicken:[0,.13,.24,.4,.34,.31]};
+    const species=defaults[e.species]?e.species:'sheep',v=defaults[species];
+    const profile=typeof game.animalProfile==='function'?game.animalProfile(e):{stanceX:v[0],stanceY:v[1],legHeight:v[2],bodyLength:v[3],bodyWidth:v[4],bodyHeight:v[5]};
+    const {stanceX,stanceY,legHeight,bodyLength,bodyWidth,bodyHeight}=profile;
+    const z=Number.isFinite(e.z)?e.z:this._height(game,e.x,e.y),root={x:e.x,y:e.y,z,yaw:e.angle||0},parts=[];
+    const pink=[1,.64,.68],cream=[.96,.93,.82],brown=[.7,.5,.32],white=[1,1,.96];
+    const coat=species==='pig'?pink:species==='goat'?brown:white;
+    const bob=e.moving?Math.sin((e.gait||0)*11)*.012:0;
+    const add=(name,x,y,h,w,d,height,material=13,tint=coat)=>parts.push({part:name,id:e.id,min:{x:x-w/2,y:y-d/2,z:h},max:{x:x+w/2,y:y+d/2,z:h+height},material,tint,transform:root});
+    add('animalBody',0,0,legHeight+bob,bodyLength,bodyWidth,bodyHeight);
+    let index=0;
+    for(const x of species==='chicken'?[0]:[-stanceX,stanceX])for(const y of [-stanceY,stanceY]) {
+      const nominal=LettercraftView.transformPoint({x,y,z:0},root);
+      const foot=e.feet&&e.feet[index]||{...nominal,z:e.grounded===false?z:this._height(game,nominal.x,nominal.y)};
+      const hip=LettercraftView.transformPoint({x,y,z:legHeight+.06+bob},root);
+      const ankle={x:foot.x,y:foot.y,z:foot.z+.055},width=species==='chicken'?.045:.085;
+      // Two-bone IK bends in the animal's forward plane while preserving the
+      // terrain contact. Very distant endpoints extend rather than detach.
+      const delta={x:ankle.x-hip.x,y:ankle.y-hip.y,z:ankle.z-hip.z},distance=Math.hypot(delta.x,delta.y,delta.z)||1e-6;
+      const unit={x:delta.x/distance,y:delta.y/distance,z:delta.z/distance};
+      const forward={x:-Math.cos(root.yaw),y:-Math.sin(root.yaw),z:0},dot=forward.x*unit.x+forward.y*unit.y;
+      const bend={x:forward.x-dot*unit.x,y:forward.y-dot*unit.y,z:-dot*unit.z},bendLength=Math.hypot(bend.x,bend.y,bend.z)||1;
+      const bone=Math.max(legHeight*.59,distance*.5),offset=Math.sqrt(Math.max(0,bone*bone-distance*distance*.25));
+      const knee={};for(const axis of ['x','y','z'])knee[axis]=(hip[axis]+ankle[axis])*.5+bend[axis]/bendLength*offset;
+      this._segment(parts,'animalUpperLeg'+index,hip,knee,width,13,e.id,species==='chicken'?[1,.69,.2]:coat);
+      this._segment(parts,'animalLowerLeg'+index,knee,ankle,width,13,e.id,species==='chicken'?[1,.69,.2]:coat);
+      parts.push({part:'animalFoot'+index,id:e.id,min:{x:-.07,y:-.06,z:0},max:{x:species==='chicken'?.13:.07,y:.06,z:.075},material:species==='chicken'?8:10,transform:{x:foot.x,y:foot.y,z:foot.z,yaw:root.yaw}});
+      index++;
+    }
+    const front=bodyLength*.43,headZ=legHeight+bodyHeight*.62+bob;
+    if(species==='chicken') {
+      add('chickenNeck',front,0,headZ,.19,.23,.24);add('chickenHead',front+.05,0,headZ+.13,.25,.27,.22);
+      add('beak',front+.23,0,headZ+.16,.15,.15,.08,8,[1,.8,.3]);
+      add('comb',front+.04,0,headZ+.35,.15,.075,.11,13,[.9,.2,.13]);
+      add('wattle',front+.17,0,headZ+.07,.065,.085,.13,13,[.85,.2,.16]);
+      for(const side of [-1,1])add('wing',-.03,side*.18,legHeight+.07,.26,.08,.19,13,cream);
+      add('tail',-.25,0,legHeight+.2,.18,.17,.24,13,cream);
+    } else {
+      const long=species==='goat'?.31:species==='cow'?.35:.28;
+      add('animalHead',front+.09,0,headZ,long,bodyWidth*.69,.29);
+      add('muzzle',front+long*.68,0,headZ+.02,.17,bodyWidth*.58,.15,13,species==='pig'?pink:cream);
+      for(const side of [-1,1]) {
+        add('ear',front+.02,side*bodyWidth*.44,headZ+.22,.17,.13,species==='pig'?.13:.075,13,species==='pig'?pink:coat);
+        if(species==='cow'||species==='goat')add('horn',front-.025,side*.13,headZ+.29,.07,.065,species==='goat'?.23:.14,13,cream);
+      }
+      if(species==='pig')for(const side of [-1,1])add('nostril',front+long*.68+.09,side*.07,headZ+.07,.012,.037,.035,10);
+      if(species==='cow')for(const side of [-1,1])add('cowPatch',-.12,side*(bodyWidth/2+.005),legHeight+.12,.28,.015,.24,10);
+      if(species==='goat')add('beard',front+.19,0,headZ-.09,.12,.12,.14,13,cream);
+      if(species==='sheep')for(const x of [-.24,0,.24])for(const side of [-1,1])add('fleece',x,side*.25,legHeight+.08,.29,.18,.35,6,white);
+      add('tail',-bodyLength/2-.05,0,legHeight+bodyHeight*.6,.17,.08,species==='pig'?.09:.18,13,coat);
+    }
+    for(const side of [-1,1])add('animalEye',front+.13,side*(species==='chicken'?.141:bodyWidth*.35+.007),headZ+(species==='chicken'?.25:.19),.065,.018,.065,10);
     return parts;
   }
 
@@ -519,7 +638,7 @@ class LettercraftView {
     const cube = (x, y, z, w, d, h, material, id = null, tint = null) => {
       boxes.push({ min: { x: x-w/2, y: y-d/2, z }, max: { x: x+w/2, y: y+d/2, z: z+h }, material, id, tint });
     };
-    for (const e of [...(game.entities || []), ...(game.enemies || []).map(e => ({ ...e, kind: 'enemy' }))]) {
+    for (const e of game.entities || []) {
       if (Math.hypot(e.x-camera.x, e.y-camera.y) > 28) continue;
       const z = this._height(game, e.x, e.y), x = e.x, y = e.y;
       let labelZ = z + 1.1;
@@ -535,31 +654,8 @@ class LettercraftView {
         cube(x+.1,y-.405,z+.58,.18,.025,.15,8,e.id);
         labelZ=z+1.45;
       } else if (e.kind === 'animal') {
-        for (const dx of [-.24,.24]) for (const dy of [-.24,.24]) cube(x+dx,y+dy,z,.16,.16,.4,4,e.id,[.6,.57,.6]);
-        cube(x,y,z+.35,.8,.8,.57,6,e.id);
-        cube(x+.22,y,z+.83,.44,.48,.4,9,e.id);
-        cube(x+.451,y-.13,z+1.07,.024,.12,.1,7,e.id);
-        cube(x+.465,y-.13,z+1.08,.026,.045,.065,10,e.id);
-        cube(x+.451,y+.13,z+1.07,.024,.12,.1,7,e.id);
-        cube(x+.465,y+.13,z+1.08,.026,.045,.065,10,e.id);
-        labelZ=z+1.43;
-      } else {
-        const a=Number.isFinite(e.angle)?e.angle:Math.PI,c=Math.cos(a),s=Math.sin(a);
-        const walk=e.moving?Math.sin(this.time*10)*.15:0,attack=Math.sin(Math.min(1,(e.attackTime||0)/.3)*Math.PI)*.35;
-        const bob=Math.sin(this.time*2+e.id)*.012,flash=e.hurtTime>0?[1.5,1.1,.82]:null;
-        for(const side of [-1,1]) {
-          cube(x-s*side*.22+c*walk*side,y+c*side*.22+s*walk*side,z+Math.max(0,walk*side)*.25,.28,.25,.35,5,e.id,flash||[.65,.85,.8]);
-          cube(x-s*side*.44+c*(attack-walk*side),y+c*side*.44+s*(attack-walk*side),z+.61+bob+attack*.25,.22,.22,.48,5,e.id,flash||[.85,1.05,.9]);
-        }
-        cube(x,y,z+.3+bob,.55,.68,.76,5,e.id,flash);
-        cube(x,y,z+1.06+bob,.74,.74,.53,5,e.id,flash||[1.15,1,.82]);
-        const face=(side,height,h)=>{
-          const dx=c*.38-s*side*.18,dy=s*.38+c*side*.18,scale=.38/Math.max(Math.abs(dx),Math.abs(dy));
-          cube(x+dx*scale,y+dy*scale,z+height+bob,.09,.09,h,10,e.id);
-        };
-        for(const side of [-1,1])face(side,1.34,.13);
-        face(0,1.17,.07);
-        labelZ=z+1.83;
+        const animal=this._animal(game,e);boxes.push(...animal);
+        labelZ=(Number.isFinite(e.z)?e.z:z)+(typeof game.animalProfile==='function'?game.animalProfile(e).height:1.3)+.24;
       }
       if (e.char) labels.push({ item:e, x, y, z:labelZ, drop:false });
     }
@@ -615,7 +711,7 @@ class LettercraftView {
   _nearest(origin, direction, boxes, limit = 44) {
     let distance=limit, box=null;
     for(const b of boxes) {
-      const hit=LettercraftView.rayBox(origin,direction,b.min,b.max);
+      const hit=LettercraftView.rayDescriptor(origin,direction,b);
       if(hit!==null && hit<distance) {distance=hit;box=b;}
     }
     return {distance,box};
@@ -735,17 +831,9 @@ class LettercraftView {
     const {min:a,max:c}=b;
     const corners=[[a.x,a.y,a.z],[c.x,a.y,a.z],[c.x,c.y,a.z],[a.x,c.y,a.z],[a.x,a.y,c.z],[c.x,a.y,c.z],[c.x,c.y,c.z],[a.x,c.y,c.z]];
     if(b.transform) {
-      const t=b.transform,p=t.pivot,cs=Math.cos(t.swing),ss=Math.sin(t.swing),cy=Math.cos(t.yaw),sy=Math.sin(t.yaw);
-      const twist=t.twist||0,ct=Math.cos(twist),st=Math.sin(twist);
       for(const corner of corners) {
-        const x=corner[0]-p.x,y=corner[1]-p.y,z=corner[2]-p.z;
-        let rx=x*cs+z*ss,rz=-x*ss+z*cs,ry=y;
-        if(twist) {
-          const ty=ry*ct-rz*st,tz=ry*st+rz*ct;
-          ry=ty;rz=tz;
-        }
-        rx+=p.x;ry+=p.y;rz+=p.z;
-        corner[0]=t.x+rx*cy-ry*sy;corner[1]=t.y+rx*sy+ry*cy;corner[2]=t.z+rz;
+        const point=LettercraftView.transformPoint({x:corner[0],y:corner[1],z:corner[2]},b.transform);
+        corner[0]=point.x;corner[1]=point.y;corner[2]=point.z;
       }
     }
     const quads=[[4,5,6,7],[0,3,2,1],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
@@ -787,7 +875,7 @@ class LettercraftView {
     const primary=new Map(),details=[];
     const volume=b=>(b.max.x-b.min.x)*(b.max.y-b.min.y)*(b.max.z-b.min.z);
     for(const box of boxes) if(box.id!=null&&(!primary.has(box.id)||volume(box)>volume(primary.get(box.id))))primary.set(box.id,box);
-    const items=new Map([...(game.entities||[]),...(game.enemies||[])].map(e=>[e.id,e]));
+    const items=new Map((game.entities||[]).map(e=>[e.id,e]));
     // Thin cuboids share the depth-tested batch; a small outward offset avoids
     // z-fighting. Decorative details never become ray or collision bodies.
     const segment=(from,to,width,material,detail)=>{
@@ -796,6 +884,7 @@ class LettercraftView {
       details.push({min,max,material,detail,id:null});
     };
     for(const [id,box] of primary) {
+      const detailStart=details.length;
       const a=box.min,b=box.max,item=items.get(id);
       if(id===hoverId) {
         const lo={x:a.x-.01,y:a.y-.01,z:a.z-.01},hi={x:b.x+.01,y:b.y+.01,z:b.z+.01};
@@ -807,6 +896,7 @@ class LettercraftView {
           }
         }
       }
+      for(let i=detailStart;i<details.length;i++)details[i].transform=box.transform;
       if(!item||!Number.isFinite(item.hp)||!Number.isFinite(item.maxHp)||item.maxHp<=0||item.hp>=item.maxHp)continue;
       const severity=1-Math.max(0,item.hp/item.maxHp);
       const paths=[[[.26,.12],[.44,.12],[.44,.36],[.62,.36],[.62,.6],[.78,.6],[.78,.84]],
@@ -817,6 +907,7 @@ class LettercraftView {
         const point=([pu,pv])=>({[normal]:(side<0?a[normal]:b[normal])+side*.006,[u]:a[u]+pu*(b[u]-a[u]),[v]:a[v]+pv*(b[v]-a[v])});
         for(const path of paths)for(let i=1;i<path.length;i++)segment(point(path[i-1]),point(path[i]),.005+severity*.006,10,'crack');
       }
+      for(let i=detailStart;i<details.length;i++)details[i].transform=box.transform;
     }
     return details;
   }
@@ -828,7 +919,7 @@ class LettercraftView {
     if(!this.camera||this.cameraGame!==game||this.cameraPlayer!==game.player)this.updateCamera(game,0);
     const scene=this._scene(game,this.camera),terrain=this._terrain(game),boxes=[...terrain,...scene.boxes];
     const vertices=this._groundVertices(game,terrain).slice();
-    const hurt=new Set([...(game.entities||[]),...(game.enemies||[])].filter(e=>e.hurtTime>0).map(e=>e.id));
+    const hurt=new Set((game.entities||[]).filter(e=>e.hurtTime>0).map(e=>e.id));
     for(const box of scene.boxes)this._boxVertices(vertices,hurt.has(box.id)?{...box,tint:[1.4,1.24,1.06]}:box,hoverId!=null&&box.id===hoverId);
     for(const detail of this._surfaceDetails(game,scene.boxes,hoverId))this._boxVertices(vertices,detail);
     for(const part of this._avatar(game))this._boxVertices(vertices,part);
@@ -876,9 +967,9 @@ class LettercraftView {
       ctx.font='700 '+Math.round(s*.65)+'px "Noto Sans Thai",Tahoma,sans-serif';
       ctx.fillText(p.item.kind==='tool'?({axe:'🪓',pickaxe:'⛏',sword:'⚔'}[p.item.tool]||'⚒'):this._displayChar(p.item.char),p.x,p.y+1);
       if(complete) {ctx.font='700 11px Tahoma,sans-serif';ctx.fillStyle='#163b2b';ctx.fillRect(p.x-26,p.y+s/2+5,52,17);ctx.fillStyle='#dcecc1';ctx.fillText('ครบแล้ว',p.x,p.y+s/2+14);}
-      if(Number.isFinite(p.item.hp)&&(p.item.kind==='enemy'||p.item.hp<p.item.maxHp)) {
+      if(Number.isFinite(p.item.hp)&&p.item.hp<p.item.maxHp) {
         ctx.fillStyle='#203133';ctx.fillRect(p.x-s/2,p.y-s/2-11,s,5);
-        ctx.fillStyle=p.item.kind==='enemy'?'#ffad82':'#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
+        ctx.fillStyle='#f6cb6a';ctx.fillRect(p.x-s/2,p.y-s/2-11,s*Math.max(0,p.item.hp/p.item.maxHp),5);
       }
     }
     ctx.globalAlpha=1;
@@ -898,7 +989,6 @@ class LettercraftView {
       ctx.strokeStyle='#ffe481';ctx.beginPath();
       ctx.arc(x,y,24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,game.collecting.elapsed/3));ctx.stroke();
     }
-    if(game.invulnerable>0) {ctx.strokeStyle='rgba(193,65,43,'+Math.min(.5,game.invulnerable*.35)+')';ctx.lineWidth=18;ctx.strokeRect(0,0,this.width,this.height);}
   }
 
   _particles(game,dt,boxes) {
@@ -1121,7 +1211,7 @@ var Lettercraft = {
         // Ray and camera follow the player even while the mouse stays still.
         this.aim(); this.renderHUD();
         for (const event of this.game.events) {
-            if (['hit','collect','tool','hurt','warning'].includes(event.kind) && state.isSoundOn) playSound(event.kind !== 'hurt');
+            if (['hit','collect','tool','warning'].includes(event.kind) && state.isSoundOn) playSound(true);
         }
         this.game.events.length = 0;
         if ((this.game.status === 'won' || this.game.status === 'lost') && this.panel !== 'result') this.showResult();
@@ -1131,8 +1221,6 @@ var Lettercraft = {
         const g = this.game, seconds = Math.ceil(g.remaining);
         this.el('lc-time').textContent = String(Math.floor(seconds / 60)).padStart(2,'0') + ':' + String(seconds % 60).padStart(2,'0');
         this.el('lc-time').classList.toggle('lc-urgent', seconds <= 60);
-        this.el('lc-hearts').textContent = '♥ '.repeat(g.hearts) + '♡ '.repeat(5-g.hearts);
-        this.el('lc-hearts').setAttribute('aria-label', 'หัวใจเหลือ ' + g.hearts + ' ดวง');
         this.el('lc-count').textContent = g.collected + ' / ' + g.goal;
         this.el('lc-mission-fill').style.width = (g.goal ? g.collected / g.goal * 100 : 0) + '%';
         const levels = ['ไม้', 'หิน ×2', 'คริสตัล ×3'];
@@ -1149,11 +1237,11 @@ var Lettercraft = {
                 item.classList.toggle('lc-collected', !g.needs(c)); item.title = 'ตัวอักษร ' + c; bag.append(item);
             }
         }
-        const selected = g.selectedDrop(), entity = [...g.entities,...g.enemies].find(e=>e.id===this.hoverId);
+        const selected = g.selectedDrop(), entity = g.entities.find(e=>e.id===this.hoverId);
         const hoveredDrop = g.drops.find(d => d.id === this.hoverId && d.kind === 'letter');
         let hint = 'WASD / ลูกศร เดิน • Space กระโดด • ล้อเมาส์ซูม • คลิกซ้ายขุดหรือฟัน';
         if (selected) hint = 'กด [ ' + this.displayChar(selected.char) + ' ] ค้าง 3 วินาทีเพื่อเก็บ' + (g.collecting ? ' · ' + Math.floor(g.collecting.elapsed/3*100) + '%' : ' · ใช้ลูกศรเดินออก');
-        else if (entity) hint = ({rock:'หิน',tree:'ต้นไม้',animal:'แกะบล็อก',enemy:'มอนสเตอร์'})[entity.kind] + ' [ ' + this.displayChar(entity.char) + ' ] · ' + (Math.hypot(entity.x-g.player.x,entity.y-g.player.y)>1.85?'เดินเข้าไปใกล้อีกนิด':'คลิกซ้ายเพื่อ'+(entity.kind==='rock'?'ขุด':'ฟัน')) + ' · ' + entity.hp + '/' + entity.maxHp;
+        else if (entity) hint = (entity.kind==='animal'?({pig:'หมู',cow:'วัว',goat:'แพะ',sheep:'แกะ',chicken:'ไก่'})[entity.species]:({rock:'หิน',tree:'ต้นไม้'})[entity.kind]) + ' [ ' + this.displayChar(entity.char) + ' ] · ' + (Math.hypot(entity.x-g.player.x,entity.y-g.player.y)>1.85?'เดินเข้าไปใกล้อีกนิด':'คลิกซ้ายเพื่อ'+(entity.kind==='rock'?'ขุด':'ฟัน')) + ' · ' + entity.hp + '/' + entity.maxHp;
         if ((hoveredDrop && !g.needs(hoveredDrop.char)) || (entity && !g.needs(entity.char))) hint = 'ตัวอักษร [ ' + this.displayChar((hoveredDrop || entity).char) + ' ] ครบแล้ว · สำรวจหาตัวที่ยังขาดในกระเป๋า';
         this.el('lc-context').textContent = hint;
         this.el('lc-toast').hidden = g.messageTime <= 0; this.el('lc-toast').textContent = g.message;
@@ -1161,12 +1249,11 @@ var Lettercraft = {
     },
     showResult() {
         const g = this.game, won = g.status === 'won';
-        this.showPanel('result', won ? 'ภารกิจสำเร็จ!' : g.reason === 'time' ? 'หมดเวลาแล้ว' : 'หัวใจหมดแล้ว');
+        this.showPanel('result', won ? 'ภารกิจสำเร็จ!' : 'หมดเวลาแล้ว');
         this.el('lc-result-icon').textContent = won ? '🏆' : '🌱';
         this.el('lc-result-message').textContent = won ? 'ยอดเยี่ยม! คุณเก็บตัวอักษรครบแล้ว' : 'คุณทำได้ดีแล้ว ลองสำรวจใหม่อีกครั้งนะ';
         this.el('lc-result-count').textContent = g.collected + ' / ' + g.goal;
         this.el('lc-result-time').textContent = Math.floor(g.elapsed/60) + ':' + String(Math.floor(g.elapsed%60)).padStart(2,'0');
-        this.el('lc-result-hearts').textContent = g.hearts + ' ♥';
         this.el('lc-next-button').hidden = !won;
         this.el('lc-next-button').textContent = state.lessonIndex >= curriculum[state.lang].length-1 ? 'จบหลักสูตร 🎉' : 'บทเรียนถัดไป →';
     },
@@ -1192,11 +1279,3 @@ var Lettercraft = {
         }
     }
 };
-function startMiniGame() {
-    if (state.userSettings && state.userSettings.enableMinigame === false) {
-        alert("ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้");
-        return;
-    }
-    Lettercraft.mount();
-}
-function handleGameInput(e) { Lettercraft.keyDown(e); }

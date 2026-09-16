@@ -1,18 +1,25 @@
 /* Lettercraft simulation: no browser dependencies. Time is seconds; positions are map tiles. */
 class LettercraftGame {
+    static animals = {
+        pig: {radius:.48,height:.95,stanceX:.28,stanceY:.21,legHeight:.28,bodyLength:.72,bodyWidth:.5,bodyHeight:.4,speed:2.3},
+        cow: {radius:.56,height:1.3,stanceX:.34,stanceY:.25,legHeight:.48,bodyLength:.88,bodyWidth:.58,bodyHeight:.5,speed:2},
+        goat: {radius:.48,height:1.22,stanceX:.28,stanceY:.20,legHeight:.44,bodyLength:.70,bodyWidth:.44,bodyHeight:.4,speed:2.7},
+        sheep: {radius:.50,height:1.08,stanceX:.28,stanceY:.23,legHeight:.32,bodyLength:.78,bodyWidth:.6,bodyHeight:.48,speed:2.2},
+        chicken: {radius:.30,height:.78,stanceX:0,stanceY:.13,legHeight:.24,bodyLength:.40,bodyWidth:.34,bodyHeight:.31,speed:3}
+    };
     constructor(text, rng = Math.random) {
         this.rng = rng; this.size = 32; this.id = 1;
         // angle/pitch describe orbit orientation; facing belongs to the body.
         this.player = { x: 16.5, y: 16.5, angle: 0, pitch: -0.32, facing: 0, moving: false, running: false, swing: 0 };
         this.cameraDistance = 4.4;
         Object.assign(this.player, { z: this.heightAt(16.5,16.5), vz: 0, grounded: true, landing: 0, swingDuration: .22 });
-        this.hearts = 5; this.invulnerable = 0; this.elapsed = 0;
+        this.elapsed = 0;
         this.status = 'ready'; this.reason = ''; this.goal = 0; this.collected = 0;
         this.goals = Object.create(null); this.inventory = Object.create(null);
         this.entities = []; this.enemies = []; this.drops = []; this.events = [];
         this.tools = { pickaxe: 0, axe: 0, sword: 0 }; this.firstPickaxe = false;
         this.keys = new Map(); this.blocked = new Set(); this.collecting = null;
-        this.cooldown = 0; this.nextSpawn = 20; this.flow = null; this.flowTime = 0;
+        this.cooldown = 0;
         this.message = ''; this.messageTime = 0; this.warned = false;
         const chars = [...new Set(Array.from(String(text)).filter(c => c.length === 1 && /[\p{L}\p{N}\p{M}\p{P}\p{S}]/u.test(c)))];
         for (let i = chars.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [chars[i], chars[j]] = [chars[j], chars[i]]; }
@@ -29,6 +36,11 @@ class LettercraftGame {
         sites.forEach((p, i) => {
             const kind = ['rock', 'tree', 'animal'][i % 3], hp = kind === 'animal' ? 3 : 4;
             this.entities.push({ id: this.id++, kind, char: quest[i % quest.length], ...p, homeX: p.x, homeY: p.y, hp, maxHp: hp, stun: 0, wander: rng() * 6.28 });
+            if(kind==='animal') {
+                const e=this.entities[this.entities.length-1];
+                Object.assign(e,{species:Object.keys(LettercraftGame.animals)[Math.floor(i/3)%5],angle:rng()*Math.PI*2,z:this.heightAt(e.x,e.y),vz:0,grounded:true,gait:0,state:'idle',moving:false,wait:rng()*2});
+                this.animalFeet(e,0);
+            }
         });
     }
     get remaining() { return Math.max(0, 300 - this.elapsed); }
@@ -102,14 +114,15 @@ class LettercraftGame {
         if (Number.isFinite(dx) && Number.isFinite(dy) && Math.hypot(dx, dy) > 0.08) this.player.angle = Math.atan2(dy, dx);
     }
     isFree(x, y, radius = 0.27, ignoreId = null) {
-        if (x < 0.5 || y < 0.5 || x > this.size - 0.5 || y > this.size - 0.5) return false;
-        return !this.entities.some(e => e.id !== ignoreId && Math.abs(x - e.x) < radius + 0.4 && Math.abs(y - e.y) < radius + 0.4);
+        const edge=Math.max(.5,radius);
+        if (x < edge || y < edge || x > this.size - edge || y > this.size - edge) return false;
+        return !this.entities.some(e => e.id !== ignoreId && Math.abs(x - e.x) < radius + (e.kind==='animal'?this.animalProfile(e).radius:.4) && Math.abs(y - e.y) < radius + (e.kind==='animal'?this.animalProfile(e).radius:.4));
     }
     move(body, dx, dy, radius = 0.27) {
         // Small substeps prevent tunnelling during knockback and slow frames.
         const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.15));
         for (let i = 0; i < steps; i++) {
-            const free=(x,y)=>body===this.player?this.playerCanMove(x,y,radius):this.isFree(x,y,radius,body.id);
+            const free=(x,y)=>body===this.player?this.playerCanMove(x,y,radius):this.isFree(x,y,radius,body.id)&&this.heightAt(x,y)-this.heightAt(body.x,body.y)<=.26;
             if (free(body.x + dx / steps, body.y)) body.x += dx / steps;
             if (free(body.x, body.y + dy / steps)) body.y += dy / steps;
         }
@@ -117,9 +130,10 @@ class LettercraftGame {
     collisionBoxes() {
         const boxes=[];
         for (const e of this.entities) {
-            const z=this.heightAt(e.x,e.y), box=(r,bottom,top)=>boxes.push({id:e.id,x:e.x,y:e.y,r,bottom:z+bottom,top:z+top});
+            const z=e.kind==='animal'&&Number.isFinite(e.z)?e.z:this.heightAt(e.x,e.y), box=(r,bottom,top)=>boxes.push({id:e.id,x:e.x,y:e.y,r,bottom:z+bottom,top:z+top});
             if(e.kind==='tree') {box(.4,0,1.7);box(.825,1.65,2.45);box(.64,2.45,3);}
-            else box(.4,0,e.kind==='rock'?1.02:1.23);
+            else if(e.kind==='animal'){const p=this.animalProfile(e);box(p.radius,0,p.height);}
+            else box(.4,0,1.02);
         }
         return boxes;
     }
@@ -156,7 +170,7 @@ class LettercraftGame {
         if (this.status !== 'playing') return false;
         this.cancelCollection();
         if (this.cooldown > 0.00001) return false;
-        const e = [...this.entities, ...this.enemies].find(o => o.id === id);
+        const e = this.entities.find(o => o.id === id);
         if (!e) { this.player.swingDuration = this.player.swing = 0.2; this.cooldown = 0.25; return false; }
         if (Math.hypot(e.x - this.player.x, e.y - this.player.y) > 1.85) { this.say('เดินเข้าไปใกล้อีกนิด'); return false; }
         if (!this.lineClear(this.player, e, e.id)) { this.say('มีสิ่งกีดขวางอยู่ข้างหน้า'); return false; }
@@ -164,50 +178,115 @@ class LettercraftGame {
         const level = this.tools[tool];
         this.cooldown = [0.6, 0.45, 0.3][level]; this.player.swingDuration = this.player.swing = 0.22; this.activeTool = tool;
         this.player.facing = Math.atan2(e.y-this.player.y, e.x-this.player.x);
-        e.hp -= level + 1; e.stun = e.kind === 'enemy' ? 1.25 : 0.8;
+        e.hp -= level + 1; e.stun = 0.8;
+        if(e.kind==='animal'){e.fleeing=true;e.safeTime=0;e.state='hurt';e.path=[];e.repath=0;}
         e.hurtTime=.24;
         this.event('hit', e, { damage: level+1 });
         if (e.hp <= 0) {
-            this.entities = this.entities.filter(o => o.id !== id); this.enemies = this.enemies.filter(o => o.id !== id);
+            this.entities = this.entities.filter(o => o.id !== id);
             this.drops.push({ id: this.id++, kind: 'letter', char: e.char, x: e.x, y: e.y });
             if ((e.kind === 'rock' && !this.firstPickaxe) || this.rng() < 0.25) {
                 this.firstPickaxe = this.firstPickaxe || e.kind === 'rock';
                 this.drops.push({ id: this.id++, kind: 'tool', tool, x: e.x + 0.18, y: e.y + 0.18 });
             }
-            this.event('break', e, { char: e.char }); this.flowTime = 0;
-        } else if (e.kind === 'enemy') {
-            const dx = e.x - this.player.x, dy = e.y - this.player.y, len = Math.hypot(dx, dy) || 1;
-            this.move(e, dx / len * 0.65, dy / len * 0.65);
+            this.event('break', e, { char: e.char });
         }
         return true;
     }
-    buildFlow() {
-        const n = this.size, distances = new Int16Array(n * n).fill(-1);
-        const x = Math.floor(this.player.x), y = Math.floor(this.player.y), queue = [y * n + x];
-        distances[queue[0]] = 0;
-        for (let i = 0; i < queue.length; i++) {
-            const cell = queue[i], cx = cell % n, cy = Math.floor(cell / n);
-            for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-                const nx = cx + dx, ny = cy + dy, next = ny * n + nx;
-                if (nx >= 0 && ny >= 0 && nx < n && ny < n && distances[next] < 0 && this.isFree(nx + 0.5, ny + 0.5)) {
-                    distances[next] = distances[cell] + 1; queue.push(next);
-                }
+    animalProfile(e) { return LettercraftGame.animals[e.species] || LettercraftGame.animals.sheep; }
+    animalAnchors(e) {
+        const p=this.animalProfile(e),c=Math.cos(e.angle||0),s=Math.sin(e.angle||0),feet=[];
+        for(const x of p.stanceX?[-p.stanceX,p.stanceX]:[0])for(const y of [-p.stanceY,p.stanceY])feet.push({x:e.x+x*c-y*s,y:e.y+x*s+y*c});
+        return feet;
+    }
+    animalFeet(e,dt) {
+        const anchors=this.animalAnchors(e),stride=this.animalProfile(e).legHeight*1.65;
+        if(!e.feet)e.feet=anchors.map(p=>({...p,z:this.heightAt(p.x,p.y),planted:true,cycle:-1}));
+        for(let i=0;i<anchors.length;i++) {
+            const f=e.feet[i],a=anchors[i],cycle=(e.gait||0)/stride+([0,.5,.5,0][i]),phase=cycle%1;
+            if(e.grounded===false){Object.assign(f,a,{z:Math.max(this.heightAt(a.x,a.y),e.z),planted:false,cycle:-1});continue;}
+            if(!e.moving){
+                // Settle a lifted foot where it stopped without sliding planted feet.
+                f.z=Math.max(this.heightAt(f.x,f.y),f.z-dt*1.8);f.planted=f.z<=this.heightAt(f.x,f.y)+.001;f.cycle=-1;continue;
+            }
+            if(phase<.55){f.cycle=Math.floor(cycle);f.planted=true;f.z=this.heightAt(f.x,f.y);continue;}
+            // Lead the hip by the remaining swing plus half the next stance.
+            // Without this prediction feet land behind a moving body and legs stretch.
+            if(f.cycle!==Math.floor(cycle)||f.planted){f.from={x:f.x,y:f.y,z:f.z};f.to={x:a.x+Math.cos(e.angle)*stride*.72,y:a.y+Math.sin(e.angle)*stride*.72};f.cycle=Math.floor(cycle);}
+            const t=phase<.55?1:Math.min(1,(phase-.55)/.45),ease=t*t*(3-2*t);
+            f.x=f.from.x+(f.to.x-f.from.x)*ease;f.y=f.from.y+(f.to.y-f.from.y)*ease;
+            const ground=this.heightAt(f.x,f.y),end=this.heightAt(f.to.x,f.to.y);
+            f.z=Math.max(ground,f.from.z+(end-f.from.z)*ease+Math.sin(t*Math.PI)*.16);f.planted=t>=.999;
+        }
+    }
+    animalVertical(e,dt) {
+        const ground=Math.max(...this.animalAnchors(e).map(f=>this.heightAt(f.x,f.y)));
+        if(!Number.isFinite(e.z))e.z=ground;
+        e.vz=e.vz||0;
+        if(ground>=e.z-.001){e.z=Math.min(ground,e.z+3*dt);e.vz=0;e.grounded=true;}
+        else {e.vz-=15*dt;e.z=Math.max(ground,e.z+e.vz*dt);e.grounded=e.z<=ground+.001;if(e.grounded)e.vz=0;}
+    }
+    animalSegmentFree(e,x,y) {
+        const r=this.animalProfile(e).radius,n=Math.max(1,Math.ceil(Math.hypot(x-e.x,y-e.y)/.15));
+        let height=this.heightAt(e.x,e.y);
+        for(let i=1;i<=n;i++){
+            const px=e.x+(x-e.x)*i/n,py=e.y+(y-e.y)*i/n,h=this.heightAt(px,py);
+            if(!this.isFree(px,py,r,e.id)||h-height>.26||Math.hypot(px-this.player.x,py-this.player.y)<r+.27)return false;
+            height=h;
+        }
+        return true;
+    }
+    buildFlow(body) {
+        // Reuse the original bounded grid search, now rooted at an animal and
+        // selecting a reachable escape/wander destination instead of a pursuer.
+        const n=this.size,start=Math.floor(body.y)*n+Math.floor(body.x),parents=new Int16Array(n*n).fill(-1),depth=new Uint8Array(n*n),queue=[start];
+        parents[start]=start;let best=start,bestScore=-Infinity;
+        const radius=this.animalProfile(body).radius,angle=body.wanderAngle||0;
+        for(let i=0;i<queue.length&&i<240;i++){
+            const cell=queue[i],cx=cell%n,cy=Math.floor(cell/n),x=cx+.5,y=cy+.5;
+            const score=body.fleeing?Math.hypot(x-this.player.x,y-this.player.y)-depth[cell]*.08:(x-body.x)*Math.cos(angle)+(y-body.y)*Math.sin(angle)-depth[cell]*.18;
+            if(cell!==start&&score>bestScore){bestScore=score;best=cell;}
+            if(depth[cell]>=7)continue;
+            for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+                const nx=cx+dx,ny=cy+dy,next=ny*n+nx;
+                if(nx<0||ny<0||nx>=n||ny>=n||parents[next]>=0||!this.isFree(nx+.5,ny+.5,radius,body.id))continue;
+                const origin=cell===start?body:{...body,x,y};
+                if(!this.animalSegmentFree(origin,nx+.5,ny+.5))continue;
+                parents[next]=cell;depth[next]=depth[cell]+1;queue.push(next);
             }
         }
-        this.flow = distances; this.flowTime = 0.5;
+        const path=[];for(let cell=best;cell!==start;cell=parents[cell])path.unshift({x:cell%n+.5,y:Math.floor(cell/n)+.5});
+        return path;
     }
-    spawnEnemy() {
-        if (this.enemies.length >= 3) return;
-        if (!this.flow) this.buildFlow();
-        const candidates = [];
-        for (let y = 1; y < this.size - 1; y++) for (let x = 1; x < this.size - 1; x++) {
-            const d = Math.hypot(x + 0.5 - this.player.x, y + 0.5 - this.player.y);
-            if (d >= 6 && d <= 7.8 && this.flow[y * this.size + x] >= 0) candidates.push({ x: x + 0.5, y: y + 0.5 });
+    updateAnimal(e,dt) {
+        const profile=this.animalProfile(e),distance=Math.hypot(e.x-this.player.x,e.y-this.player.y);
+        if(distance<3&&!e.fleeing){e.fleeing=true;e.path=[];e.repath=0;}
+        e.safeTime=e.fleeing&&distance>6?(e.safeTime||0)+dt:0;
+        if(e.safeTime>=2){e.fleeing=false;e.path=[];e.wait=.5;e.safeTime=0;}
+        e.stun=Math.max(0,(e.stun||0)-dt);e.moving=false;e.gait=e.gait||0;e.angle=e.angle||0;
+        e.state=e.stun?'hurt':e.fleeing?'flee':'idle';
+        if(!e.stun){
+            e.wait=Math.max(0,(e.wait||0)-dt);e.repath=Math.max(0,(e.repath||0)-dt);
+            if(e.fleeing||!e.wait){
+                if(!e.path?.length||!e.repath){
+                    if(!e.fleeing)e.wanderAngle=this.rng()*Math.PI*2;
+                    e.path=this.buildFlow(e);e.repath=e.fleeing?1.2:3;
+                }
+                const target=e.path[0];
+                if(target){
+                    if(!this.animalSegmentFree(e,target.x,target.y)){e.path=[];e.repath=0;}
+                    else {
+                        const dx=target.x-e.x,dy=target.y-e.y,len=Math.hypot(dx,dy),speed=e.fleeing?profile.speed:.55,step=Math.min(len,speed*dt),oldX=e.x,oldY=e.y;
+                        this.move(e,dx/(len||1)*step,dy/(len||1)*step,profile.radius);
+                        const moved=Math.hypot(e.x-oldX,e.y-oldY);e.moving=moved>.00001;e.gait+=moved;
+                        if(e.moving){const heading=Math.atan2(e.y-oldY,e.x-oldX);e.angle+=Math.atan2(Math.sin(heading-e.angle),Math.cos(heading-e.angle))*(1-Math.exp(-10*dt));e.state=e.fleeing?'flee':'wander';}
+                        else {e.path=[];e.repath=0;}
+                        if(len<=step+.001){e.path.shift();if(!e.path.length&&!e.fleeing)e.wait=1+this.rng()*2;}
+                    }
+                } else {e.wait=.3;e.repath=.3;}
+            }
         }
-        if (!candidates.length) return;
-        const p = candidates[Math.floor(this.rng() * candidates.length)], chars = Object.keys(this.goals);
-        this.enemies.push({ id: this.id++, kind: 'enemy', char: chars[Math.floor(this.rng() * chars.length)], ...p, hp: 4, maxHp: 4, stun: 0 });
-        this.say('มอนสเตอร์มาแล้ว! คลิกสู้ หรือเดินหลบ');
+        this.animalVertical(e,dt);this.animalFeet(e,dt);
     }
     finish(status, reason = '') { this.status = status; this.reason = reason; this.clearInput(); }
     update(seconds, active = true) {
@@ -216,7 +295,7 @@ class LettercraftGame {
         if (this.remaining <= 0.000001) { this.elapsed = 300; this.finish('lost', 'time'); return; }
         if (!active) { this.clearInput(); return; }
         const dt = Math.min(0.05, seconds);
-        this.invulnerable = Math.max(0, this.invulnerable - dt); this.cooldown = Math.max(0, this.cooldown - dt);
+        this.cooldown = Math.max(0, this.cooldown - dt);
         this.player.swing = Math.max(0, this.player.swing - dt); this.messageTime = Math.max(0, this.messageTime - dt);
         if (this.remaining <= 60 && !this.warned) { this.warned = true; this.event('warning', this.player); this.say('เหลือเวลาอีก 1 นาที!'); }
         const dir = this.direction();
@@ -231,53 +310,8 @@ class LettercraftGame {
             p.moving = Math.hypot(p.x-x,p.y-y) > .0001;
         }
         this.verticalStep(dt);
-        this.flowTime -= dt;
-        if (this.enemies.length && this.flowTime <= 0) this.buildFlow();
-        if (this.elapsed >= this.nextSpawn) { this.buildFlow(); this.spawnEnemy(); this.nextSpawn = this.elapsed + 25; }
         for (const e of this.entities) e.hurtTime=Math.max(0,(e.hurtTime||0)-dt);
-        for (const e of this.entities) if (e.kind === 'animal') {
-            e.stun = Math.max(0, (e.stun || 0) - dt);
-            if (!e.stun && Math.hypot(e.x - this.player.x, e.y - this.player.y) > 2) {
-                e.wander = (e.wander || 0) + dt * 0.6;
-                const x = e.homeX + Math.sin(e.wander) * 0.3, y = e.homeY + Math.cos(e.wander) * 0.3;
-                if (Number.isFinite(x) && this.isFree(x, y, 0.25, e.id)) { e.x = x; e.y = y; }
-            }
-        }
-        for (const e of this.enemies) {
-            e.stun = Math.max(0, (e.stun || 0) - dt);
-            e.hurtTime=Math.max(0,(e.hurtTime||0)-dt);
-            e.attackTime=Math.max(0,(e.attackTime||0)-dt);
-            e.attackCooldown=Math.max(0,(e.attackCooldown||0)-dt);
-            e.moving=false;e.state=e.stun?'hurt':e.attackTime?'attack':'idle';
-            const distance = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-            // Continue the existing flow-field pursuit; only distant idle enemies patrol.
-            if(!e.stun&&distance>=8) {
-                e.wanderTime=(e.wanderTime||0)-dt;
-                if(e.wanderTime<=0){e.wanderTime=1.5+this.rng()*2;e.wanderAngle=this.rng()*Math.PI*2;e.rest=this.rng()<.25;}
-                if(!e.rest){const x=e.x,y=e.y;e.angle=e.wanderAngle;this.move(e,Math.cos(e.angle)*.55*dt,Math.sin(e.angle)*.55*dt);e.moving=Math.hypot(e.x-x,e.y-y)>.0001;e.state='wander';}
-            }
-            if (!e.stun && !e.attackTime && distance < 8 && distance > 0.55) {
-                e.state='chase';
-                let target = this.player;
-                if (!this.lineClear(e, this.player, null)) {
-                    const cx = Math.floor(e.x), cy = Math.floor(e.y); let best = Infinity; target = null;
-                    for (const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]) {
-                        const nx = cx + dx, ny = cy + dy;
-                        if (nx < 0 || ny < 0 || nx >= this.size || ny >= this.size) continue;
-                        const score = this.flow ? this.flow[ny * this.size + nx] : -1;
-                        if (score >= 0 && score < best && this.isFree(nx + 0.5, ny + 0.5)) { best = score; target = { x: nx + 0.5, y: ny + 0.5 }; }
-                    }
-                }
-                if (target) { const dx = target.x - e.x, dy = target.y - e.y, len = Math.hypot(dx,dy) || 1; e.angle = Math.atan2(dy,dx);const x=e.x,y=e.y; this.move(e, dx / len * 2 * dt, dy / len * 2 * dt);e.moving=Math.hypot(e.x-x,e.y-y)>.0001; }
-            }
-            if (!e.stun && !e.attackCooldown && Math.hypot(e.x - this.player.x, e.y - this.player.y) < 0.7 && Math.abs(this.player.z-this.heightAt(e.x,e.y))<1.1 && this.lineClear(e,this.player,null) && this.invulnerable === 0) {
-                e.attackCooldown=1.05;e.attackTime=.3;e.state='attack';e.angle=Math.atan2(this.player.y-e.y,this.player.x-e.x);
-                this.hearts--; this.invulnerable = 2; this.cancelCollection(); this.event('hurt', this.player);
-                const dx = this.player.x - e.x || 0.3, dy = this.player.y - e.y, len = Math.hypot(dx,dy) || 1;
-                this.move(this.player, dx / len, dy / len);
-                if (this.hearts <= 0) { this.finish('lost', 'hearts'); return; }
-            }
-        }
+        for (const e of this.entities) if (e.kind === 'animal') this.updateAnimal(e,dt);
         for (const d of [...this.drops]) if (d.kind === 'tool' && this.player.grounded && Math.abs(this.player.z-this.heightAt(d.x,d.y))<.65 && Math.hypot(d.x - this.player.x, d.y - this.player.y) < 0.85) {
             this.tools[d.tool] = Math.min(2, this.tools[d.tool] + 1); this.drops = this.drops.filter(o => o.id !== d.id);
             this.event('tool', d, { tool: d.tool }); this.say('ได้อุปกรณ์ใหม่! ฟันหรือขุดเร็วขึ้นแล้ว');

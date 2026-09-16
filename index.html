@@ -522,7 +522,7 @@
         <button type="button" id="lc-capture" class="lc-capture" hidden>คลิกเพื่อสำรวจ • ล็อกเมาส์</button>
         <header class="lc-top">
             <div class="lc-brand"><span class="lc-brand-icon">◈</span><div><b>LETTERCRAFT</b><small id="lc-lesson">นักสำรวจโลกอักษร</small></div></div>
-            <div class="lc-vitals"><span id="lc-hearts" class="lc-hearts" aria-label="หัวใจ 5 ดวง">♥ ♥ ♥ ♥ ♥</span><span class="lc-divider"></span><span id="lc-time" class="lc-time">05:00</span></div>
+            <div class="lc-vitals"><span aria-hidden="true">◷</span><span id="lc-time" class="lc-time" aria-label="เวลาที่เหลือ">05:00</span></div>
             <div class="lc-top-actions"><button type="button" id="lc-help-button">? <span>วิธีเล่น</span></button><button type="button" id="lc-exit-button" aria-label="ออกจากเกม">✕</button></div>
         </header>
         <div class="lc-mission"><span class="lc-eyebrow">ภารกิจนักสำรวจ</span><strong>เก็บตัวอักษร <span id="lc-count">0 / 20</span></strong><div class="lc-meter"><i id="lc-mission-fill"></i></div><small>ตัวอักษรจากบทเรียนของคุณ</small></div>
@@ -543,20 +543,20 @@
                     <p class="lc-lead">ออกเดินทาง ขุดสมบัติ และเก็บตัวอักษร<br>พิชิตภารกิจ <b>20 ชิ้น</b> ใน <b>5 นาที</b></p>
                     <div class="lc-tutorial">
                         <div><span>01</span><p><b>ควบคุมนักสำรวจเต็มตัว</b><strong>WASD / ลูกศร</strong> เดินตามทิศกล้อง<br>เมาส์หมุนกล้องรอบตัว · ล้อเมาส์ซูม<br><strong>Space</strong> กระโดด · <strong>Shift + เดิน</strong> วิ่ง</p></div>
-                        <div><span>02</span><p><b>เล็ง แล้วคลิกขุดหรือฟัน</b>เข้าใกล้ต้นไม้ หิน สัตว์ หรือมอนสเตอร์<br>ใช้ <strong>เป้าเล็งกลางจอ</strong> แล้วคลิกซ้ายจนแตก</p></div>
+                        <div><span>02</span><p><b>วิ่งตามเพื่อนสัตว์</b>ค้นหาหมู วัว แพะ แกะ และไก่<br>เข้าใกล้ เล็งกลางจอ แล้ว <strong>คลิกซ้าย</strong><br>ขุดหินและตัดต้นไม้เพื่อหาอักษรได้ด้วย</p></div>
                         <div><span>03</span><p><b>กดค้างเพื่อเก็บ</b>เข้าใกล้ตัวอักษรที่ตก หยุดเดิน<br>กดปุ่มตรงตัวค้าง <strong>3 วินาที</strong></p></div>
-                        <div><span>04</span><p><b>อัปเกรด & เอาตัวรอด</b>เดินเก็บอุปกรณ์เพื่อฟันหรือขุดเร็วขึ้น<br>มี <strong>5 หัวใจ</strong> ระวังมอนสเตอร์!</p></div>
+                        <div><span>04</span><p><b>สำรวจให้ทันเวลา</b>สัตว์จะวิ่งหนีเมื่อเข้าใกล้ แต่ไม่ทำร้ายเรา<br>กด <strong>Shift + เดิน</strong> เพื่อวิ่งตาม<br>เก็บอุปกรณ์อัปเกรดและทำให้ครบก่อนหมดเวลา</p></div>
                     </div>
-                    <p class="lc-note">คลิกเริ่มเพื่อล็อกเมาส์ • กด Esc เพื่อปล่อยเมาส์ แล้วคลิกในโลกเพื่อเล่นต่อ<br>ปล่อยปุ่ม เดิน กระโดด หรือโดนตี ต้องเริ่มเก็บใหม่ แต่หมุนกล้องระหว่างเก็บได้<br>ถ้าอักษรตรงกับ WASD ให้หยุดแล้วกดใหม่เพื่อเก็บ ใช้ลูกศรเดินออกได้</p>
+                    <p class="lc-note">คลิกเริ่มเพื่อล็อกเมาส์ • กด Esc เพื่อปล่อยเมาส์ แล้วคลิกในโลกเพื่อเล่นต่อ<br>ปล่อยปุ่ม เดิน หรือกระโดด ต้องเริ่มเก็บใหม่ แต่หมุนกล้องระหว่างเก็บได้<br>ถ้าอักษรตรงกับ WASD ให้หยุดแล้วกดใหม่เพื่อเก็บ ใช้ลูกศรเดินออกได้</p>
                     <div class="lc-dialog-actions"><button id="lc-start-button" type="button" class="lc-primary">เริ่มสำรวจ <span>→</span></button><button id="lc-back-button" type="button" class="lc-secondary">กลับบทเรียน</button></div>
                     <small class="lc-device-note">สำหรับคอมพิวเตอร์ที่มีคีย์บอร์ดและเมาส์ • เปิด/ปิดเสียงได้จากหน้าบทเรียน</small>
                 </div>
                 <div id="lc-help" hidden>
                     <p class="lc-note">มุมมองบุคคลที่สาม: ขยับเมาส์หมุนกล้องรอบตัว · ล้อเมาส์ซูมเข้า/ออก<br><b>Space</b> กระโดดเมื่อยืนบนพื้น · <b>Shift + เดิน</b> วิ่ง<br>หยุดบนพื้นใกล้ตัวอักษรเพื่อเก็บ — กระโดดจะยกเลิกการเก็บ</p>
-                    <div class="lc-help-copy"><p><b>W / ↑</b> เดินหน้า • <b>S / ↓</b> ถอยหลัง • <b>A D / ← →</b> เดินด้านข้างตามทิศที่มอง</p><p><b>เมาส์</b> หันซ้าย–ขวา มองขึ้น–ลง • <b>Esc</b> ปล่อยเมาส์เพื่อกดเมนู คลิกในโลกเพื่อล็อกเมาส์อีกครั้ง</p><p><b>คลิกซ้าย</b> ฟันหรือขุดเฉพาะวัตถุที่เป้ากลางจอเล็งและอยู่ใกล้ จนตัวอักษรดรอป ไม่สามารถตีทะลุสิ่งกีดขวาง</p><p><b>กดตัวอักษรค้าง 3 วินาที</b> ขณะหยุดใกล้ของ เพื่อรับเข้ากระเป๋า อุปกรณ์ไม่ลดเวลาเก็บ</p><p>หากปุ่มเก็บเป็น WASD ให้ปล่อยปุ่มเดินก่อนแล้วกดใหม่ค้าง ใช้ลูกศรเดินออกได้ ขยับเมาส์มองรอบตัวระหว่างเก็บได้</p><p>อุปกรณ์ที่เดินเก็บจะอัปเกรดอัตโนมัติ: พลั่วขุดหิน ขวานตัดต้นไม้ ดาบฟันสัตว์และมอนสเตอร์ เกมเลือกใช้ให้ตรงเป้าหมาย</p><p>มีหัวใจ 5 ดวง โดนตีครั้งละ 1 ดวง หลังโดนตีอมตะ 2 วินาที เก็บอักษรจากบทเรียนให้ครบ 20 ชิ้นก่อน 5 นาทีจึงชนะ</p></div>
+                    <div class="lc-help-copy"><p><b>W / ↑</b> เดินหน้า • <b>S / ↓</b> ถอยหลัง • <b>A D / ← →</b> เดินด้านข้างตามทิศกล้อง</p><p><b>เมาส์</b> หมุนกล้อง • <b>Esc</b> ปล่อยเมาส์เพื่อกดเมนู คลิกในโลกเพื่อล็อกเมาส์อีกครั้ง</p><p><b>หมู วัว แพะ แกะ และไก่</b> จะวิ่งหนีเมื่อเราเข้าใกล้ ใช้ Shift + เดินเพื่อวิ่งตาม สัตว์ไม่โจมตีผู้เล่น</p><p><b>คลิกซ้าย</b> ฟันหรือขุดเฉพาะสิ่งที่เล็งและอยู่ใกล้ จนตัวอักษรดรอป ไม่สามารถตีทะลุสิ่งกีดขวาง</p><p><b>กดตัวอักษรค้าง 3 วินาที</b> ขณะหยุดบนพื้นใกล้ของ เพื่อรับเข้ากระเป๋า อุปกรณ์ไม่ลดเวลาเก็บ</p><p>หากปุ่มเก็บเป็น WASD ให้ปล่อยปุ่มเดินก่อนแล้วกดใหม่ค้าง ใช้ลูกศรเดินออกได้ หมุนกล้องระหว่างเก็บได้</p><p>อุปกรณ์ที่เดินเก็บจะอัปเกรดอัตโนมัติ: พลั่วขุดหิน ขวานตัดต้นไม้ ดาบใช้กับสัตว์ เกมเลือกใช้ให้ตรงเป้าหมาย</p><p>เก็บอักษรจากบทเรียนให้ครบ 20 ชิ้นภายใน 5 นาทีจึงชนะ หากหมดเวลาก่อนครบให้ลองใหม่ได้</p></div>
                     <p class="lc-note">เวลายังเดินต่อขณะปล่อยเมาส์ ดูวิธีเล่น หรือสลับแท็บ<br>หากเบราว์เซอร์ไม่อนุญาต Pointer Lock ให้ใช้การลากเมาส์ขวาเพื่อมองแทน</p><button id="lc-resume-button" type="button" class="lc-primary">กลับไปสำรวจ →</button>
                 </div>
-                <div id="lc-result" hidden><div id="lc-result-icon" class="lc-result-icon">🏆</div><p id="lc-result-message" class="lc-lead"></p><div class="lc-results"><div><small>เก็บได้</small><b id="lc-result-count"></b></div><div><small>เวลาที่ใช้</small><b id="lc-result-time"></b></div><div><small>หัวใจเหลือ</small><b id="lc-result-hearts"></b></div></div><div class="lc-dialog-actions"><button id="lc-retry-button" type="button" class="lc-primary">สำรวจอีกครั้ง ↻</button><button id="lc-next-button" type="button" class="lc-secondary">บทเรียนถัดไป →</button><button id="lc-result-back" type="button" class="lc-secondary">กลับบทเรียน</button></div></div>
+                <div id="lc-result" hidden><div id="lc-result-icon" class="lc-result-icon">🏆</div><p id="lc-result-message" class="lc-lead"></p><div class="lc-results"><div><small>เก็บได้</small><b id="lc-result-count"></b></div><div><small>เวลาที่ใช้</small><b id="lc-result-time"></b></div></div><div class="lc-dialog-actions"><button id="lc-retry-button" type="button" class="lc-primary">สำรวจอีกครั้ง ↻</button><button id="lc-next-button" type="button" class="lc-secondary">บทเรียนถัดไป →</button><button id="lc-result-back" type="button" class="lc-secondary">กลับบทเรียน</button></div></div>
                 <div id="lc-leave" hidden><p class="lc-lead">ต้องการจบรอบนี้และกลับบทเรียนหรือไม่?</p><p class="lc-note">ความคืบหน้าบทเรียนยังอยู่ แต่การเก็บของในรอบนี้จะสิ้นสุด<br>เวลายังเดินต่อระหว่างหน้าต่างนี้</p><div class="lc-dialog-actions"><button id="lc-stay-button" type="button" class="lc-primary">เล่นต่อ</button><button id="lc-confirm-exit" type="button" class="lc-secondary">ออกจากเกม</button></div></div>
                 <div id="lc-error" hidden><p id="lc-error-message" class="lc-lead"></p><button id="lc-error-back" type="button" class="lc-primary">กลับบทเรียน</button></div>
             </div>
@@ -1621,36 +1621,43 @@
 // Small bootstrap kept in the typing page. The game runtime is fetched only
 // after the lesson UI is usable, then reused when the student starts playing.
 var LettercraftLoader = {
-    assetVersion: '139ae5504489',
+    assetVersion: 'c62a3a84e990',
     promise: null,
     startPromise: null,
+    resources: {},
+    loadResource(kind) {
+        if (this.resources[kind]) return this.resources[kind];
+        if (kind === 'runtime' && typeof Lettercraft !== 'undefined') return Promise.resolve(Lettercraft);
+        const isStyle = kind === 'styles';
+        const id = isStyle ? 'lettercraft-styles' : 'lettercraft-runtime';
+        const pending = new Promise((resolve, reject) => {
+            let node = document.getElementById(id);
+            if (node && (node.dataset.ready === 'true' || (isStyle && node.sheet))) { resolve(); return; }
+            const fresh = !node;
+            if (!node) {
+                node = document.createElement(isStyle ? 'link' : 'script'); node.id = id;
+                if (isStyle) { node.rel = 'stylesheet'; node.href = 'lettercraft.css?v=' + this.assetVersion; }
+                else { node.src = 'lettercraft.bundle.js?v=' + this.assetVersion; node.async = true; }
+            }
+            const finish = error => {
+                clearTimeout(timer); node.removeEventListener('load', loaded); node.removeEventListener('error', failed);
+                if (error) { node.remove(); reject(error); }
+                else { node.dataset.ready = 'true'; resolve(isStyle ? undefined : Lettercraft); }
+            };
+            const loaded = () => finish(!isStyle && typeof Lettercraft === 'undefined' ? new Error('ไม่พบระบบเกม') : null);
+            const failed = () => finish(new Error('โหลดไฟล์เกมไม่สำเร็จ'));
+            const timer = setTimeout(() => finish(new Error('หมดเวลาโหลดเกม')), 15000);
+            node.addEventListener('load', loaded, { once: true }); node.addEventListener('error', failed, { once: true });
+            if (fresh) document.head.appendChild(node);
+        });
+        this.resources[kind] = pending.catch(error => { delete this.resources[kind]; throw error; });
+        return this.resources[kind];
+    },
     preload() {
-        if (typeof Lettercraft !== 'undefined') {
-            window.__lettercraftLoadState = 'ready';
-            return Promise.resolve(Lettercraft);
-        }
         if (this.promise) return this.promise;
         window.__lettercraftLoadState = 'loading';
-        const css = new Promise((resolve, reject) => {
-            const existing = document.getElementById('lettercraft-styles');
-            if (existing) {
-                if (existing.dataset.ready === 'true' || existing.sheet) resolve();
-                else { existing.addEventListener('load', resolve, { once:true }); existing.addEventListener('error', reject, { once:true }); }
-                return;
-            }
-            const link = document.createElement('link');
-            link.id = 'lettercraft-styles'; link.rel = 'stylesheet'; link.href = 'lettercraft.css?v=' + this.assetVersion;
-            link.onload = () => { link.dataset.ready = 'true'; resolve(); };
-            link.onerror = () => reject(new Error('โหลดรูปแบบเกมไม่สำเร็จ'));
-            document.head.appendChild(link);
-        });
-        const runtime = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'lettercraft.bundle.js?v=' + this.assetVersion; script.async = true;
-            script.onload = () => typeof Lettercraft !== 'undefined' ? resolve(Lettercraft) : reject(new Error('ไม่พบระบบเกม'));
-            script.onerror = () => reject(new Error('โหลดระบบเกมไม่สำเร็จ'));
-            document.head.appendChild(script);
-        });
+        const css = this.loadResource('styles');
+        const runtime = this.loadResource('runtime');
         this.promise = Promise.all([css, runtime]).then(([, game]) => {
             window.__lettercraftLoadState = 'ready';
             return game;
@@ -1676,12 +1683,16 @@ function startMiniGame() {
     }
     if (LettercraftLoader.startPromise) return LettercraftLoader.startPromise;
     const button = document.getElementById('btn-mini-game');
-    if (button) button.disabled = true;
-    LettercraftLoader.startPromise = LettercraftLoader.preload().then(() => { Lettercraft.mount(); return true; }).catch(error => {
+    const wasDisabled = button && button.disabled;
+    if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
+    LettercraftLoader.startPromise = LettercraftLoader.preload().then(() => {
+        if (state.userSettings && state.userSettings.enableMinigame === false) return false;
+        Lettercraft.mount(); return true;
+    }).catch(error => {
         console.error(error);
         alert('ไม่สามารถเตรียมเกมได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง');
         return false;
-    }).finally(() => { LettercraftLoader.startPromise = null; if (button) button.disabled = false; });
+    }).finally(() => { LettercraftLoader.startPromise = null; if (button) { button.disabled = wasDisabled; button.removeAttribute('aria-busy'); } });
     return LettercraftLoader.startPromise;
 }
 function handleGameInput(e) { if (typeof Lettercraft !== 'undefined') Lettercraft.keyDown(e); }

@@ -5,7 +5,8 @@ const root=path.join(__dirname,'..');
 (async()=>{
  const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
-  const file=path.join(root,pathname==='/'?'index.html':pathname.slice(1));
+  const relative=pathname.replace(/^\/classroom\//,'/');
+  const file=path.join(root,relative==='/'?'index.html':relative.slice(1));
   if(!file.startsWith(root)||!fs.existsSync(file)){res.statusCode=404;return res.end('missing');}
   res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8');
   res.end(fs.readFileSync(file));
@@ -44,6 +45,29 @@ const root=path.join(__dirname,'..');
   await page.waitForFunction(()=>Lettercraft.game&&Lettercraft.view);
   assert.equal(await page.evaluate(()=>window.__webglCreates),1,'repeated play clicks while loading must mount only one WebGL session');
   assert.equal(runtimeRequests,1,'starting a preloaded game must reuse the same bundle');
-  console.log('PASS: typing renders first, idle game preload is single-flight, and WebGL starts only on play.');
+  const fallback=await browser.newPage();
+  await fallback.addInitScript(()=>{
+   const native=HTMLCanvasElement.prototype.getContext;
+   window.__webglAttempts=0;
+   HTMLCanvasElement.prototype.getContext=function(type,...args){
+    if(type==='webgl'||type==='webgl2'||type==='experimental-webgl'){window.__webglAttempts++;return null;}
+    return native.call(this,type,...args);
+   };
+  });
+  await fallback.route('**/script.google.com/**',route=>route.fulfill({json:{users:['Guest'],settings:{targetLength:100,enableMinigame:true},progress:{Guest:{TH:0,EN:0}}}}));
+  await fallback.goto('http://127.0.0.1:'+server.address().port+'/classroom/',{waitUntil:'domcontentloaded'});
+  await fallback.waitForFunction(()=>document.getElementById('loading-overlay').classList.contains('hidden'));
+  const letter=await fallback.evaluate(()=>{state.currentUser='Guest';setLanguage('EN');loadLesson(0);focusInput();return state.text[0];});
+  const focusBefore=await fallback.evaluate(()=>document.activeElement.id);
+  await fallback.waitForFunction(()=>window.__lettercraftLoadState==='ready');
+  assert.deepEqual(await fallback.evaluate(()=>({attempts:window.__webglAttempts,game:Lettercraft.game,view:Lettercraft.view,focus:document.activeElement.id})),{attempts:0,game:null,view:null,focus:focusBefore},'background preload must not create a renderer/session or steal lesson focus');
+  await fallback.keyboard.press(letter);
+  assert.equal(await fallback.evaluate(()=>state.userInput),letter);
+  await fallback.evaluate(()=>startMiniGame());
+  assert.equal(await fallback.locator('#lc-error').isVisible(),true,'unsupported WebGL must show a recoverable game error only after play');
+  await fallback.locator('#lc-error-back').click();
+  assert.equal(await fallback.evaluate(()=>state.isGameMode),false);
+  await fallback.close();
+  console.log('PASS: typing first, single-flight play, inactive background preload, subpath assets, and recoverable no-WebGL fallback.');
  }finally{if(releaseRuntime)releaseRuntime();if(releaseData)releaseData();await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

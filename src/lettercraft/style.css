@@ -67,7 +67,7 @@
 .lc-device-note { display:block; margin-top:14px; text-align:center; color:#8c997e; font-size:9px; }
 .lc-help-copy p { font-size:13px; line-height:1.8; margin:12px 0; }
 .lc-result-icon { font-size:60px; text-align:center; margin:18px 0; }
-.lc-results { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.lc-results { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
 .lc-results>div { background:#dde9d4; padding:15px; border-radius:10px; text-align:center; }
 .lc-results small { display:block; font-size:10px; color:#75876b; }
 .lc-results b { display:block; font:800 24px/1.5 system-ui,sans-serif; }

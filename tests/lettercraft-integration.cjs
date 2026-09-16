@@ -28,7 +28,7 @@ const {chromium}=require('playwright');
   assert.equal(await page.evaluate(()=>JSON.stringify(mockData.progress)),progress);assert.equal(await page.evaluate(()=>state.isSoundOn),false);
   assert.equal(await page.locator('#modal-complete').isVisible(),true);
   await page.evaluate(()=>{state.userSettings.enableMinigame=false;startMiniGame();});assert.equal(await page.evaluate(()=>state.isGameMode),false);
-  await page.evaluate(()=>{state.userSettings.enableMinigame=true;closeModal();setLanguage('TH');startMiniGame();});
+  await page.evaluate(async()=>{state.userSettings.enableMinigame=true;closeModal();setLanguage('TH');await startMiniGame();});
   assert.match(await page.locator('#lc-lesson').textContent(),/ภาษาไทย/);await page.locator('#lc-back-button').click();
   assert.equal(await page.evaluate(()=>state.lang),'TH');assert.equal(writes.length,0);assert.deepEqual(errors,[]);
   console.log('PASS: lesson completion/entry/exit, 20-letter/five-minute rules, language/sound/progress preservation, admin game toggle and no remote writes.');

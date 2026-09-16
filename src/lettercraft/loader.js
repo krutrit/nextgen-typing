@@ -4,33 +4,40 @@ var LettercraftLoader = {
     assetVersion: '__LETTERCRAFT_VERSION__',
     promise: null,
     startPromise: null,
+    resources: {},
+    loadResource(kind) {
+        if (this.resources[kind]) return this.resources[kind];
+        if (kind === 'runtime' && typeof Lettercraft !== 'undefined') return Promise.resolve(Lettercraft);
+        const isStyle = kind === 'styles';
+        const id = isStyle ? 'lettercraft-styles' : 'lettercraft-runtime';
+        const pending = new Promise((resolve, reject) => {
+            let node = document.getElementById(id);
+            if (node && (node.dataset.ready === 'true' || (isStyle && node.sheet))) { resolve(); return; }
+            const fresh = !node;
+            if (!node) {
+                node = document.createElement(isStyle ? 'link' : 'script'); node.id = id;
+                if (isStyle) { node.rel = 'stylesheet'; node.href = 'lettercraft.css?v=' + this.assetVersion; }
+                else { node.src = 'lettercraft.bundle.js?v=' + this.assetVersion; node.async = true; }
+            }
+            const finish = error => {
+                clearTimeout(timer); node.removeEventListener('load', loaded); node.removeEventListener('error', failed);
+                if (error) { node.remove(); reject(error); }
+                else { node.dataset.ready = 'true'; resolve(isStyle ? undefined : Lettercraft); }
+            };
+            const loaded = () => finish(!isStyle && typeof Lettercraft === 'undefined' ? new Error('ไม่พบระบบเกม') : null);
+            const failed = () => finish(new Error('โหลดไฟล์เกมไม่สำเร็จ'));
+            const timer = setTimeout(() => finish(new Error('หมดเวลาโหลดเกม')), 15000);
+            node.addEventListener('load', loaded, { once: true }); node.addEventListener('error', failed, { once: true });
+            if (fresh) document.head.appendChild(node);
+        });
+        this.resources[kind] = pending.catch(error => { delete this.resources[kind]; throw error; });
+        return this.resources[kind];
+    },
     preload() {
-        if (typeof Lettercraft !== 'undefined') {
-            window.__lettercraftLoadState = 'ready';
-            return Promise.resolve(Lettercraft);
-        }
         if (this.promise) return this.promise;
         window.__lettercraftLoadState = 'loading';
-        const css = new Promise((resolve, reject) => {
-            const existing = document.getElementById('lettercraft-styles');
-            if (existing) {
-                if (existing.dataset.ready === 'true' || existing.sheet) resolve();
-                else { existing.addEventListener('load', resolve, { once:true }); existing.addEventListener('error', reject, { once:true }); }
-                return;
-            }
-            const link = document.createElement('link');
-            link.id = 'lettercraft-styles'; link.rel = 'stylesheet'; link.href = 'lettercraft.css?v=' + this.assetVersion;
-            link.onload = () => { link.dataset.ready = 'true'; resolve(); };
-            link.onerror = () => reject(new Error('โหลดรูปแบบเกมไม่สำเร็จ'));
-            document.head.appendChild(link);
-        });
-        const runtime = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'lettercraft.bundle.js?v=' + this.assetVersion; script.async = true;
-            script.onload = () => typeof Lettercraft !== 'undefined' ? resolve(Lettercraft) : reject(new Error('ไม่พบระบบเกม'));
-            script.onerror = () => reject(new Error('โหลดระบบเกมไม่สำเร็จ'));
-            document.head.appendChild(script);
-        });
+        const css = this.loadResource('styles');
+        const runtime = this.loadResource('runtime');
         this.promise = Promise.all([css, runtime]).then(([, game]) => {
             window.__lettercraftLoadState = 'ready';
             return game;
@@ -56,12 +63,16 @@ function startMiniGame() {
     }
     if (LettercraftLoader.startPromise) return LettercraftLoader.startPromise;
     const button = document.getElementById('btn-mini-game');
-    if (button) button.disabled = true;
-    LettercraftLoader.startPromise = LettercraftLoader.preload().then(() => { Lettercraft.mount(); return true; }).catch(error => {
+    const wasDisabled = button && button.disabled;
+    if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
+    LettercraftLoader.startPromise = LettercraftLoader.preload().then(() => {
+        if (state.userSettings && state.userSettings.enableMinigame === false) return false;
+        Lettercraft.mount(); return true;
+    }).catch(error => {
         console.error(error);
         alert('ไม่สามารถเตรียมเกมได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง');
         return false;
-    }).finally(() => { LettercraftLoader.startPromise = null; if (button) button.disabled = false; });
+    }).finally(() => { LettercraftLoader.startPromise = null; if (button) { button.disabled = wasDisabled; button.removeAttribute('aria-busy'); } });
     return LettercraftLoader.startPromise;
 }
 function handleGameInput(e) { if (typeof Lettercraft !== 'undefined') Lettercraft.keyDown(e); }

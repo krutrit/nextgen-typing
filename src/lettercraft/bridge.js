@@ -185,7 +185,7 @@ var Lettercraft = {
         // Ray and camera follow the player even while the mouse stays still.
         this.aim(); this.renderHUD();
         for (const event of this.game.events) {
-            if (['hit','collect','tool','hurt','warning'].includes(event.kind) && state.isSoundOn) playSound(event.kind !== 'hurt');
+            if (['hit','collect','tool','warning'].includes(event.kind) && state.isSoundOn) playSound(true);
         }
         this.game.events.length = 0;
         if ((this.game.status === 'won' || this.game.status === 'lost') && this.panel !== 'result') this.showResult();
@@ -195,8 +195,6 @@ var Lettercraft = {
         const g = this.game, seconds = Math.ceil(g.remaining);
         this.el('lc-time').textContent = String(Math.floor(seconds / 60)).padStart(2,'0') + ':' + String(seconds % 60).padStart(2,'0');
         this.el('lc-time').classList.toggle('lc-urgent', seconds <= 60);
-        this.el('lc-hearts').textContent = '♥ '.repeat(g.hearts) + '♡ '.repeat(5-g.hearts);
-        this.el('lc-hearts').setAttribute('aria-label', 'หัวใจเหลือ ' + g.hearts + ' ดวง');
         this.el('lc-count').textContent = g.collected + ' / ' + g.goal;
         this.el('lc-mission-fill').style.width = (g.goal ? g.collected / g.goal * 100 : 0) + '%';
         const levels = ['ไม้', 'หิน ×2', 'คริสตัล ×3'];
@@ -213,11 +211,11 @@ var Lettercraft = {
                 item.classList.toggle('lc-collected', !g.needs(c)); item.title = 'ตัวอักษร ' + c; bag.append(item);
             }
         }
-        const selected = g.selectedDrop(), entity = [...g.entities,...g.enemies].find(e=>e.id===this.hoverId);
+        const selected = g.selectedDrop(), entity = g.entities.find(e=>e.id===this.hoverId);
         const hoveredDrop = g.drops.find(d => d.id === this.hoverId && d.kind === 'letter');
         let hint = 'WASD / ลูกศร เดิน • Space กระโดด • ล้อเมาส์ซูม • คลิกซ้ายขุดหรือฟัน';
         if (selected) hint = 'กด [ ' + this.displayChar(selected.char) + ' ] ค้าง 3 วินาทีเพื่อเก็บ' + (g.collecting ? ' · ' + Math.floor(g.collecting.elapsed/3*100) + '%' : ' · ใช้ลูกศรเดินออก');
-        else if (entity) hint = ({rock:'หิน',tree:'ต้นไม้',animal:'แกะบล็อก',enemy:'มอนสเตอร์'})[entity.kind] + ' [ ' + this.displayChar(entity.char) + ' ] · ' + (Math.hypot(entity.x-g.player.x,entity.y-g.player.y)>1.85?'เดินเข้าไปใกล้อีกนิด':'คลิกซ้ายเพื่อ'+(entity.kind==='rock'?'ขุด':'ฟัน')) + ' · ' + entity.hp + '/' + entity.maxHp;
+        else if (entity) hint = (entity.kind==='animal'?({pig:'หมู',cow:'วัว',goat:'แพะ',sheep:'แกะ',chicken:'ไก่'})[entity.species]:({rock:'หิน',tree:'ต้นไม้'})[entity.kind]) + ' [ ' + this.displayChar(entity.char) + ' ] · ' + (Math.hypot(entity.x-g.player.x,entity.y-g.player.y)>1.85?'เดินเข้าไปใกล้อีกนิด':'คลิกซ้ายเพื่อ'+(entity.kind==='rock'?'ขุด':'ฟัน')) + ' · ' + entity.hp + '/' + entity.maxHp;
         if ((hoveredDrop && !g.needs(hoveredDrop.char)) || (entity && !g.needs(entity.char))) hint = 'ตัวอักษร [ ' + this.displayChar((hoveredDrop || entity).char) + ' ] ครบแล้ว · สำรวจหาตัวที่ยังขาดในกระเป๋า';
         this.el('lc-context').textContent = hint;
         this.el('lc-toast').hidden = g.messageTime <= 0; this.el('lc-toast').textContent = g.message;
@@ -225,12 +223,11 @@ var Lettercraft = {
     },
     showResult() {
         const g = this.game, won = g.status === 'won';
-        this.showPanel('result', won ? 'ภารกิจสำเร็จ!' : g.reason === 'time' ? 'หมดเวลาแล้ว' : 'หัวใจหมดแล้ว');
+        this.showPanel('result', won ? 'ภารกิจสำเร็จ!' : 'หมดเวลาแล้ว');
         this.el('lc-result-icon').textContent = won ? '🏆' : '🌱';
         this.el('lc-result-message').textContent = won ? 'ยอดเยี่ยม! คุณเก็บตัวอักษรครบแล้ว' : 'คุณทำได้ดีแล้ว ลองสำรวจใหม่อีกครั้งนะ';
         this.el('lc-result-count').textContent = g.collected + ' / ' + g.goal;
         this.el('lc-result-time').textContent = Math.floor(g.elapsed/60) + ':' + String(Math.floor(g.elapsed%60)).padStart(2,'0');
-        this.el('lc-result-hearts').textContent = g.hearts + ' ♥';
         this.el('lc-next-button').hidden = !won;
         this.el('lc-next-button').textContent = state.lessonIndex >= curriculum[state.lang].length-1 ? 'จบหลักสูตร 🎉' : 'บทเรียนถัดไป →';
     },
@@ -256,11 +253,3 @@ var Lettercraft = {
         }
     }
 };
-function startMiniGame() {
-    if (state.userSettings && state.userSettings.enableMinigame === false) {
-        alert("ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้");
-        return;
-    }
-    Lettercraft.mount();
-}
-function handleGameInput(e) { Lettercraft.keyDown(e); }
