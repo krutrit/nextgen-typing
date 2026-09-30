@@ -717,6 +717,7 @@
     // --- INITIALIZATION ---
     function init() {
         renderKeyboard();
+        updateLanguageButtonsUI();
 
         // 1. ตรวจสอบข้อมูลแคชห้องเรียนใน localStorage เพื่อให้เปิดเว็บได้ทันทีพร้อมรายชื่อนักเรียนจริง
         let hasCache = false;
@@ -849,6 +850,10 @@
         const guestView = document.getElementById('guest-view');
         const usernameDisplay = document.getElementById('current-username');
 
+        if (state.lang === 'EN' && !isThaiCompleted()) {
+            state.lang = 'TH';
+        }
+
         if (state.currentUser) {
             if(loggedInView) loggedInView.classList.remove('hidden');
             if(guestView) guestView.classList.add('hidden');
@@ -857,6 +862,7 @@
             if(loggedInView) loggedInView.classList.add('hidden');
             if(guestView) guestView.classList.remove('hidden');
         }
+        updateLanguageButtonsUI();
     }
 
     function populateLoginRooms() {
@@ -1337,14 +1343,45 @@
         handleTyping(e);
     }
 
+    function isThaiCompleted() {
+        const user = (state.currentUser && state.currentUser !== 'Guest') ? state.currentUser : 'Guest';
+        const thLevel = getUserProgress(user, 'TH');
+        return thLevel >= (curriculum['TH'] ? curriculum['TH'].length : 20);
+    }
+
+    function updateLanguageButtonsUI() {
+        const btnTh = document.getElementById('btn-th');
+        const btnEn = document.getElementById('btn-en');
+        if (!btnTh || !btnEn) return;
+
+        const thDone = isThaiCompleted();
+        btnEn.title = thDone ? "สลับเป็นภาษาอังกฤษ" : "ต้องฝึกพิมพ์ภาษาไทยให้ครบ 20 บทก่อน จึงจะปลดล็อก";
+        
+        if (state.lang === 'TH') {
+            btnTh.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm";
+            btnEn.className = thDone 
+                ? "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white"
+                : "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-500 hover:text-slate-400 opacity-80";
+        } else {
+            btnTh.className = "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
+            btnEn.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm";
+        }
+        btnEn.innerHTML = thDone ? "EN" : "EN 🔒";
+    }
+
     function setLanguage(lang) {
+        if (lang === 'EN' && !isThaiCompleted()) {
+            alert("🔒 คุณยังฝึกพิมพ์ภาษาไทยไม่ครบ 20 บทเรียน\nกรุณาผ่านภาษาไทยให้ครบทุกบทก่อน จึงจะปลดล็อกบทเรียนภาษาอังกฤษได้ครับ");
+            updateLanguageButtonsUI();
+            return;
+        }
+
         state.lang = lang;
-        document.getElementById('btn-th').className = lang==='TH' ? "px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm" : "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
-        document.getElementById('btn-en').className = lang==='EN' ? "px-3 py-1 rounded-md text-xs font-bold transition-all bg-indigo-500 text-white shadow-sm" : "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
+        updateLanguageButtonsUI();
         renderKeyboard(); 
         if (state.currentUser && state.currentUser !== 'Guest') {
             let savedLesson = getUserProgress(state.currentUser, lang);
-            if (savedLesson >= curriculum[lang].length) savedLesson = 0;
+            if (savedLesson >= curriculum[lang].length) savedLesson = curriculum[lang].length - 1;
             state.lessonIndex = savedLesson;
         } else { state.lessonIndex = 0; }
         renderLessonList(); loadLesson(state.lessonIndex);
@@ -1353,26 +1390,27 @@
     function renderLessonList() {
         const list = document.getElementById('lesson-list'); list.innerHTML = '';
         let maxUnlocked = state.currentUser && state.currentUser !== 'Guest' ? getUserProgress(state.currentUser, state.lang) : getUserProgress('Guest', state.lang);
+        const isCourseFinished = maxUnlocked >= curriculum[state.lang].length;
 
         curriculum[state.lang].forEach((lesson, index) => {
             const btn = document.createElement('button');
             const isActive = index === state.lessonIndex;
-            const isCompleted = index < maxUnlocked;   // ทำผ่านแล้ว = ล็อก กดย้อนกลับไม่ได้
-            const isCurrent = index === maxUnlocked;    // บทปัจจุบัน = เล่นได้บทเดียว
-            const isFuture = index > maxUnlocked;       // ยังไม่ปลดล็อก
+            const isCompleted = index < maxUnlocked;   // ทำผ่านแล้ว = ติ๊กถูก
+            const isCurrent = index === maxUnlocked;    // บทปัจจุบัน = เล่นได้
 
             const label = `${index + 1}. ${lesson.name || 'Lesson ' + (index + 1)}`;
 
             let baseClass = "w-full text-left px-3 py-2 rounded text-xs mb-1 transition-all flex justify-between items-center ";
             if (isActive) baseClass += "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 font-bold";
+            else if (isCourseFinished) baseClass += "bg-slate-800/80 text-slate-300 hover:bg-slate-700/60 border border-slate-700/60 cursor-pointer";
             else if (isCompleted) baseClass += "bg-slate-800/60 text-slate-500 cursor-not-allowed border border-slate-700/40";
             else if (isCurrent) baseClass += "text-slate-200 hover:bg-slate-700/50 border border-indigo-500/30";
             else baseClass += "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50";
 
             btn.className = baseClass;
 
-            // กดได้เฉพาะบทปัจจุบันเท่านั้น (บทที่ทำผ่านแล้วและบทข้างหน้ากดไม่ได้)
-            if (isCurrent) {
+            // ถ้าทำครบทุกบทแล้ว ให้กดเลือกทบทวนบทไหนก็ได้ แต่ถ้ายังไม่ครบ ให้กดได้เฉพาะบทปัจจุบัน
+            if (isCourseFinished || isCurrent) {
                 btn.onclick = () => { loadLesson(index); };
             } else {
                 btn.disabled = true;
@@ -1572,7 +1610,7 @@
             let currentUnlocked = state.currentUser && mockData.progress[state.currentUser] ? getUserProgress(state.currentUser, state.lang) : 0;
             if (state.lessonIndex === currentUnlocked) {
                 const nextUnlocked = currentUnlocked + 1;
-                if (nextUnlocked < curriculum[state.lang].length) {
+                if (nextUnlocked <= curriculum[state.lang].length) {
                     const targetUser = (state.currentUser && state.currentUser !== 'Guest') ? state.currentUser : 'Guest';
                     getUserProgress(targetUser, state.lang); 
                     mockData.progress[targetUser][state.lang] = nextUnlocked;
@@ -1582,6 +1620,14 @@
                         apiCall('saveProgress', { username: targetUser, level: nextUnlocked, lang: state.lang });
                     }
                 }
+            }
+            renderLessonList();
+            updateLanguageButtonsUI();
+
+            if (state.lessonIndex >= curriculum[state.lang].length - 1) {
+                btnNext.innerText = "จบหลักสูตร 🎉";
+            } else {
+                btnNext.innerText = "บทเรียนถัดไป →";
             }
             btnNext.classList.remove('hidden');
             const isMinigameEnabled = state.userSettings && state.userSettings.enableMinigame !== false;
@@ -1605,8 +1651,16 @@
     
     function nextLesson() {
         closeModal();
-        if (state.lessonIndex < curriculum[state.lang].length - 1) loadLesson(state.lessonIndex + 1);
-        else { alert("🎉 จบหลักสูตรแล้ว! ยินดีด้วย!"); loadLesson(curriculum[state.lang].length - 1); }
+        if (state.lessonIndex < curriculum[state.lang].length - 1) {
+            loadLesson(state.lessonIndex + 1);
+        } else {
+            if (state.lang === 'TH') {
+                alert("🎉 ยินดีด้วย! คุณผ่านบทเรียนภาษาไทยครบทั้ง 20 บทแล้ว!\nระบบได้ปลดล็อกแบบฝึกหัดภาษาอังกฤษ (EN) ให้คุณเรียบร้อยแล้วครับ");
+            } else {
+                alert("🎉 จบหลักสูตรภาษาอังกฤษแล้ว! ยอดเยี่ยมมาก!");
+            }
+            loadLesson(curriculum[state.lang].length - 1);
+        }
     }
 
     function closeModal() { 
