@@ -7,4 +7,4 @@
 | Task 2: Implement Lesson 20 save & checkmark | Completed | Fixed finishLesson, renderLessonList in index.html |
 | Task 3: Implement Thai prerequisite gate for English | Completed | Added isThaiCompleted, updateLanguageButtonsUI, setLanguage gate |
 | Task 4: Verify test suite & syntax | Completed | 60 unit tests pass, syntax checked |
-| Task 5: Commit & deploy to GitHub Pages | In Progress | git add, commit, push, verify gh pages run |
+| Task 5: Commit & deploy to GitHub Pages | Completed | Pushed to main, GitHub Pages deployed successfully |
