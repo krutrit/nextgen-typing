@@ -1,15 +1,14 @@
 | Task | Status | Details |
 |---|---|---|
-| Explore project context | Completed | Investigated transition flow, login handling, and renderLessonList locking |
-| Ask clarifying questions | Completed | Clarified transition trigger, login auto-route, and Thai completion banner |
-| Propose 2-3 approaches | Completed | User approved Approach 1 (Smart transition, permanent lock, completion card) |
-| Present design sections | Completed | Presented all design sections and received user approval |
-| Write design doc | Completed | Saved docs/plans/2026-11-19-auto-switch-english-and-lesson-locking-design.md |
-| Write implementation plan | Completed | Saved docs/plans/2026-11-19-auto-switch-english-and-lesson-locking-plan.md |
-| Task 1: Update unit tests | Completed | tests/progress-gate.test.cjs updated and 5/5 pass |
-| Task 2: Implement permanent lesson locking | Completed | Updated renderLessonList in index.html to permanently lock completed lessons |
-| Task 3: Implement auto-transition to English | Completed | Updated finishLesson and nextLesson in index.html |
-| Task 4: Implement login auto-routing | Completed | Updated loginUser in index.html |
-| Task 5: Implement completion card & typing block | Completed | Updated renderTypingArea, loadLesson, focusInput, and handleTyping |
-| Task 6: Full verification test suite | Completed | All 62 unit tests pass, syntax validated |
-| Task 7: Commit & deploy to GitHub Pages | Completed | Deployed to GitHub Pages (workflow success) |
+| Explore project context & game constraints | Completed | Analyzed typing system isolation, arrow keys & spacebar mechanics |
+| Propose puzzle game concepts (Scratch-style) | Completed | Proposed 3 games; User requested all 3 games with MMORPG fantasy style |
+| Tri-Input System Integration | Completed | Designed Arrow Keys + Lesson Letter Keys + Spacebar coordination |
+| Write design doc | Completed | Saved docs/plans/2026-11-19-mmorpg-puzzle-arcade-design.md |
+| Write implementation plan | Completed | Saved docs/plans/2026-11-19-mmorpg-puzzle-arcade-plan.md |
+| Task 1: Write automated tests for puzzle engines | Pending | tests/arcade-puzzle.test.cjs for Rune Coder, Crystal Reflector, Dungeon Relic |
+| Task 2: Build core puzzle logic engine | Pending | src/arcade/core.js |
+| Task 3: Build MMORPG retro canvas view | Pending | src/arcade/view.js |
+| Task 4: Build arcade bridge & lobby dialog | Pending | src/arcade/bridge.js and style.css |
+| Task 5: Integrate Arcade Lobby into index.html | Pending | Safe integration preserving all typing & Lettercraft |
+| Task 6: Full test suite & asset verification | Pending | Run all 62+ tests and syntax validation |
+| Task 7: Commit & deploy to GitHub Pages | Pending | git push and monitor gh run |
