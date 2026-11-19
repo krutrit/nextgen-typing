@@ -12,4 +12,4 @@
 | Task 4: Implement login auto-routing | Completed | Updated loginUser in index.html |
 | Task 5: Implement completion card & typing block | Completed | Updated renderTypingArea, loadLesson, focusInput, and handleTyping |
 | Task 6: Full verification test suite | Completed | All 62 unit tests pass, syntax validated |
-| Task 7: Commit & deploy to GitHub Pages | In Progress | Commit, push, and monitor gh run |
+| Task 7: Commit & deploy to GitHub Pages | Completed | Deployed to GitHub Pages (workflow success) |
