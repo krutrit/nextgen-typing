@@ -11,4 +11,4 @@
 | Task 4: Build arcade bridge & lobby dialog | Completed | src/arcade/bridge.js and style.css |
 | Task 5: Integrate Arcade Lobby into index.html | Completed | Safe integration preserving all typing & Lettercraft |
 | Task 6: Full test suite & asset verification | Completed | 78/78 tests pass & build-lettercraft check clean |
-| Task 7: Commit & deploy to GitHub Pages | In Progress | git push and monitor gh run |
+| Task 7: Commit & deploy to GitHub Pages | Completed | Pushed 3befbca & GitHub Pages deployed successfully |
