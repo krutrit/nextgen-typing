@@ -5,10 +5,10 @@
 | Tri-Input System Integration | Completed | Designed Arrow Keys + Lesson Letter Keys + Spacebar coordination |
 | Write design doc | Completed | Saved docs/plans/2026-11-19-mmorpg-puzzle-arcade-design.md |
 | Write implementation plan | Completed | Saved docs/plans/2026-11-19-mmorpg-puzzle-arcade-plan.md |
-| Task 1: Write automated tests for puzzle engines | Pending | tests/arcade-puzzle.test.cjs for Rune Coder, Crystal Reflector, Dungeon Relic |
-| Task 2: Build core puzzle logic engine | Pending | src/arcade/core.js |
-| Task 3: Build MMORPG retro canvas view | Pending | src/arcade/view.js |
-| Task 4: Build arcade bridge & lobby dialog | Pending | src/arcade/bridge.js and style.css |
-| Task 5: Integrate Arcade Lobby into index.html | Pending | Safe integration preserving all typing & Lettercraft |
-| Task 6: Full test suite & asset verification | Pending | Run all 62+ tests and syntax validation |
-| Task 7: Commit & deploy to GitHub Pages | Pending | git push and monitor gh run |
+| Task 1: Write automated tests for puzzle engines | Completed | tests/arcade-puzzle.test.cjs (7/7 pass) |
+| Task 2: Build core puzzle logic engine | Completed | src/arcade/core.js built with UMD support |
+| Task 3: Build MMORPG retro canvas view | Completed | src/arcade/view.js with retro RPG renderer |
+| Task 4: Build arcade bridge & lobby dialog | Completed | src/arcade/bridge.js and style.css |
+| Task 5: Integrate Arcade Lobby into index.html | Completed | Safe integration preserving all typing & Lettercraft |
+| Task 6: Full test suite & asset verification | Completed | 78/78 tests pass & build-lettercraft check clean |
+| Task 7: Commit & deploy to GitHub Pages | In Progress | git push and monitor gh run |

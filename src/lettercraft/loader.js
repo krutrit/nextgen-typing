@@ -56,7 +56,7 @@ function scheduleLettercraftPreload() {
     else setTimeout(run, 1500);
 }
 
-function startMiniGame() {
+function startLettercraftGame() {
     if (state.userSettings && state.userSettings.enableMinigame === false) {
         alert('ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้');
         return Promise.resolve(false);
@@ -74,5 +74,20 @@ function startMiniGame() {
         return false;
     }).finally(() => { LettercraftLoader.startPromise = null; if (button) { button.disabled = wasDisabled; button.removeAttribute('aria-busy'); } });
     return LettercraftLoader.startPromise;
+}
+
+function startMiniGame() {
+    if (state.userSettings && state.userSettings.enableMinigame === false) {
+        alert('ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้');
+        return Promise.resolve(false);
+    }
+    const currentChars = (typeof curriculum !== 'undefined' && curriculum[state.lang] && curriculum[state.lang][state.lessonIndex] && curriculum[state.lang][state.lessonIndex].chars) || ['ก', 'ด', 'า', 'ส'];
+    if (typeof ArcadeBridge !== 'undefined' && typeof ArcadeBridge.openLobby === 'function') {
+        ArcadeBridge.openLobby(currentChars, () => {
+            if (typeof focusInput === 'function') focusInput();
+        });
+        return Promise.resolve(true);
+    }
+    return startLettercraftGame();
 }
 function handleGameInput(e) { if (typeof Lettercraft !== 'undefined') Lettercraft.keyDown(e); }

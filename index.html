@@ -10,6 +10,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- MMORPG Puzzle Arcade Styles -->
+    <link rel="stylesheet" href="src/arcade/style.css">
     <style>
         body { font-family: 'Sarabun', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', 'Sarabun', monospace; }
@@ -508,7 +510,7 @@
             </div>
 
             <div class="flex flex-col gap-3 relative z-10">
-                <button onclick="startMiniGame()" id="btn-mini-game" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-sm font-bold transition-all transform hover:scale-[1.02] cursor-pointer hidden">🌳 เล่นเกมนักสำรวจโลกอักษร</button>
+                <button onclick="startMiniGame()" id="btn-mini-game" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-sm font-bold transition-all transform hover:scale-[1.02] cursor-pointer hidden">🏰 มินิเกมประลองปัญญา (MMORPG & 3D)</button>
                 <button onclick="nextLesson()" id="btn-next-lesson" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-bold transition-colors cursor-pointer hidden">บทเรียนถัดไป →</button>
                 <button onclick="resetLessonAndClose()" class="text-xs text-slate-500 hover:text-slate-300 mt-2 cursor-pointer relative z-20">พิมพ์ซ้ำอีกครั้ง</button>
             </div>
@@ -1349,6 +1351,7 @@
     }
 
     function handleGlobalKeydown(e) {
+        if (typeof ArcadeBridge !== 'undefined' && ArcadeBridge.activeSession) return;
         if (state.isGameMode) { handleGameInput(e); return; }
         if ((e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') && e.target.id !== 'hidden-input') return;
         handleTyping(e);
@@ -1537,6 +1540,7 @@
 
     function focusInput(e) {
         if (state.isGameMode) return;
+        if (typeof ArcadeBridge !== 'undefined' && (ArcadeBridge.activeSession || ArcadeBridge.isLobbyOpen)) return;
         if (state.isGameMode || isCurrentCourseFinished()) return;
         if (e && e.target && (['input', 'select', 'textarea', 'button', 'a'].includes(e.target.tagName.toLowerCase()) || e.target.closest('button') || e.target.closest('select'))) return;
         if ((document.getElementById('login-modal') && !document.getElementById('login-modal').classList.contains('hidden')) || (document.getElementById('admin-panel') && !document.getElementById('admin-panel').classList.contains('hidden'))) return;
@@ -1793,7 +1797,7 @@ function scheduleLettercraftPreload() {
     else setTimeout(run, 1500);
 }
 
-function startMiniGame() {
+function startLettercraftGame() {
     if (state.userSettings && state.userSettings.enableMinigame === false) {
         alert('ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้');
         return Promise.resolve(false);
@@ -1811,6 +1815,21 @@ function startMiniGame() {
         return false;
     }).finally(() => { LettercraftLoader.startPromise = null; if (button) { button.disabled = wasDisabled; button.removeAttribute('aria-busy'); } });
     return LettercraftLoader.startPromise;
+}
+
+function startMiniGame() {
+    if (state.userSettings && state.userSettings.enableMinigame === false) {
+        alert('ผู้ดูแลระบบได้ปิดใช้งานเกมท้ายบทเรียนไว้ในขณะนี้');
+        return Promise.resolve(false);
+    }
+    const currentChars = (typeof curriculum !== 'undefined' && curriculum[state.lang] && curriculum[state.lang][state.lessonIndex] && curriculum[state.lang][state.lessonIndex].chars) || ['ก', 'ด', 'า', 'ส'];
+    if (typeof ArcadeBridge !== 'undefined' && typeof ArcadeBridge.openLobby === 'function') {
+        ArcadeBridge.openLobby(currentChars, () => {
+            if (typeof focusInput === 'function') focusInput();
+        });
+        return Promise.resolve(true);
+    }
+    return startLettercraftGame();
 }
 function handleGameInput(e) { if (typeof Lettercraft !== 'undefined') Lettercraft.keyDown(e); }
 
@@ -2031,5 +2050,9 @@ function handleGameInput(e) { if (typeof Lettercraft !== 'undefined') Lettercraf
 
     window.onload = init;
 </script>
+<!-- MMORPG Puzzle Arcade Scripts -->
+<script src="src/arcade/core.js"></script>
+<script src="src/arcade/view.js"></script>
+<script src="src/arcade/bridge.js"></script>
 </body>
 </html>
