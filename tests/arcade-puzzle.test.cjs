@@ -143,8 +143,8 @@ test('index.html contains Arcade assets and safe mini-game integration', () => {
   assert.ok(indexHtml.includes('id="btn-mini-game"'), 'index.html must contain btn-mini-game');
   assert.ok(indexHtml.includes('มินิเกมประลองปัญญา'), 'btn-mini-game must display arcade title');
 
-  // Verify header direct launch button
-  assert.ok(indexHtml.includes('id="header-btn-arcade"'), 'index.html must contain header-btn-arcade');
+  // Verify header direct launch button has been removed so game is gated behind lesson completion
+  assert.strictEqual(indexHtml.includes('id="header-btn-arcade"'), false, 'index.html must NOT contain header-btn-arcade');
 
   // Verify focus and input isolation
   assert.ok(indexHtml.includes('ArcadeBridge.activeSession'), 'focusInput/handleGlobalKeydown must check ArcadeBridge.activeSession');
@@ -341,4 +341,15 @@ test('ArcadeView 2.5D: renders all 3 biomes safely without roundRect/ellipse and
   assert.doesNotThrow(() => view.renderRuneCoder(g1));
   assert.doesNotThrow(() => view.renderCrystalReflector(g2));
   assert.doesNotThrow(() => view.renderDungeonRelic(g3));
+});
+
+test('ArcadeBridge: Lettercraft 3D option is removed from lobby and only 3 MMORPG games are available', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const bridgeSrc = fs.readFileSync(path.join(__dirname, '../src/arcade/bridge.js'), 'utf-8');
+  assert.strictEqual(bridgeSrc.includes('data-game="lettercraft_3d"'), false, 'Lobby must not offer lettercraft_3d');
+  assert.strictEqual(bridgeSrc.includes('นักสำรวจ 3 มิติ'), false, 'Lobby must not show 3D explorer card');
+  assert.ok(bridgeSrc.includes('data-game="rune_coder"'), 'Lobby must contain rune_coder');
+  assert.ok(bridgeSrc.includes('data-game="crystal_reflector"'), 'Lobby must contain crystal_reflector');
+  assert.ok(bridgeSrc.includes('data-game="dungeon_relic"'), 'Lobby must contain dungeon_relic');
 });

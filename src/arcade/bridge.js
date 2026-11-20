@@ -155,16 +155,6 @@ const ArcadeBridge = {
             <div class="arcade-desc">พิมพ์อักขระปลดโซ่ตรวน ผลักหีบสมบัติเข้าสู่วงเวททองคำ เคาะ Spacebar ย้อนเวลาเมื่อเดินพลาด</div>
             <div class="arcade-tag">⬆⬇⬅➡ + อักษร + Space</div>
           </div>
-
-          <!-- Game 4: Original Lettercraft 3D -->
-          <div class="arcade-card arcade-card--voxel" data-game="lettercraft_3d">
-            <span class="arcade-badge">3D Voxel</span>
-            <div class="arcade-icon-pedestal">🌲</div>
-            <div class="arcade-name">นักสำรวจ 3 มิติ</div>
-            <div class="arcade-biome">⛰️ โลกบล็อก 3D</div>
-            <div class="arcade-desc">สำรวจโลกบล็อก 3 มิติ ขุดแร่ ตัดไม้ ต้อนสัตว์ และเก็บอักษรประจำบทเรียนแบบดั้งเดิม</div>
-            <div class="arcade-tag">WASD + เมาส์ + Space</div>
-          </div>
         </div>
       </div>
     `;
@@ -195,16 +185,7 @@ const ArcadeBridge = {
       card.onclick = () => {
         const gameKey = card.getAttribute('data-game');
         this.closeLobby();
-
-        if (gameKey === 'lettercraft_3d') {
-          if (typeof startLettercraftGame === 'function') {
-            startLettercraftGame();
-          } else if (typeof startMiniGame === 'function') {
-            startMiniGame();
-          }
-        } else {
-          this.launchGame(gameKey, chars, onExit);
-        }
+        this.launchGame(gameKey, chars, onExit);
       };
     });
   },

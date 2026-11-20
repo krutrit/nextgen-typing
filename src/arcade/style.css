@@ -223,12 +223,6 @@
 }
 .arcade-card--temple::before { background: linear-gradient(90deg, #fbbf24, #f97316); }
 
-.arcade-card--voxel {
-  background: linear-gradient(180deg, #102a3b 0%, #131b2c 100%);
-  border-color: #38bdf8;
-}
-.arcade-card--voxel::before { background: linear-gradient(90deg, #38bdf8, #22c55e); }
-
 .arcade-card:hover {
   transform: translateY(-6px) scale(1.015);
   box-shadow: 0 18px 34px -8px rgba(0, 0, 0, 0.65), 0 0 22px rgba(129, 140, 248, 0.28);
