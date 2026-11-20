@@ -24,4 +24,4 @@
 | Task 17: Full verification, commit & deploy to GitHub Pages | Completed | 84/84 tests pass & deployed 30ad35c to GitHub Pages |
 | Task 18: TDD RED - Add tests asserting removal of lettercraft_3d and removal of header-btn-arcade | Completed | tests/arcade-puzzle.test.cjs asserted strict gating and 3 MMORPG games |
 | Task 19: TDD GREEN - Remove lettercraft_3d from bridge.js & remove header-btn-arcade from index.html | Completed | Removed direct header button & Lettercraft 3D card; 3 MMORPG games retained |
-| Task 20: Full test suite verification & GitHub Pages deployment | In Progress | All 85/85 tests pass; pushing to origin/main |
+| Task 20: Full test suite verification & GitHub Pages deployment | Completed | All 85/85 tests pass; pushed 8632b7f to origin/main |
