@@ -21,4 +21,4 @@
 | Task 14: TDD GREEN - Upgrade core.js with solvable 2.5D generators | Completed | 150/150 random procedural stages verified solvable |
 | Task 15: TDD GREEN - Rebuild view.js as 2.5D Oblique Diorama Engine | Completed | 13/13 tests pass across all 3 fantasy biomes |
 | Task 16: Upgrade bridge.js & style.css (playback, audio, themed UI) | Completed | Animated playback, Web Audio SFX, HiDPI 800x560, themed lobby |
-| Task 17: Full verification, commit & deploy to GitHub Pages | In Progress | 84/84 tests pass, build check clean; deploying |
+| Task 17: Full verification, commit & deploy to GitHub Pages | Completed | 84/84 tests pass & deployed 30ad35c to GitHub Pages |
