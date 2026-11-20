@@ -16,4 +16,4 @@
 | Task 9: TDD GREEN - Fix view initialization order in bridge.js | Completed | src/arcade/bridge.js (now passes) |
 | Task 10: Add safe fallback for ctx.roundRect | Completed | src/arcade/view.js (drawRoundedRect fallback) |
 | Task 11: Add direct Arcade entry button on Header in index.html | Completed | header-btn-arcade added |
-| Task 12: Full verification and deploy | In Progress | 80/80 tests pass; committing & pushing |
+| Task 12: Full verification and deploy | Completed | 80/80 tests pass & deployed 56f31ae to GitHub Pages |
