@@ -232,3 +232,113 @@ test('ArcadeBridge: launchGame initializes without ReferenceError and sets activ
   ArcadeBridge.dispose();
   assert.equal(ArcadeBridge.activeSession, null);
 });
+
+test('Rune Coder 2.5D: cardinal commands, execution trace, and procedural solvable stages', () => {
+  const lessonChars = ['ก', 'ด', 'า', 'ส', 'ว'];
+  for (let stage = 1; stage <= 3; stage++) {
+    const game = ArcadeCore.createRuneCoder({ lessonChars, stage, random: true });
+    assert.equal(game.stage, stage);
+    assert.equal(game.biome, 'elven_glade');
+    assert.ok(Array.isArray(game.solutionQueue) && game.solutionQueue.length >= 3, 'Procedural stage must provide a valid solutionQueue');
+
+    // Feed solution commands into queue
+    for (const step of game.solutionQueue) {
+      if (step.type === 'move') game.addCommand(step.cmd);
+      else if (step.type === 'char') game.addCharCommand(step.char);
+    }
+
+    const result = game.execute();
+    assert.equal(result.success, true, `Stage ${stage} solutionQueue must succeed`);
+    assert.equal(game.status, 'won');
+    assert.ok(Array.isArray(result.trace) && result.trace.length > 0, 'execute() must return step-by-step animation trace');
+
+    // Verify nextStage advances stage cleanly
+    game.nextStage();
+    assert.equal(game.stage, stage + 1);
+    assert.equal(game.status, 'planning');
+  }
+});
+
+test('Crystal Reflector 2.5D: procedural solvable optics stages, obstacle collision, and nextStage', () => {
+  const lessonChars = ['a', 's', 'd', 'f'];
+  for (let stage = 1; stage <= 3; stage++) {
+    const game = ArcadeCore.createCrystalReflector({ lessonChars, stage, random: true });
+    assert.equal(game.stage, stage);
+    assert.equal(game.biome, 'crystal_spire');
+    assert.ok(game.mirrors.length >= 2);
+    assert.equal(typeof game.moveHero, 'function', 'CrystalReflector must expose obstacle-aware moveHero');
+
+    // Align all mirrors to their solutionAngle and verify beam hits obelisk
+    game.mirrors.forEach(m => { m.angle = m.solutionAngle; });
+    const beam = game.traceBeam();
+    assert.equal(beam.hitsObelisk, true, `Stage ${stage} beam must hit obelisk when mirrors aligned`);
+
+    assert.equal(game.typeChar(game.obelisk.char), true);
+    assert.equal(game.status, 'won');
+
+    game.nextStage();
+    assert.equal(game.stage, stage + 1);
+    assert.equal(game.status, 'playing');
+  }
+});
+
+test('Dungeon Relic 2.5D: procedural temple stages scale chests and support nextStage', () => {
+  const lessonChars = ['ม', 'ย', 'ร', 'น'];
+  const stage1 = ArcadeCore.createDungeonRelic({ lessonChars, stage: 1, random: true });
+  assert.equal(stage1.stage, 1);
+  assert.equal(stage1.biome, 'sun_temple');
+  assert.equal(stage1.chests.length, 1);
+  assert.equal(stage1.targets.length, 1);
+
+  const stage2 = ArcadeCore.createDungeonRelic({ lessonChars, stage: 2, random: true });
+  assert.equal(stage2.stage, 2);
+  assert.ok(stage2.chests.length >= 2, 'Stage 2+ should have at least 2 chests');
+  assert.equal(stage2.chests.length, stage2.targets.length);
+
+  stage1.nextStage();
+  assert.equal(stage1.stage, 2);
+  assert.equal(stage1.status, 'playing');
+});
+
+test('ArcadeView 2.5D: renders all 3 biomes safely without roundRect/ellipse and supports particles', () => {
+  const ArcadeView = require('../src/arcade/view.js');
+  const noop = () => {};
+  const gradMock = { addColorStop: noop };
+  const legacyCtx = {
+    fillRect: noop,
+    strokeRect: noop,
+    fillText: noop,
+    strokeText: noop,
+    save: noop,
+    restore: noop,
+    beginPath: noop,
+    closePath: noop,
+    moveTo: noop,
+    lineTo: noop,
+    quadraticCurveTo: noop,
+    arc: noop,
+    rect: noop,
+    stroke: noop,
+    fill: noop,
+    setLineDash: noop,
+    translate: noop,
+    rotate: noop,
+    scale: noop,
+    createLinearGradient: () => gradMock,
+    createRadialGradient: () => gradMock,
+    measureText: () => ({ width: 40 })
+  };
+  const canvas = { getContext: () => legacyCtx, width: 800, height: 560 };
+  const view = new ArcadeView(canvas);
+
+  assert.equal(typeof view.spawnBurst, 'function');
+  view.spawnBurst(400, 280, '#fbbf24', 8);
+
+  const g1 = ArcadeCore.createRuneCoder({ lessonChars: ['ก', 'ด'], stage: 1, random: true });
+  const g2 = ArcadeCore.createCrystalReflector({ lessonChars: ['a', 's'], stage: 1, random: true });
+  const g3 = ArcadeCore.createDungeonRelic({ lessonChars: ['ม', 'ย'], stage: 1, random: true });
+
+  assert.doesNotThrow(() => view.renderRuneCoder(g1));
+  assert.doesNotThrow(() => view.renderCrystalReflector(g2));
+  assert.doesNotThrow(() => view.renderDungeonRelic(g3));
+});

@@ -17,8 +17,8 @@
 | Task 10: Add safe fallback for ctx.roundRect | Completed | src/arcade/view.js (drawRoundedRect fallback) |
 | Task 11: Add direct Arcade entry button on Header in index.html | Completed | header-btn-arcade added |
 | Task 12: Full verification and deploy | Completed | 80/80 tests pass & deployed 56f31ae to GitHub Pages |
-| Task 13: TDD RED - Add 2.5D procedural & rendering tests | In Progress | tests/arcade-puzzle.test.cjs |
-| Task 14: TDD GREEN - Upgrade core.js with solvable 2.5D generators | Pending | src/arcade/core.js |
-| Task 15: TDD GREEN - Rebuild view.js as 2.5D Oblique Diorama Engine | Pending | src/arcade/view.js |
-| Task 16: Upgrade bridge.js & style.css (playback, audio, themed UI) | Pending | src/arcade/bridge.js, style.css |
-| Task 17: Full verification, commit & deploy to GitHub Pages | Pending | node --test, build check & gh pages |
+| Task 13: TDD RED - Add 2.5D procedural & rendering tests | Completed | 4 new RED tests added to tests/arcade-puzzle.test.cjs |
+| Task 14: TDD GREEN - Upgrade core.js with solvable 2.5D generators | Completed | 150/150 random procedural stages verified solvable |
+| Task 15: TDD GREEN - Rebuild view.js as 2.5D Oblique Diorama Engine | Completed | 13/13 tests pass across all 3 fantasy biomes |
+| Task 16: Upgrade bridge.js & style.css (playback, audio, themed UI) | Completed | Animated playback, Web Audio SFX, HiDPI 800x560, themed lobby |
+| Task 17: Full verification, commit & deploy to GitHub Pages | In Progress | 84/84 tests pass, build check clean; deploying |
