@@ -132,8 +132,6 @@ const ArcadeBridge = {
     container.id = 'arcade-game-container';
     container.className = 'arcade-overlay';
 
-    this.activeSession = { game, view, gameKey };
-
     container.innerHTML = `
       <div class="arcade-modal" style="max-width: 680px; height: 560px;">
         <div class="arcade-header">
@@ -152,6 +150,8 @@ const ArcadeBridge = {
 
     const canvas = document.getElementById('arcade-canvas');
     const view = new View(canvas);
+
+    this.activeSession = { game, view, gameKey };
 
     const exitBtn = document.getElementById('arcade-game-exit');
     if (exitBtn) {

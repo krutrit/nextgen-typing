@@ -143,6 +143,92 @@ test('index.html contains Arcade assets and safe mini-game integration', () => {
   assert.ok(indexHtml.includes('id="btn-mini-game"'), 'index.html must contain btn-mini-game');
   assert.ok(indexHtml.includes('มินิเกมประลองปัญญา'), 'btn-mini-game must display arcade title');
 
+  // Verify header direct launch button
+  assert.ok(indexHtml.includes('id="header-btn-arcade"'), 'index.html must contain header-btn-arcade');
+
   // Verify focus and input isolation
   assert.ok(indexHtml.includes('ArcadeBridge.activeSession'), 'focusInput/handleGlobalKeydown must check ArcadeBridge.activeSession');
+});
+
+test('ArcadeView: drawRoundedRect falls back safely when ctx.roundRect is unavailable', () => {
+  const ArcadeView = require('../src/arcade/view.js');
+  let rectCalled = false;
+  const mockCtx = {
+    rect: () => { rectCalled = true; },
+    // simulate older browser where roundRect is undefined
+    roundRect: undefined
+  };
+  const mockCanvas = { getContext: () => mockCtx, width: 100, height: 100 };
+  const view = new ArcadeView(mockCanvas);
+
+  assert.equal(typeof view.drawRoundedRect, 'function');
+  view.drawRoundedRect(0, 0, 50, 50, 5);
+  assert.equal(rectCalled, true, 'Should use rect fallback when roundRect is undefined');
+});
+
+test('ArcadeBridge: launchGame initializes without ReferenceError and sets activeSession', () => {
+  const ArcadeCore = require('../src/arcade/core.js');
+  const ArcadeView = require('../src/arcade/view.js');
+  const ArcadeBridge = require('../src/arcade/bridge.js');
+
+  global.ArcadeCore = ArcadeCore;
+  global.ArcadeView = ArcadeView;
+
+  const mockCtx = {
+    fillRect: () => {},
+    strokeRect: () => {},
+    fillText: () => {},
+    strokeText: () => {},
+    save: () => {},
+    restore: () => {},
+    beginPath: () => {},
+    closePath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    arc: () => {},
+    stroke: () => {},
+    fill: () => {},
+    setLineDash: () => {},
+    roundRect: () => {}
+  };
+
+  const mockCanvas = {
+    getContext: () => mockCtx,
+    width: 640,
+    height: 470
+  };
+
+  const mockElement = {
+    id: '',
+    className: '',
+    innerHTML: '',
+    style: {},
+    querySelectorAll: () => [],
+    appendChild: () => {},
+    remove: () => {},
+    getContext: () => mockCtx
+  };
+
+  global.document = {
+    createElement: () => ({ ...mockElement }),
+    body: { appendChild: () => {} },
+    getElementById: (id) => (id === 'arcade-canvas' ? mockCanvas : { ...mockElement })
+  };
+  global.window = {
+    addEventListener: () => {},
+    removeEventListener: () => {}
+  };
+  global.requestAnimationFrame = () => 1;
+  global.cancelAnimationFrame = () => {};
+
+  // This should succeed without throwing ReferenceError
+  ArcadeBridge.launchGame('rune_coder', ['ก', 'ด', 'า']);
+
+  assert.ok(ArcadeBridge.activeSession, 'activeSession should be set');
+  assert.equal(ArcadeBridge.activeSession.gameKey, 'rune_coder');
+  assert.ok(ArcadeBridge.activeSession.game);
+  assert.ok(ArcadeBridge.activeSession.view);
+
+  ArcadeBridge.dispose();
+  assert.equal(ArcadeBridge.activeSession, null);
 });

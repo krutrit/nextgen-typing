@@ -12,3 +12,8 @@
 | Task 5: Integrate Arcade Lobby into index.html | Completed | Safe integration preserving all typing & Lettercraft |
 | Task 6: Full test suite & asset verification | Completed | 78/78 tests pass & build-lettercraft check clean |
 | Task 7: Commit & deploy to GitHub Pages | Completed | Pushed 3befbca & GitHub Pages deployed successfully |
+| Task 8: TDD RED - Write failing test for launchGame TDZ error | Completed | tests/arcade-puzzle.test.cjs (caught ReferenceError) |
+| Task 9: TDD GREEN - Fix view initialization order in bridge.js | Completed | src/arcade/bridge.js (now passes) |
+| Task 10: Add safe fallback for ctx.roundRect | Completed | src/arcade/view.js (drawRoundedRect fallback) |
+| Task 11: Add direct Arcade entry button on Header in index.html | Completed | header-btn-arcade added |
+| Task 12: Full verification and deploy | In Progress | 80/80 tests pass; committing & pushing |

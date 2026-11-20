@@ -18,6 +18,16 @@ class ArcadeView {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
+  // Safe rounded rect supporting older browsers/environments without ctx.roundRect
+  drawRoundedRect(x, y, w, h, r = 6) {
+    const ctx = this.ctx;
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+  }
+
   // Draw MMORPG Stone Dungeon Grid
   drawDungeonFloor(gridW, gridH, tileSize, offsetX, offsetY) {
     const ctx = this.ctx;
@@ -57,7 +67,11 @@ class ArcadeView {
     // Hero shadow
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath();
-    ctx.ellipse(0, radius * 0.8, radius * 0.9, radius * 0.4, 0, 0, Math.PI * 2);
+    if (typeof ctx.ellipse === 'function') {
+      ctx.ellipse(0, radius * 0.8, radius * 0.9, radius * 0.4, 0, 0, Math.PI * 2);
+    } else {
+      ctx.arc(0, radius * 0.8, radius * 0.6, 0, Math.PI * 2);
+    }
     ctx.fill();
 
     // Body (Armor plate)
@@ -114,7 +128,7 @@ class ArcadeView {
     }
 
     ctx.beginPath();
-    ctx.roundRect(px, py, size, size, 8);
+    this.drawRoundedRect(px, py, size, size, 8);
     ctx.fill();
     ctx.stroke();
     ctx.shadowBlur = 0;
@@ -220,7 +234,7 @@ class ArcadeView {
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(sx, slotY, slotSize, slotSize, 6);
+      this.drawRoundedRect(sx, slotY, slotSize, slotSize, 6);
       ctx.fill();
       ctx.stroke();
 
