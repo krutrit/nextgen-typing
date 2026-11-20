@@ -17,3 +17,8 @@
 | Task 10: Add safe fallback for ctx.roundRect | Completed | src/arcade/view.js (drawRoundedRect fallback) |
 | Task 11: Add direct Arcade entry button on Header in index.html | Completed | header-btn-arcade added |
 | Task 12: Full verification and deploy | Completed | 80/80 tests pass & deployed 56f31ae to GitHub Pages |
+| Task 13: TDD RED - Add 2.5D procedural & rendering tests | In Progress | tests/arcade-puzzle.test.cjs |
+| Task 14: TDD GREEN - Upgrade core.js with solvable 2.5D generators | Pending | src/arcade/core.js |
+| Task 15: TDD GREEN - Rebuild view.js as 2.5D Oblique Diorama Engine | Pending | src/arcade/view.js |
+| Task 16: Upgrade bridge.js & style.css (playback, audio, themed UI) | Pending | src/arcade/bridge.js, style.css |
+| Task 17: Full verification, commit & deploy to GitHub Pages | Pending | node --test, build check & gh pages |
