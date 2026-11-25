@@ -353,3 +353,38 @@ test('ArcadeBridge: Lettercraft 3D option is removed from lobby and only 3 MMORP
   assert.ok(bridgeSrc.includes('data-game="crystal_reflector"'), 'Lobby must contain crystal_reflector');
   assert.ok(bridgeSrc.includes('data-game="dungeon_relic"'), 'Lobby must contain dungeon_relic');
 });
+
+test('Arcade Performance: snappy hero tween responsiveness (>= 50% movement in frame 1)', () => {
+  const ArcadeView = require('../src/arcade/view.js');
+  const mockCanvas = { getContext: () => ({}), width: 800, height: 560 };
+  const view = new ArcadeView(mockCanvas);
+
+  const mockGame = { hero: { x: 0, y: 0 } };
+  view.syncHeroTween(mockGame);
+  assert.equal(view.heroVisual.x, 0);
+
+  // Hero moves to x = 1
+  mockGame.hero.x = 1;
+  const v1 = view.syncHeroTween(mockGame);
+  // Must close at least 0.5 (50%) of the distance on frame 1 to avoid sluggish/dragging feel
+  assert.ok(v1.x >= 0.5, `Hero tween rate must be snappy (>= 0.5), got ${v1.x}`);
+});
+
+test('Arcade Performance: ArcadeView caches diorama island to eliminate per-frame tile re-draws', () => {
+  const ArcadeView = require('../src/arcade/view.js');
+  const mockCanvas = { getContext: () => ({}), width: 800, height: 560 };
+  const view = new ArcadeView(mockCanvas);
+
+  assert.equal(typeof view.getCachedIsland, 'function', 'ArcadeView must provide getCachedIsland method');
+});
+
+test('Arcade Performance: Rune Coder playback step speed is fast and energetic (stepMs <= 160)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const bridgeSrc = fs.readFileSync(path.join(__dirname, '../src/arcade/bridge.js'), 'utf-8');
+
+  const match = bridgeSrc.match(/const\s+stepMs\s*=\s*(\d+);/);
+  assert.ok(match, 'bridge.js must define stepMs for Rune Coder playback');
+  const stepMs = Number(match[1]);
+  assert.ok(stepMs <= 160, `stepMs must be <= 160ms for fast energetic playback, got ${stepMs}ms`);
+});

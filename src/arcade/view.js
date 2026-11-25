@@ -31,6 +31,10 @@ class ArcadeView {
     this.activeStepIndex = -1;
     this.statusBanner = null;
 
+    // Offscreen diorama island cache (renders static island once per stage)
+    this.cachedIslandCanvas = null;
+    this.cachedIslandKey = null;
+
     this.initAmbientMotes();
   }
 
@@ -64,6 +68,8 @@ class ArcadeView {
     this.mirrorVisuals.clear();
     this.activeStepIndex = -1;
     this.statusBanner = null;
+    this.cachedIslandCanvas = null;
+    this.cachedIslandKey = null;
   }
 
   triggerShake(magnitude = 7, duration = 14) {
@@ -177,9 +183,9 @@ class ArcadeView {
     const dx = game.hero.x - this.heroVisual.x;
     const dy = game.hero.y - this.heroVisual.y;
     const dist = Math.hypot(dx, dy);
-    if (dist > 0.02) {
-      this.heroVisual.x += dx * 0.28;
-      this.heroVisual.y += dy * 0.28;
+    if (dist > 0.04) {
+      this.heroVisual.x += dx * 0.58;
+      this.heroVisual.y += dy * 0.58;
       this.heroVisual.hop = Math.min(1, dist) * 12;
     } else {
       this.heroVisual.x = game.hero.x;
@@ -251,7 +257,44 @@ class ArcadeView {
     ctx.restore();
   }
 
+  getCachedIsland(gridW, gridH, layout, biome) {
+    const key = `${gridW}_${gridH}_${layout.tileW}_${layout.tileH}_${layout.offsetX}_${layout.offsetY}_${biome}`;
+    if (this.cachedIslandCanvas && this.cachedIslandKey === key) {
+      return this.cachedIslandCanvas;
+    }
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+      return null;
+    }
+    try {
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = this.logicalW;
+      offCanvas.height = this.logicalH;
+      const offCtx = offCanvas.getContext('2d');
+      if (!offCtx) return null;
+
+      const origCtx = this.ctx;
+      this.ctx = offCtx;
+      this.renderRawDioramaIsland(gridW, gridH, layout, biome);
+      this.ctx = origCtx;
+
+      this.cachedIslandCanvas = offCanvas;
+      this.cachedIslandKey = key;
+      return this.cachedIslandCanvas;
+    } catch (_) {
+      return null;
+    }
+  }
+
   drawDioramaIsland(gridW, gridH, layout, biome) {
+    const cached = this.getCachedIsland(gridW, gridH, layout, biome);
+    if (cached && typeof this.ctx.drawImage === 'function') {
+      this.ctx.drawImage(cached, 0, 0);
+      return;
+    }
+    this.renderRawDioramaIsland(gridW, gridH, layout, biome);
+  }
+
+  renderRawDioramaIsland(gridW, gridH, layout, biome) {
     const ctx = this.ctx;
     const { tileW, tileH, offsetX, offsetY, boardW, boardH } = layout;
     const cliffH = 22;
@@ -709,8 +752,10 @@ class ArcadeView {
       vis = { x: chest.x, y: chest.y };
       this.chestVisuals.set(chest.id, vis);
     } else {
-      vis.x += (chest.x - vis.x) * 0.32;
-      vis.y += (chest.y - vis.y) * 0.32;
+      vis.x += (chest.x - vis.x) * 0.60;
+      vis.y += (chest.y - vis.y) * 0.60;
+      if (Math.abs(chest.x - vis.x) < 0.03) vis.x = chest.x;
+      if (Math.abs(chest.y - vis.y) < 0.03) vis.y = chest.y;
     }
 
     const px = offsetX + vis.x * tileW + tileW * 0.12;
@@ -1252,7 +1297,8 @@ class ArcadeView {
     let curAng = this.mirrorVisuals.get(idx);
     if (curAng === undefined) curAng = mirror.angle;
     let diff = ((mirror.angle - curAng + 540) % 360) - 180;
-    curAng += diff * 0.28;
+    curAng += diff * 0.55;
+    if (Math.abs(diff) < 1.0) curAng = mirror.angle;
     this.mirrorVisuals.set(idx, curAng);
 
     ctx.save();

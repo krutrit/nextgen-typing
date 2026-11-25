@@ -370,7 +370,7 @@ const ArcadeBridge = {
       session.isPlayingBack = true;
       view.activeStepIndex = -1;
 
-      const stepMs = 280;
+      const stepMs = 135;
       trace.forEach((step, idx) => {
         const timerId = setTimeout(() => {
           if (this.activeSession !== session) return;
@@ -419,7 +419,7 @@ const ArcadeBridge = {
             view.spawnPopup(hp.x, hp.y - 24, 'ยังเดินไม่ถึงประตูวาร์ป!', '#fde047');
           }
         }
-      }, trace.length * stepMs + 160);
+      }, trace.length * stepMs + 100);
       this.playbackTimers.push(finishTimer);
     };
 

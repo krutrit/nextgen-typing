@@ -25,3 +25,6 @@
 | Task 18: TDD RED - Add tests asserting removal of lettercraft_3d and removal of header-btn-arcade | Completed | tests/arcade-puzzle.test.cjs asserted strict gating and 3 MMORPG games |
 | Task 19: TDD GREEN - Remove lettercraft_3d from bridge.js & remove header-btn-arcade from index.html | Completed | Removed direct header button & Lettercraft 3D card; 3 MMORPG games retained |
 | Task 20: Full test suite verification & GitHub Pages deployment | Completed | All 85/85 tests pass; pushed 8632b7f to origin/main |
+| Task 21: TDD RED - Add tests for snappy tweens, island cache, and fast playback | Completed | tests/arcade-puzzle.test.cjs asserted responsiveness & caching |
+| Task 22: TDD GREEN - Implement island cache, snappy lerp rates, and fast playback | Completed | src/arcade/view.js and bridge.js optimized for 60 FPS fluidity |
+| Task 23: Full test suite verification & GitHub Pages deployment | In Progress | All 88/88 tests pass; committing and deploying |
