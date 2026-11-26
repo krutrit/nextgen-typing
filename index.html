@@ -306,6 +306,60 @@
                     </div>
                 </div>
 
+                <!-- Grade Targets Section -->
+                <div id="admin-grade-targets-container" class="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-amber-400 flex items-center gap-2">🎯 กำหนดจำนวนตัวอักษรเป้าหมายแยกตามระดับชั้น</h3>
+                            <p class="text-xs text-slate-400 mt-1">กำหนดจำนวนตัวอักษรเริ่มต้นของแต่ละชั้น และสามารถระบุแยกเฉพาะบทเรียนได้ (ปล่อยว่าง = ใช้ค่าตั้งต้นของชั้น)</p>
+                        </div>
+                    </div>
+
+                    <!-- Grade Pills Selector -->
+                    <div class="flex flex-wrap items-center gap-2 mb-4 p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                        <span class="text-xs text-slate-400 font-bold mr-1">เลือกระดับชั้น:</span>
+                        <div id="admin-grade-pills" class="flex flex-wrap gap-2"></div>
+                        <button type="button" onclick="promptAddGradeTarget()" class="text-xs text-amber-400 hover:text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 px-3 py-1.5 rounded-lg border border-amber-500/30 transition flex items-center gap-1 font-bold cursor-pointer">+ เพิ่มระดับชั้น</button>
+                    </div>
+
+                    <!-- Active Grade Config Card -->
+                    <div id="admin-grade-config-card" class="bg-slate-800/70 p-5 rounded-xl border border-slate-700 space-y-4">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-700">
+                            <div>
+                                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <span>🏷️</span> ระดับชั้น: <span id="admin-current-grade-label" class="text-amber-400 font-extrabold text-base">...</span>
+                                </h4>
+                                <p class="text-xs text-slate-400 mt-0.5">จำนวนตัวอักษรตั้งต้นที่นักเรียนในชั้นนี้ต้องพิมพ์ในทุกบทเรียน</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs text-slate-300 font-medium">ค่าตั้งต้น (ทุกบท):</label>
+                                <input type="number" id="admin-grade-base-input" min="10" max="5000" class="w-28 bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-center font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="เช่น 150">
+                                <span class="text-xs text-slate-400">ตัว</span>
+                            </div>
+                        </div>
+
+                        <!-- Per-Lesson Override Accordion -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                                    <span>⚙️</span> กำหนดเฉพาะบทเรียน (ทางเลือก - หากปล่อยว่างจะใช้ค่าตั้งต้นด้านบน):
+                                </span>
+                                <button type="button" id="admin-toggle-lessons-btn" onclick="toggleGradeLessonsPanel()" class="text-xs text-indigo-400 hover:text-indigo-300 transition cursor-pointer">▼ แสดงบทเรียนทั้งหมด</button>
+                            </div>
+                            <div id="admin-grade-lessons-panel" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 max-h-80 overflow-y-auto custom-scroll">
+                                <!-- 20 Lesson Inputs generated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex flex-wrap items-center justify-between gap-3">
+                            <button type="button" onclick="saveGradeTargetsAdmin()" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-lg text-sm shadow-lg font-bold whitespace-nowrap transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer">
+                                <span>💾</span> บันทึกการตั้งค่าระดับชั้นนี้
+                            </button>
+                            <button type="button" onclick="deleteCurrentGradeTarget()" class="text-xs text-red-400 hover:text-red-300 hover:bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-500/20 transition cursor-pointer">ลบการตั้งค่าชั้นนี้</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Custom Lesson Text Section -->
                 <div class="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
                     <h3 class="text-lg font-bold text-indigo-400 mb-4 flex items-center gap-2">📝 ตั้งค่าเนื้อหาบทเรียน</h3>
@@ -1076,6 +1130,7 @@
             updateMinigameToggleUI();
         }
         refreshRoomDropdowns();
+        renderGradeTargetsAdmin();
     }
 
     function updateMinigameToggleUI() {
@@ -1088,6 +1143,162 @@
         } else {
             desc.textContent = "ปิดใช้งาน: ปิดปุ่มเข้าเล่นเกมท้ายบทเรียน (นักเรียนจะข้ามไปบทเรียนถัดไปทันที)";
             desc.className = "text-xs text-rose-400 mt-1 transition-colors";
+        }
+    }
+
+    // --- GRADE-LEVEL TARGET LENGTH MANAGER ---
+    let adminActiveGrade = null;
+
+    function getAllGradesInSystem() {
+        const set = new Set();
+        (mockData.users || []).forEach(u => {
+            if (u === 'Guest') return;
+            const grade = getStudentGrade(u);
+            if (grade) set.add(grade);
+        });
+        const gt = (state.userSettings && state.userSettings.gradeTargets) || {};
+        Object.keys(gt).forEach(g => set.add(g));
+
+        if (set.size === 0) {
+            ['ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6', 'ม.1', 'ม.2', 'ม.3'].forEach(g => set.add(g));
+        }
+
+        return Array.from(set).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+    }
+
+    function renderGradeTargetsAdmin() {
+        const pillsContainer = document.getElementById('admin-grade-pills');
+        if (!pillsContainer) return;
+
+        const grades = getAllGradesInSystem();
+        if (!adminActiveGrade || !grades.includes(adminActiveGrade)) {
+            adminActiveGrade = grades[0] || 'ป.1';
+        }
+
+        pillsContainer.innerHTML = grades.map(g => {
+            const isActive = g === adminActiveGrade;
+            const cls = isActive
+                ? 'bg-amber-600 text-white font-bold shadow-md scale-105 border-amber-400'
+                : 'bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-600';
+            return `<button type="button" onclick="selectAdminGrade('${g}')" class="px-3 py-1 rounded-lg text-xs transition border cursor-pointer ${cls}">${g}</button>`;
+        }).join('');
+
+        const label = document.getElementById('admin-current-grade-label');
+        if (label) label.innerText = adminActiveGrade;
+
+        const gt = (state.userSettings && state.userSettings.gradeTargets) || {};
+        const conf = gt[adminActiveGrade] || { base: 150, lessons: {} };
+
+        const baseInput = document.getElementById('admin-grade-base-input');
+        if (baseInput) baseInput.value = conf.base || 150;
+
+        // Render 20 lessons
+        const panel = document.getElementById('admin-grade-lessons-panel');
+        if (panel) {
+            const currentCurriculum = (typeof curriculum !== 'undefined' && curriculum['TH']) || [];
+            let html = '';
+            for (let i = 0; i < 20; i++) {
+                const lessonTitle = (currentCurriculum[i] && currentCurriculum[i].name) ? currentCurriculum[i].name : `บทที่ ${i + 1}`;
+                const val = (conf.lessons && conf.lessons[i]) ? conf.lessons[i] : '';
+                html += `
+                    <div class="flex items-center justify-between gap-2 p-2 bg-slate-800 rounded-lg border border-slate-700/80 text-xs">
+                        <span class="truncate text-slate-300 font-medium" title="${lessonTitle}">${i + 1}. ${lessonTitle}</span>
+                        <input type="number" id="admin-grade-lesson-${i}" min="10" max="5000" value="${val}" placeholder="${conf.base || 150}" class="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-center text-white focus:ring-1 focus:ring-amber-400 outline-none text-xs">
+                    </div>
+                `;
+            }
+            panel.innerHTML = html;
+        }
+    }
+
+    function selectAdminGrade(grade) {
+        adminActiveGrade = grade;
+        renderGradeTargetsAdmin();
+    }
+
+    function toggleGradeLessonsPanel() {
+        const panel = document.getElementById('admin-grade-lessons-panel');
+        const btn = document.getElementById('admin-toggle-lessons-btn');
+        if (!panel || !btn) return;
+        const isHidden = panel.classList.contains('hidden');
+        if (isHidden) {
+            panel.classList.remove('hidden');
+            btn.innerText = '▲ ซ่อนบทเรียนทั้งหมด';
+        } else {
+            panel.classList.add('hidden');
+            btn.innerText = '▼ แสดงบทเรียนทั้งหมด';
+        }
+    }
+
+    function promptAddGradeTarget() {
+        const name = prompt('กรุณาระบุชื่อระดับชั้นใหม่ (เช่น ป.4 หรือ ม.4):');
+        if (!name || !name.trim()) return;
+        const cleanName = name.trim();
+        state.userSettings.gradeTargets = state.userSettings.gradeTargets || {};
+        if (!state.userSettings.gradeTargets[cleanName]) {
+            state.userSettings.gradeTargets[cleanName] = { base: 150, lessons: {} };
+        }
+        adminActiveGrade = cleanName;
+        renderGradeTargetsAdmin();
+    }
+
+    function deleteCurrentGradeTarget() {
+        if (!adminActiveGrade) return;
+        if (!confirm(`ต้องการลบการตั้งค่าเฉพาะของระดับชั้น ${adminActiveGrade}? (จะกลับไปใช้ค่าเริ่มต้นสากล)`)) return;
+        if (state.userSettings.gradeTargets) {
+            delete state.userSettings.gradeTargets[adminActiveGrade];
+            saveGradeTargetsAdmin(false);
+        }
+    }
+
+    function saveGradeTargetsAdmin(showAlert = true) {
+        if (!adminActiveGrade) return;
+        state.userSettings.gradeTargets = state.userSettings.gradeTargets || {};
+
+        const baseInput = document.getElementById('admin-grade-base-input');
+        const baseVal = Math.max(10, parseInt(baseInput ? baseInput.value : 150) || 150);
+
+        const lessonsObj = {};
+        for (let i = 0; i < 20; i++) {
+            const inp = document.getElementById(`admin-grade-lesson-${i}`);
+            if (inp && inp.value.trim() !== '') {
+                const parsed = parseInt(inp.value.trim());
+                if (parsed > 0) lessonsObj[i] = parsed;
+            }
+        }
+
+        state.userSettings.gradeTargets[adminActiveGrade] = {
+            base: baseVal,
+            lessons: lessonsObj
+        };
+        mockData.settings.gradeTargets = state.userSettings.gradeTargets;
+
+        localStorage.setItem('ngt_gradeTargets', JSON.stringify(state.userSettings.gradeTargets));
+
+        if (typeof google !== 'undefined' && google.script) {
+            google.script.run.saveSettings({
+                targetLength: state.userSettings.targetLength,
+                enableMinigame: state.userSettings.enableMinigame,
+                gradeTargets: state.userSettings.gradeTargets
+            });
+        } else {
+            apiCall('saveSettings', {
+                settings: {
+                    targetLength: state.userSettings.targetLength,
+                    enableMinigame: state.userSettings.enableMinigame,
+                    gradeTargets: state.userSettings.gradeTargets
+                }
+            });
+        }
+
+        renderGradeTargetsAdmin();
+
+        if (state.currentUser) {
+            loadLesson(state.lessonIndex);
+        }
+
+        if (showAlert) {
+            alert(`บันทึกการตั้งค่าระดับชั้น ${adminActiveGrade} เรียบร้อยแล้ว!`);
         }
     }
     

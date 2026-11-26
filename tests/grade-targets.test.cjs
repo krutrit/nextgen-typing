@@ -73,3 +73,10 @@ test('code.gs and index.html support gradeTargets persistence and fallback', () 
   assert.ok(currentSrc.includes("localStorage.getItem('ngt_gradeTargets'") || currentSrc.includes('localStorage.getItem("ngt_gradeTargets"'),
     'index.html must read gradeTargets from localStorage');
 });
+
+test('index.html contains Grade Targets Admin UI elements and render functions', () => {
+  const currentSrc = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf-8');
+  assert.ok(currentSrc.includes('id="admin-grade-targets-container"'), 'index.html must contain admin-grade-targets-container');
+  assert.ok(currentSrc.includes('function renderGradeTargetsAdmin'), 'index.html must define renderGradeTargetsAdmin function');
+  assert.ok(currentSrc.includes('function saveGradeTargetsAdmin'), 'index.html must define saveGradeTargetsAdmin function');
+});
