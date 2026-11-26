@@ -678,6 +678,30 @@
         return { room: null, name: username };
     }
 
+    function getStudentGrade(username) {
+        const { room } = parseRoom(username);
+        if (!room) return null;
+        return room.split('/')[0].trim();
+    }
+
+    function getTargetLengthForUser(username, lessonIndex, customSettings = null) {
+        const s = customSettings || (typeof state !== 'undefined' ? state.userSettings : null);
+        const globalDefault = (s && s.targetLength) || 1000;
+        if (!username) return globalDefault;
+        const grade = getStudentGrade(username);
+        const gt = s && s.gradeTargets;
+        if (grade && gt && gt[grade]) {
+            const gradeConf = gt[grade];
+            if (gradeConf.lessons && typeof gradeConf.lessons[lessonIndex] === 'number' && gradeConf.lessons[lessonIndex] > 0) {
+                return gradeConf.lessons[lessonIndex];
+            }
+            if (typeof gradeConf.base === 'number' && gradeConf.base > 0) {
+                return gradeConf.base;
+            }
+        }
+        return globalDefault;
+    }
+
     // รายชื่อห้องไม่ซ้ำ (ไม่รวม Guest) เรียงแบบไทย+ตัวเลข
     function getRooms(users) {
         const set = new Set();
