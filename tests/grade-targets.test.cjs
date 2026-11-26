@@ -62,3 +62,14 @@ test('generateLessonText and target-display integrate getTargetLengthForUser', (
   assert.ok(currentSrc.includes('targetDisplay.innerText = getTargetLengthForUser(state.currentUser, state.lessonIndex)'), 
     'Sidebar targetDisplay must update using getTargetLengthForUser(state.currentUser, state.lessonIndex)');
 });
+
+test('code.gs and index.html support gradeTargets persistence and fallback', () => {
+  const codeGsSrc = fs.readFileSync(path.join(__dirname, '../code.gs'), 'utf-8');
+  assert.ok(codeGsSrc.includes('gradeTargets'), 'code.gs must support gradeTargets in saveSettings and getSettings');
+  
+  const currentSrc = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf-8');
+  assert.ok(currentSrc.includes("localStorage.setItem('ngt_gradeTargets'") || currentSrc.includes('localStorage.setItem("ngt_gradeTargets"'),
+    'index.html must cache gradeTargets in localStorage');
+  assert.ok(currentSrc.includes("localStorage.getItem('ngt_gradeTargets'") || currentSrc.includes('localStorage.getItem("ngt_gradeTargets"'),
+    'index.html must read gradeTargets from localStorage');
+});

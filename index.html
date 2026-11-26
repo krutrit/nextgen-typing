@@ -835,6 +835,15 @@
             mockData.settings.enableMinigame = localGameSetting === 'true';
         }
 
+        const localGradeTargets = localStorage.getItem('ngt_gradeTargets');
+        if (data && data.settings && data.settings.gradeTargets) {
+            mockData.settings.gradeTargets = data.settings.gradeTargets;
+        } else if (localGradeTargets) {
+            try { mockData.settings.gradeTargets = JSON.parse(localGradeTargets); } catch (_) { mockData.settings.gradeTargets = {}; }
+        } else {
+            mockData.settings.gradeTargets = mockData.settings.gradeTargets || {};
+        }
+
         // อัปเดต dropdown ห้องสำหรับหน้า Login เสมอ
         populateLoginRooms();
 
@@ -1362,12 +1371,13 @@
         mockData.settings.targetLength = len;
         mockData.settings.enableMinigame = enableGame;
         localStorage.setItem('ngt_enableMinigame', enableGame);
+        localStorage.setItem('ngt_gradeTargets', JSON.stringify(state.userSettings.gradeTargets || {}));
 
         document.getElementById('target-display').innerText = len;
         if (typeof google !== 'undefined' && google.script) {
-            google.script.run.saveSettings({ targetLength: len, enableMinigame: enableGame });
+            google.script.run.saveSettings({ targetLength: len, enableMinigame: enableGame, gradeTargets: state.userSettings.gradeTargets || {} });
         } else {
-            apiCall('saveSettings', { settings: { targetLength: len, enableMinigame: enableGame } });
+            apiCall('saveSettings', { settings: { targetLength: len, enableMinigame: enableGame, gradeTargets: state.userSettings.gradeTargets || {} } });
         }
         alert('บันทึกการตั้งค่าแล้ว');
         if(state.currentUser) loadLesson(state.lessonIndex); 

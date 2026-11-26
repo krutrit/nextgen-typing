@@ -119,6 +119,9 @@ function saveSettings(settings) {
   sheet.appendRow(["Key", "Value"]);
   sheet.appendRow(["targetLength", settings.targetLength]);
   sheet.appendRow(["enableMinigame", settings.enableMinigame !== false]);
+  if (settings.gradeTargets) {
+    sheet.appendRow(["gradeTargets", typeof settings.gradeTargets === 'object' ? JSON.stringify(settings.gradeTargets) : String(settings.gradeTargets)]);
+  }
   return "Success";
 }
 
@@ -247,12 +250,18 @@ function getUsers() {
 function getSettings() {
   const sheet = getOrCreateSheet(SHEET_SETTINGS);
   const data = sheet.getDataRange().getValues();
-  let settings = { targetLength: 1000, enableMinigame: true }; 
+  let settings = { targetLength: 1000, enableMinigame: true, gradeTargets: {} }; 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === 'targetLength') {
       settings.targetLength = parseInt(data[i][1]);
     } else if (data[i][0] === 'enableMinigame') {
       settings.enableMinigame = (data[i][1] === true || String(data[i][1]).toLowerCase() === 'true');
+    } else if (data[i][0] === 'gradeTargets') {
+      try {
+        settings.gradeTargets = typeof data[i][1] === 'string' ? JSON.parse(data[i][1]) : (data[i][1] || {});
+      } catch (_) {
+        settings.gradeTargets = {};
+      }
     }
   }
   return settings;
