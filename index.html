@@ -1473,7 +1473,7 @@
         const customText = localStorage.getItem(customKey);
         if (customText && customText.trim().length > 0) return customText.trim();
 
-        let content = ""; const length = state.userSettings.targetLength;
+        let content = ""; const length = getTargetLengthForUser(state.currentUser, state.lessonIndex);
         if (lesson.type === 'sentence' || lesson.type === 'words') {
             while (content.length < length) content += lesson.source[Math.floor(Math.random() * lesson.source.length)] + " ";
         } else {
@@ -1485,6 +1485,8 @@
     function loadLesson(index) {
         resetStats();
         state.lessonIndex = index;
+        const targetDisplay = document.getElementById('target-display');
+        if (targetDisplay) targetDisplay.innerText = getTargetLengthForUser(state.currentUser, state.lessonIndex);
         const lesson = curriculum[state.lang][index];
         const numEl = document.getElementById('current-lesson-num-mobile');
         if (numEl) {

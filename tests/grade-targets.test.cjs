@@ -54,3 +54,11 @@ test('getTargetLengthForUser resolves override > grade base > global fallback', 
   assert.equal(getTargetLengthForUser('Guest', 0, settings), 1000);
   assert.equal(getTargetLengthForUser('[ป.5/1] สมปอง', 0, settings), 1000);
 });
+
+test('generateLessonText and target-display integrate getTargetLengthForUser', () => {
+  const currentSrc = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf-8');
+  assert.ok(currentSrc.includes('getTargetLengthForUser(state.currentUser, state.lessonIndex)'), 
+    'generateLessonText must call getTargetLengthForUser(state.currentUser, state.lessonIndex)');
+  assert.ok(currentSrc.includes('targetDisplay.innerText = getTargetLengthForUser(state.currentUser, state.lessonIndex)'), 
+    'Sidebar targetDisplay must update using getTargetLengthForUser(state.currentUser, state.lessonIndex)');
+});
