@@ -28,3 +28,8 @@
 | Task 21: TDD RED - Add tests for snappy tweens, island cache, and fast playback | Completed | tests/arcade-puzzle.test.cjs asserted responsiveness & caching |
 | Task 22: TDD GREEN - Implement island cache, snappy lerp rates, and fast playback | Completed | src/arcade/view.js and bridge.js optimized for 60 FPS fluidity |
 | Task 23: Full test suite verification & GitHub Pages deployment | Completed | All 88/88 tests pass; pushed 2afd6ab to origin/main |
+| Task 24: TDD RED/GREEN - Core Target Resolution Logic | Completed | getStudentGrade and getTargetLengthForUser verified by tests |
+| Task 25: Integrate dynamic lesson generation and sidebar display | Completed | generateContent and loadLesson now adapt dynamically to student grade |
+| Task 26: Google Apps Script & localStorage persistence | Completed | code.gs saveSettings/getSettings and localStorage cache updated |
+| Task 27: Admin UI Panel for Grade-Level & Per-Lesson Target Configuration | Completed | Grade pills, base length, and per-lesson inputs added to Admin Modal |
+| Task 28: End-to-End System Verification & Deployment | Completed | All 93/93 tests pass; pushed to origin/main |
